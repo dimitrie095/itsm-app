@@ -1,0 +1,210 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  role          Role      @default(END_USER)
+  department    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  tickets       Ticket[]
+  assignedTickets Ticket[] @relation("AssignedTickets")
+  assets        Asset[]
+  comments      Comment[]
+  articles      KnowledgeBaseArticle[]
+  // SSO integration fields
+  externalId    String?   @unique
+  avatarUrl     String?
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  AGENT
+  END_USER
+}
+
+model Ticket {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  status      TicketStatus @default(NEW)
+  priority    Priority @default(MEDIUM)
+  category    String?
+  tags        String   // JSON string array
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  closedAt    DateTime?
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  assignedToId String?
+  assignedTo  User?    @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  assetId     String?
+  asset       Asset?   @relation(fields: [assetId], references: [id])
+  slaId       String?
+  sla         SLA?     @relation(fields: [slaId], references: [id])
+  comments    Comment[]
+  // SLA timestamps
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+  // Automated fields
+  source      TicketSource @default(PORTAL)
+  impact      ImpactLevel @default(LOW)
+  urgency     UrgencyLevel @default(LOW)
+  // Calculated priority matrix (impact x urgency)
+  calculatedPriority Priority?
+
+  @@map("tickets")
+}
+
+enum TicketStatus {
+  NEW
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TicketSource {
+  PORTAL
+  EMAIL
+  PHONE
+  CHAT
+}
+
+enum ImpactLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum UrgencyLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  isInternal Boolean @default(false)
+
+  @@map("comments")
+}
+
+model Asset {
+  id          String   @id @default(uuid())
+  name        String
+  type        AssetType
+  serialNumber String? @unique
+  location    String?
+  status      AssetStatus @default(ACTIVE)
+  purchaseDate DateTime?
+  warrantyEnd DateTime?
+  licenseKey  String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // Relations
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  tickets     Ticket[]
+
+  @@map("assets")
+}
+
+enum AssetType {
+  LAPTOP
+  DESKTOP
+  MONITOR
+  PHONE
+  PRINTER
+  SOFTWARE
+  SERVER
+  NETWORK
+  OTHER
+}
+
+enum AssetStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  RETIRED
+  LOST
+}
+
+model SLA {
+  id                String   @id @default(uuid())
+  name              String
+  description       String?
+  priority          Priority
+  responseTime      Int      // minutes
+  resolutionTime    Int      // minutes
+  escalationLevels  Int      @default(3)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  tickets           Ticket[]
+
+  @@map("slas")
+}
+
+model KnowledgeBaseArticle {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  category    String
+  tags        String   // JSON string array
+  isPublished Boolean  @default(false)
+  viewCount   Int      @default(0)
+  helpfulCount Int     @default(0)
+  notHelpfulCount Int  @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+
+  @@map("knowledge_base_articles")
+}
+
+model AutomationRule {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  trigger     String   // e.g., "ticket.created", "ticket.updated"
+  condition   String?  // JSON condition
+  action      String   // JSON action
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("automation_rules")
+}
