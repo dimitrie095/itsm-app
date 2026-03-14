@@ -1,0 +1,15 @@
+[
+  {
+    "id": "KB-001",
+    "title": "Test-Article",
+    "content": "Test-Article Software",
+    "category": "Software",
+    "tags": [],
+    "isPublished": true,
+    "views": 0,
+    "helpful": 0,
+    "createdAt": "2026-03-13T21:29:17.654Z",
+    "updatedAt": "2026-03-13T21:29:17.654Z",
+    "authorId": "demo-admin"
+  }
+]

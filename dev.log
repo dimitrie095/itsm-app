@@ -1,0 +1,204 @@
+
+> itsm-app@0.1.0 dev
+> next dev
+
+⚠ Port 3000 is in use by an unknown process, using available port 3001 instead.
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.1.104:3001
+- Environments: .env.local, .env
+
+✓ Starting...
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+✓ Ready in 781ms
+
+thread 'tokio-runtime-worker' (10104) panicked at turbopack\crates\turbo-persistence\src\static_sorted_file.rs:387:51:
+range start index 4879960 out of range for slice of length 4879880
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+-----
+[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to C:\Users\dimit\AppData\Local\Temp\next-panic-349937d707486d86a2b2fbcf294cf467.log.
+
+To help make Turbopack better, report this error by ]8;;https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20range%20start%20index%204879960%20out%20of%20range%20for%20slice%20of%20length%204879880&body=Turbopack%20version%3A%20%6023c46498%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0Arange%20start%20index%204879960%20out%20of%20range%20for%20slice%20of%20length%204879880%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace\clicking here.]8;;\
+-----
+
+
+thread 'tokio-runtime-worker' (3392) panicked at turbopack\crates\turbo-persistence\src\static_sorted_file.rs:387:51:
+range start index 4879960 out of range for slice of length 4879880
+⨯ Error [TurbopackInternalError]: range start index 4879960 out of range for slice of length 4879880
+    at <unknown> (TurbopackInternalError: range start index 4879960 out of range for slice of length 4879880) {
+  location: 'turbopack\\crates\\turbo-persistence\\src\\static_sorted_file.rs:387:51'
+}
+Persisting failed: Unable to open static sorted file referenced from 00000179.meta
+
+Caused by:
+    0: Unable to open static sorted file 00000178.sst
+    1: Das System kann die angegebene Datei nicht finden. (os error 2)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+
+thread 'tokio-runtime-worker' (27584) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for get_type (TaskId 32124))
+
+Caused by:
+    0: Looking up data for TaskId 32124 from database failed
+    1: Unable to open static sorted file referenced from 00000147.meta
+    2: Unable to open static sorted file 00000143.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (27584) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for get_type (TaskId 32124))
+
+Caused by:
+    0: Looking up data for TaskId 32124 from database failed
+    1: Unable to open static sorted file referenced from 00000147.meta
+    2: Unable to open static sorted file 00000143.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (448) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <FileSource as Asset>::content (TaskId 199))
+
+Caused by:
+    0: Looking up data for TaskId 199 from database failed
+    1: Unable to open static sorted file referenced from 00000180.meta
+    2: Unable to open static sorted file 00000177.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (27608) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for find_context_file (TaskId 194))
+
+Caused by:
+    0: Looking up data for TaskId 194 from database failed
+    1: Unable to open static sorted file referenced from 00000180.meta
+    2: Unable to open static sorted file 00000177.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (448) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for parse (TaskId 843))
+
+Caused by:
+    0: Looking up data for TaskId 843 from database failed
+    1: Unable to open static sorted file referenced from 00000180.meta
+    2: Unable to open static sorted file 00000177.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (25692) panicked at turbopack\crates\turbo-persistence\src\static_sorted_file.rs:387:51:
+range start index 4879960 out of range for slice of length 4879880
+
+thread 'tokio-runtime-worker' (32324) panicked at turbopack\crates\turbo-persistence\src\static_sorted_file.rs:387:51:
+range start index 4879960 out of range for slice of length 4879880
+
+thread 'tokio-runtime-worker' (448) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EcmascriptChunkType as ChunkType>::chunk_item_size (TaskId 19086))
+
+Caused by:
+    0: Looking up data for TaskId 19086 from database failed
+    1: Unable to open static sorted file referenced from 00000147.meta
+    2: Unable to open static sorted file 00000143.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (28244) panicked at turbopack\crates\turbo-persistence\src\static_sorted_file.rs:387:51:
+range start index 4879960 out of range for slice of length 4879880
+
+thread 'tokio-runtime-worker' (28244) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EcmascriptChunkType as ChunkType>::chunk_item_size (TaskId 19040))
+
+Caused by:
+    0: Looking up data for TaskId 19040 from database failed
+    1: Unable to open static sorted file referenced from 00000147.meta
+    2: Unable to open static sorted file 00000143.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (25692) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EcmascriptChunkType as ChunkType>::chunk_item_size (TaskId 19040))
+
+Caused by:
+    0: Looking up data for TaskId 19040 from database failed
+    1: Unable to open static sorted file referenced from 00000147.meta
+    2: Unable to open static sorted file 00000143.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (25692) panicked at turbopack\crates\turbo-persistence\src\static_sorted_file.rs:387:51:
+range start index 4879960 out of range for slice of length 4879880
+
+thread 'tokio-runtime-worker' (30264) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for primary_chunkable_referenced_modules (TaskId 1235))
+
+Caused by:
+    0: Looking up data for TaskId 1235 from database failed
+    1: Unable to open static sorted file referenced from 00000180.meta
+    2: Unable to open static sorted file 00000177.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (25692) panicked at turbopack\crates\turbo-persistence\src\static_sorted_file.rs:387:51:
+range start index 4879960 out of range for slice of length 4879880
+
+thread 'tokio-runtime-worker' (28244) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EcmascriptChunkType as ChunkType>::chunk_item_size (TaskId 19040))
+
+Caused by:
+    0: Looking up data for TaskId 19040 from database failed
+    1: Unable to open static sorted file referenced from 00000147.meta
+    2: Unable to open static sorted file 00000143.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (25692) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EcmascriptChunkType as ChunkType>::chunk_item_size (TaskId 19040))
+
+Caused by:
+    0: Looking up data for TaskId 19040 from database failed
+    1: Unable to open static sorted file referenced from 00000147.meta
+    2: Unable to open static sorted file 00000143.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (25692) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EcmascriptChunkType as ChunkType>::chunk_item_size (TaskId 19086))
+
+Caused by:
+    0: Looking up data for TaskId 19086 from database failed
+    1: Unable to open static sorted file referenced from 00000147.meta
+    2: Unable to open static sorted file 00000143.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (28244) panicked at turbopack\crates\turbo-persistence\src\static_sorted_file.rs:387:51:
+range start index 4879960 out of range for slice of length 4879880
+
+thread 'tokio-runtime-worker' (23928) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for AssetIdent::new_inner (TaskId 2565))
+
+Caused by:
+    0: Looking up data for TaskId 2565 from database failed
+    1: Unable to open static sorted file referenced from 00000147.meta
+    2: Unable to open static sorted file 00000143.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (23620) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for AssetIdent::new_inner (TaskId 2334))
+
+Caused by:
+    0: Looking up data for TaskId 2334 from database failed
+    1: Unable to open static sorted file referenced from 00000180.meta
+    2: Unable to open static sorted file 00000177.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (27584) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for AssetIdent::new_inner (TaskId 5238))
+
+Caused by:
+    0: Looking up data for TaskId 5238 from database failed
+    1: Unable to open static sorted file referenced from 00000180.meta
+    2: Unable to open static sorted file 00000177.sst
+    3: Das System kann die angegebene Datei nicht finden. (os error 2)
+
+thread 'tokio-runtime-worker' (28244) panicked at turbopack\crates\turbo-persistence\src\static_sorted_file.rs:387:51:
+range start index 4879960 out of range for slice of length 4879880
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)
+[?25h

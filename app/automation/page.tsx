@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Plus, Zap, Clock, Mail, User, Tag } from "lucide-react"
+import { MoreHorizontal, Plus, Zap, Clock, Mail, Tag } from "lucide-react"
 
 export default function AutomationPage() {
   const rules = [

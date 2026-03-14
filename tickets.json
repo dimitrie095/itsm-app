@@ -1,0 +1,47 @@
+[
+  {
+    "id": "TKT-001",
+    "title": "ticket-0201",
+    "description": "test description",
+    "category": "software",
+    "priority": "high",
+    "customer": "sta",
+    "email": "tayondimitrie@gmail.com",
+    "department": "finance",
+    "status": "New",
+    "assignedTo": "Unassigned",
+    "sla": "24h",
+    "createdAt": "2026-03-13T21:36:34.336Z",
+    "updatedAt": "2026-03-13T21:36:34.336Z"
+  },
+  {
+    "id": "TKT-002",
+    "title": "Resolved critical issue",
+    "description": "Critical server issue resolved",
+    "category": "network",
+    "priority": "critical",
+    "customer": "Admin",
+    "email": "admin@example.com",
+    "department": "it",
+    "status": "Resolved",
+    "assignedTo": "John Doe",
+    "sla": "2h",
+    "createdAt": "2026-03-13T20:00:00.000Z",
+    "updatedAt": "2026-03-13T21:00:00.000Z"
+  },
+  {
+    "id": "TKT-003",
+    "title": "Low priority request",
+    "description": "General inquiry",
+    "category": "other",
+    "priority": "low",
+    "customer": "Jane Smith",
+    "email": "jane@example.com",
+    "department": "hr",
+    "status": "Closed",
+    "assignedTo": "Support Team",
+    "sla": "72h",
+    "createdAt": "2026-03-12T10:00:00.000Z",
+    "updatedAt": "2026-03-12T15:00:00.000Z"
+  }
+]

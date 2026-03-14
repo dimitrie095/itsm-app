@@ -4,24 +4,23 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Plus, Search, Filter, Cpu, Monitor, Printer, Server } from "lucide-react"
+import { MoreHorizontal, Plus, Search, Filter, Cpu, Monitor, Printer, Server, Smartphone, HardDrive, Database } from "lucide-react"
+import Link from "next/link"
+import { getAssets, getAssetStats } from "./actions"
 
-export default function AssetsPage() {
-  const assets = [
-    { id: "AST-001", name: "Dell Latitude 5420", type: "Laptop", status: "Active", assignedTo: "John Doe", location: "Floor 3", warranty: "2026-05-15" },
-    { id: "AST-002", name: "HP EliteDisplay", type: "Monitor", status: "Active", assignedTo: "Jane Smith", location: "Floor 2", warranty: "2025-12-10" },
-    { id: "AST-003", name: "Cisco Router", type: "Network", status: "Maintenance", assignedTo: "IT Dept", location: "Server Room", warranty: "2027-03-20" },
-    { id: "AST-004", name: "Microsoft Office", type: "Software", status: "Active", assignedTo: "Robert Brown", location: "License", warranty: "2025-10-01" },
-    { id: "AST-005", name: "Canon ImageRunner", type: "Printer", status: "Retired", assignedTo: "N/A", location: "Storage", warranty: "Expired" },
-    { id: "AST-006", name: "Lenovo ThinkStation", type: "Desktop", status: "Active", assignedTo: "Alice Johnson", location: "Floor 4", warranty: "2026-08-30" },
-  ]
+export default async function AssetsPage() {
+  const assets = await getAssets()
+  const stats = await getAssetStats()
 
   const typeIcon = (type: string) => {
-    switch (type) {
-      case "Laptop": return <Cpu className="h-4 w-4" />
-      case "Monitor": return <Monitor className="h-4 w-4" />
-      case "Printer": return <Printer className="h-4 w-4" />
-      case "Server": return <Server className="h-4 w-4" />
+    switch (type.toLowerCase()) {
+      case "laptop": return <Cpu className="h-4 w-4" />
+      case "monitor": return <Monitor className="h-4 w-4" />
+      case "printer": return <Printer className="h-4 w-4" />
+      case "server": return <Server className="h-4 w-4" />
+      case "desktop": return <HardDrive className="h-4 w-4" />
+      case "network": return <Database className="h-4 w-4" />
+      case "software": return <Smartphone className="h-4 w-4" />
       default: return <Cpu className="h-4 w-4" />
     }
   }
@@ -32,7 +31,20 @@ export default function AssetsPage() {
       case "Maintenance": return "bg-yellow-100 text-yellow-800"
       case "Retired": return "bg-gray-100 text-gray-800"
       case "Lost": return "bg-red-100 text-red-800"
+      case "Damaged": return "bg-orange-100 text-orange-800"
       default: return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  // Überprüfe ob Garantie abgelaufen ist
+  const isWarrantyExpired = (warranty: string) => {
+    if (warranty === "Expired" || warranty === "N/A" || !warranty) return true
+    try {
+      const warrantyDate = new Date(warranty)
+      const today = new Date()
+      return warrantyDate < today
+    } catch {
+      return true
     }
   }
 
@@ -44,10 +56,10 @@ export default function AssetsPage() {
           <p className="text-muted-foreground">Manage IT assets, inventory, and warranties.</p>
         </div>
         <Button asChild>
-          <a href="/assets/new">
+          <Link href="/assets/new">
             <Plus className="mr-2 h-4 w-4" />
             New Asset
-          </a>
+          </Link>
         </Button>
       </div>
 
@@ -57,7 +69,7 @@ export default function AssetsPage() {
             <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">289</div>
+            <div className="text-2xl font-bold">{stats.totalAssets}</div>
             <p className="text-xs text-muted-foreground">+12 from last month</p>
           </CardContent>
         </Card>
@@ -66,8 +78,8 @@ export default function AssetsPage() {
             <CardTitle className="text-sm font-medium">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">245</div>
-            <p className="text-xs text-muted-foreground">85% of total</p>
+            <div className="text-2xl font-bold">{stats.activeAssets}</div>
+            <p className="text-xs text-muted-foreground">{stats.totalAssets > 0 ? Math.round((stats.activeAssets / stats.totalAssets) * 100) : 0}% of total</p>
           </CardContent>
         </Card>
         <Card>
@@ -75,8 +87,8 @@ export default function AssetsPage() {
             <CardTitle className="text-sm font-medium">Under Warranty</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">187</div>
-            <p className="text-xs text-muted-foreground">Expiring soon: 23</p>
+            <div className="text-2xl font-bold">{stats.underWarranty}</div>
+            <p className="text-xs text-muted-foreground">Expiring soon: {stats.expiringSoon}</p>
           </CardContent>
         </Card>
         <Card>
@@ -84,8 +96,8 @@ export default function AssetsPage() {
             <CardTitle className="text-sm font-medium">Maintenance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">18</div>
-            <p className="text-xs text-muted-foreground">3 critical</p>
+            <div className="text-2xl font-bold">{stats.maintenanceAssets}</div>
+            <p className="text-xs text-muted-foreground">{stats.maintenanceAssets > 0 ? "Needs attention" : "All good"}</p>
           </CardContent>
         </Card>
       </div>
@@ -123,45 +135,68 @@ export default function AssetsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assets.map((asset) => (
-                <TableRow key={asset.id}>
-                  <TableCell className="font-medium">{asset.id}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {typeIcon(asset.type)}
-                      {asset.name}
+              {assets.length > 0 ? (
+                assets.map((asset: any) => (
+                  <TableRow key={asset.id}>
+                    <TableCell className="font-medium">{asset.id}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {typeIcon(asset.type)}
+                        {asset.name}
+                      </div>
+                    </TableCell>
+                    <TableCell>{asset.type}</TableCell>
+                    <TableCell>
+                      <Badge className={statusColor(asset.status)}>{asset.status}</Badge>
+                    </TableCell>
+                    <TableCell>{asset.assignedTo || "Unassigned"}</TableCell>
+                    <TableCell>{asset.location}</TableCell>
+                    <TableCell>
+                      <Badge variant={isWarrantyExpired(asset.warranty) ? "destructive" : "outline"}>
+                        {asset.warranty || "N/A"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/assets/${asset.id}`}>View Details</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/assets/${asset.id}/edit`}>Edit Asset</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>Assign to User</DropdownMenuItem>
+                          <DropdownMenuItem>Update Status</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-red-600" asChild>
+                            <Link href={`/assets/${asset.id}/delete`}>Delete Asset</Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <div className="flex flex-col items-center gap-2">
+                      <Cpu className="h-8 w-8" />
+                      <p>No assets found.</p>
+                      <p className="text-sm">
+                        <Link href="/assets/new" className="text-primary hover:underline">
+                          Create your first asset
+                        </Link>
+                      </p>
                     </div>
                   </TableCell>
-                  <TableCell>{asset.type}</TableCell>
-                  <TableCell>
-                    <Badge className={statusColor(asset.status)}>{asset.status}</Badge>
-                  </TableCell>
-                  <TableCell>{asset.assignedTo}</TableCell>
-                  <TableCell>{asset.location}</TableCell>
-                  <TableCell>
-                    <Badge variant={asset.warranty === "Expired" ? "destructive" : "outline"}>
-                      {asset.warranty}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Assign to User</DropdownMenuItem>
-                        <DropdownMenuItem>Update Status</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600">Retire Asset</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

@@ -134,4 +134,68 @@
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* Hide sidebar and topbar on auth pages */
+  body[data-path^="/login"] .sidebar-container,
+  body[data-path^="/login"] [data-sidebar],
+  body[data-path^="/forgot-password"] .sidebar-container,
+  body[data-path^="/forgot-password"] [data-sidebar],
+  body[data-path^="/login"] .topbar-container,
+  body[data-path^="/login"] [data-topbar],
+  body[data-path^="/forgot-password"] .topbar-container,
+  body[data-path^="/forgot-password"] [data-topbar] {
+    display: none !important;
+  }
+
+  /* Adjust layout for auth pages */
+  body[data-path^="/login"] .peer-data-\[state\=expanded\]\:md\:pl-\[var\(--sidebar-width\)\],
+  body[data-path^="/login"] .peer-data-\[state\=collapsed\]\:md\:pl-\[var\(--sidebar-width-icon\)\],
+  body[data-path^="/forgot-password"] .peer-data-\[state\=expanded\]\:md\:pl-\[var\(--sidebar-width\)\],
+  body[data-path^="/forgot-password"] .peer-data-\[state\=collapsed\]\:md\:pl-\[var\(--sidebar-width-icon\)\] {
+    padding-left: 0 !important;
+  }
+
+  body[data-path^="/login"] main,
+  body[data-path^="/forgot-password"] main {
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+
+  /* Ensure auth pages content is centered */
+  body[data-path^="/login"] main > *,
+  body[data-path^="/forgot-password"] main > * {
+    width: 100%;
+    max-width: 28rem;
+  }
+
+  /* Hide sidebar and topbar on auth pages using data-auth attribute */
+  body[data-auth="true"] .sidebar-container,
+  body[data-auth="true"] [data-sidebar],
+  body[data-auth="true"] .topbar-container,
+  body[data-auth="true"] [data-topbar] {
+    display: none !important;
+  }
+
+  /* Adjust layout for auth pages */
+  body[data-auth="true"] .peer-data-\[state\=expanded\]\:md\:pl-\[var\(--sidebar-width\)\],
+  body[data-auth="true"] .peer-data-\[state\=collapsed\]\:md\:pl-\[var\(--sidebar-width-icon\)\] {
+    padding-left: 0 !important;
+  }
+
+  body[data-auth="true"] main {
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+
+  /* Ensure auth pages content is centered */
+  body[data-auth="true"] main > * {
+    width: 100%;
+    max-width: 28rem;
+  }
 }

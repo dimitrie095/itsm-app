@@ -1,0 +1,107 @@
+[
+  {
+    "id": "sample-report-1",
+    "name": "Weekly Performance Report - March 2025",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 15,
+      "openTickets": 3,
+      "resolvedTickets": 12,
+      "resolutionRate": 80,
+      "totalArticles": 8,
+      "categoryDistribution": {
+        "software": 6,
+        "hardware": 4,
+        "network": 3,
+        "other": 2
+      },
+      "priorityDistribution": {
+        "high": 5,
+        "medium": 7,
+        "low": 3
+      },
+      "topCategories": [
+        { "category": "software", "count": 6 },
+        { "category": "hardware", "count": 4 },
+        { "category": "network", "count": 3 }
+      ],
+      "recentTickets": [
+        {
+          "id": "TKT-001",
+          "title": "Printer not working",
+          "priority": "high",
+          "status": "Resolved",
+          "category": "hardware",
+          "createdAt": "2025-03-10T10:30:00.000Z"
+        },
+        {
+          "id": "TKT-002",
+          "title": "Software license renewal",
+          "priority": "medium",
+          "status": "In Progress",
+          "category": "software",
+          "createdAt": "2025-03-09T14:20:00.000Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2025-03-13T10:00:00.000Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2025-03-06T00:00:00.000Z",
+        "end": "2025-03-13T23:59:59.999Z"
+      },
+      "emailRecipients": ["admin@example.com", "manager@example.com"],
+      "sentAt": "2025-03-13T10:05:00.000Z"
+    },
+    "createdAt": "2025-03-13T10:00:00.000Z",
+    "updatedAt": "2025-03-13T10:05:00.000Z"
+  },
+  {
+    "id": "sample-report-2",
+    "name": "SLA Compliance Report - Q1 2025",
+    "type": "sla",
+    "format": "html",
+    "status": "generated",
+    "description": "Detailed SLA compliance analysis report",
+    "data": {
+      "totalTickets": 42,
+      "openTickets": 5,
+      "resolvedTickets": 37,
+      "resolutionRate": 88,
+      "totalArticles": 15,
+      "categoryDistribution": {
+        "software": 18,
+        "hardware": 12,
+        "network": 8,
+        "email": 4
+      },
+      "priorityDistribution": {
+        "critical": 2,
+        "high": 10,
+        "medium": 20,
+        "low": 10
+      },
+      "topCategories": [
+        { "category": "software", "count": 18 },
+        { "category": "hardware", "count": 12 },
+        { "category": "network", "count": 8 }
+      ],
+      "recentTickets": []
+    },
+    "metadata": {
+      "generatedAt": "2025-03-31T14:30:00.000Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2025-01-01T00:00:00.000Z",
+        "end": "2025-03-31T23:59:59.999Z"
+      },
+      "emailRecipients": []
+    },
+    "createdAt": "2025-03-31T14:30:00.000Z",
+    "updatedAt": "2025-03-31T14:30:00.000Z"
+  }
+]

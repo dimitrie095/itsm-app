@@ -4,6 +4,7 @@ import {
   BarChart3,
   BookOpen,
   Cpu,
+  FileText,
   Home,
   Settings,
   Ticket,
@@ -35,6 +36,7 @@ const navItems = [
   { label: "Knowledge Base", href: "/knowledge", icon: BookOpen },
   { label: "Users", href: "/users", icon: Users },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
+  { label: "Reports", href: "/reports", icon: FileText },
   { label: "Automation", href: "/automation", icon: Wrench },
   { label: "Settings", href: "/settings", icon: Settings },
 ]
@@ -58,7 +60,8 @@ export function Sidebar() {
     */
     <ShadcnSidebar
       collapsible="icon"
-      className="border-r bg-gradient-to-b from-sidebar to-sidebar-accent/80"
+      className="border-r bg-gradient-to-b from-sidebar to-sidebar-accent/80 sidebar-container"
+      data-sidebar="true"
     >
       <SidebarHeader className="p-4">
         <div className="flex items-center mb-2">
@@ -140,6 +143,30 @@ export function Sidebar() {
                   <Link href="/knowledge/new">
                     <BookOpen className="h-4 w-4 shrink-0" />
                     <span>New Article</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="New Report"
+                  className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <Link href="/reports/new">
+                    <FileText className="h-4 w-4 shrink-0" />
+                    <span>New Report</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="New Asset"
+                  className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <Link href="/assets/new">
+                    <Cpu className="h-4 w-4 shrink-0" />
+                    <span>New Asset</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

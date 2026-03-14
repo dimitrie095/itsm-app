@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BarChart3, TrendingUp, TrendingDown, Download } from "lucide-react"
+import Link from "next/link"
 
 export default function AnalyticsPage() {
   return (
@@ -11,9 +12,11 @@ export default function AnalyticsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
           <p className="text-muted-foreground">Data-driven insights into your IT service performance.</p>
         </div>
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Export Report
+        <Button variant="outline" asChild>
+          <Link href="/reports/new">
+            <Download className="mr-2 h-4 w-4" />
+            Generate Report
+          </Link>
         </Button>
       </div>
 

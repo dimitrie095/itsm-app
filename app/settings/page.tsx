@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Save, Bell, Lock, Database, Users, Globe } from "lucide-react"
+import { Save, Database, Users, Globe } from "lucide-react"
 
 export default function SettingsPage() {
   return (
