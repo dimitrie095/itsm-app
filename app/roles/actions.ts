@@ -141,7 +141,7 @@ export async function initializePermissions() {
 
     // Set up default role permissions
     const permissions = await prisma.permission.findMany()
-    const permissionMap = new Map(permissions.map(p => [p.name, p]))
+    const permissionMap = new Map<string, (typeof permissions)[0]>(permissions.map(p => [p.name, p]))
 
     for (const [role, permissionNames] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
       for (const permName of permissionNames) {
@@ -263,7 +263,7 @@ export async function updateStandardRolePermissions(role: Role, permissionNames:
   try {
     // Get all permissions
     const allPermissions = await prisma.permission.findMany()
-    const permissionMap = new Map(allPermissions.map(p => [p.name, p.id]))
+    const permissionMap = new Map<string, string>(allPermissions.map(p => [p.name, p.id]))
 
     // Get current permissions for this role
     const currentPermissions = await prisma.rolePermission.findMany({
@@ -584,7 +584,7 @@ export async function removePermissionFromUser(userId: string, permissionName: s
 export async function updateUserPermissions(userId: string, permissionNames: string[]) {
   try {
     const allPermissions = await prisma.permission.findMany()
-    const permissionMap = new Map(allPermissions.map(p => [p.name, p.id]))
+    const permissionMap = new Map<string, string>(allPermissions.map(p => [p.name, p.id]))
 
     const currentPermissions = await prisma.userPermission.findMany({
       where: { userId }
