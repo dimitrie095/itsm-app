@@ -64,8 +64,21 @@ const DEFAULT_PERMISSIONS = [
   { name: "roles.assign", description: "Assign roles to users", category: "roles", action: "assign" },
 ]
 
+// Permission categories with ordering
+const PERMISSION_CATEGORIES = [
+  { name: "tickets", description: "Ticket Management", order: 1 },
+  { name: "users", description: "User Management", order: 2 },
+  { name: "assets", description: "Asset Management", order: 3 },
+  { name: "knowledge", description: "Knowledge Base", order: 4 },
+  { name: "reports", description: "Reporting", order: 5 },
+  { name: "settings", description: "System Settings", order: 6 },
+  { name: "automation", description: "Automation Rules", order: 7 },
+  { name: "analytics", description: "Analytics Dashboard", order: 8 },
+  { name: "roles", description: "Roles & Permissions", order: 9 },
+]
+
 // Default role permissions mapping
-const DEFAULT_ROLE_PERMISSIONS: Record<Role, string[]> = {
+const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, 'CUSTOM'>, string[]> = {
   ADMIN: [
     "tickets.view", "tickets.create", "tickets.update", "tickets.delete", "tickets.assign", "tickets.resolve", "tickets.close", "tickets.escalate",
     "users.view", "users.create", "users.update", "users.delete", "users.manage_roles",
@@ -90,18 +103,39 @@ const DEFAULT_ROLE_PERMISSIONS: Record<Role, string[]> = {
     "tickets.view", "tickets.create", "tickets.update",
     "knowledge.view",
     "assets.view"
-  ],
-  CUSTOM: [] // Custom roles start with no permissions
+  ]
 }
 
 export async function initializePermissions() {
   try {
+    // Create permission categories first
+    const categoryMap = new Map<string, string>()
+    for (const categoryData of PERMISSION_CATEGORIES) {
+      const category = await prisma.permissionCategory.upsert({
+        where: { name: categoryData.name },
+        update: { description: categoryData.description, order: categoryData.order },
+        create: {
+          name: categoryData.name,
+          description: categoryData.description,
+          order: categoryData.order
+        }
+      })
+      categoryMap.set(category.name, category.id)
+    }
+
     // Create default permissions if they don't exist
     for (const permData of DEFAULT_PERMISSIONS) {
+      const categoryId = categoryMap.get(permData.category)
       await prisma.permission.upsert({
         where: { name: permData.name },
-        update: permData,
-        create: permData,
+        update: { 
+          ...permData,
+          categoryId: categoryId || null
+        },
+        create: {
+          ...permData,
+          categoryId: categoryId || null
+        },
       })
     }
 
@@ -194,11 +228,10 @@ export async function getRolesAndPermissions() {
     }, {} as Record<string, typeof permissions>)
 
     // Create role permission maps
-    const standardRolePermissions: Record<Role, string[]> = {
+    const standardRolePermissions: Record<Exclude<Role, 'CUSTOM'>, string[]> = {
       ADMIN: [],
       AGENT: [],
-      END_USER: [],
-      CUSTOM: []
+      END_USER: []
     }
 
     rolePermissions.forEach(rp => {
@@ -219,7 +252,7 @@ export async function getRolesAndPermissions() {
     return {
       permissions: {},
       customRoles: [],
-      standardRolePermissions: { ADMIN: [], AGENT: [], END_USER: [], CUSTOM: [] },
+      standardRolePermissions: { ADMIN: [], AGENT: [], END_USER: [] },
       users: [],
       allPermissions: []
     }

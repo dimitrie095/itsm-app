@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Save, Database, Users, Globe } from "lucide-react"
+import AzureADConfig from "./azure-ad-config"
 
 export default function SettingsPage() {
   return (
@@ -191,25 +192,14 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="integrations" className="space-y-6">
+          <AzureADConfig />
+          
           <Card>
             <CardHeader>
-              <CardTitle>Third-Party Integrations</CardTitle>
+              <CardTitle>Other Integrations</CardTitle>
               <CardDescription>Connect with other tools and services.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                    <Globe className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <Label>Azure Active Directory</Label>
-                    <p className="text-sm text-muted-foreground">User synchronization and SSO.</p>
-                  </div>
-                </div>
-                <Switch />
-              </div>
-              <Separator />
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">

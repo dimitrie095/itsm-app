@@ -13,6 +13,8 @@ model User {
   email           String                 @unique
   name            String?
   role            Role                   @default(END_USER)
+  customRoleId    String?
+  customRole      CustomRole?            @relation(fields: [customRoleId], references: [id])
   department      String?
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
@@ -27,6 +29,8 @@ model User {
   sessions        Session[]
   assignedTickets Ticket[]               @relation("AssignedTickets")
   tickets         Ticket[]
+  userPermissions UserPermission[]
+  auditLogs       AuditLog[]
 
   @@map("users")
 }
@@ -195,6 +199,86 @@ enum Role {
   ADMIN
   AGENT
   END_USER
+  CUSTOM
+}
+
+model PermissionCategory {
+  id          String       @id @default(uuid())
+  name        String       @unique  // "tickets", "users", "assets", etc.
+  description String?
+  order       Int          @default(0)
+  permissions Permission[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  @@map("permission_categories")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  category    String   // e.g., "tickets", "users", "settings", "reports", "assets"
+  action      String   // e.g., "create", "read", "update", "delete", "manage"
+  categoryId  String?
+  permissionCategory PermissionCategory? @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  role         Role?      // For standard roles (ADMIN, AGENT, END_USER)
+  customRoleId String?    // For custom roles
+  customRole   CustomRole? @relation(fields: [customRoleId], references: [id])
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([role, permissionId])
+  @@unique([customRoleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([userId, permissionId])
+  @@map("user_permissions")
+}
+
+model CustomRole {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  permissions RolePermission[]
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("custom_roles")
+}
+
+model RoleHierarchy {
+  id         String   @id @default(uuid())
+  parentRole Role     // Übergeordnete Rolle
+  childRole  Role     // Untergeordnete Rolle
+  createdAt  DateTime @default(now())
+  
+  @@unique([parentRole, childRole])
+  @@map("role_hierarchies")
 }
 
 enum TicketStatus {
@@ -251,4 +335,35 @@ enum AssetStatus {
   MAINTENANCE
   RETIRED
   LOST
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String   // e.g., "PERMISSION_CHANGE", "ROLE_CREATE", "USER_ASSIGN"
+  entityType  String   // e.g., "Role", "Permission", "User"
+  entityId    String?
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  details     String?  // JSON details of the change
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model IntegrationConfig {
+  id        String   @id @default(uuid())
+  provider  String   @unique
+  name      String
+  config    String   // JSON configuration
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("integration_configs")
 }

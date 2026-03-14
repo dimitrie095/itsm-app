@@ -10,6 +10,7 @@ import {
   Ticket,
   Users,
   Wrench,
+  Shield,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -38,6 +39,7 @@ const navItems = [
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Reports", href: "/reports", icon: FileText },
   { label: "Automation", href: "/automation", icon: Wrench },
+  { label: "Roles & Permissions", href: "/roles", icon: Shield },
   { label: "Settings", href: "/settings", icon: Settings },
 ]
 
