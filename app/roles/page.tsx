@@ -96,11 +96,11 @@ export default async function RolesPermissionsPage() {
         </TabsList>
 
         <TabsContent value="matrix" className="space-y-6">
-          <PermissionMatrix initialData={matrixData} />
+          <PermissionMatrix initialData={matrixData as any} />
         </TabsContent>
 
         <TabsContent value="roles" className="space-y-6">
-          <RolesPermissionsClient initialData={standardData} />
+          <RolesPermissionsClient initialData={standardData as any} />
         </TabsContent>
 
         <TabsContent value="assignments" className="space-y-6">

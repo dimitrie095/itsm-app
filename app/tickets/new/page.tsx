@@ -11,35 +11,119 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
-import { createTicket } from "./actions"
+import { useSession } from "next-auth/react"
+import { Role } from "@/lib/generated/prisma/enums"
 
 export default function NewTicketPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { data: session, status } = useSession()
+  
+  const userRole = session?.user?.role
+  const isEndUser = userRole === Role.END_USER
+  const isAdminOrAgent = userRole === Role.ADMIN || userRole === Role.AGENT
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    
+    // Check if user is authenticated
+    if (status === "loading") {
+      toast.error("Please wait while we verify your session")
+      return
+    }
+    
+    if (status === "unauthenticated" || !session) {
+      toast.error("You must be logged in to create a ticket")
+      router.push("/login")
+      return
+    }
+    
     setIsSubmitting(true)
 
     const formData = new FormData(e.currentTarget)
-    const data = {
-      title: formData.get("title") as string,
-      description: formData.get("description") as string,
-      category: formData.get("category") as string,
-      priority: formData.get("priority") as string,
-      customer: formData.get("customer") as string,
-      email: formData.get("email") as string,
-      department: formData.get("department") as string || undefined,
+    
+    // Basic validation
+    const title = (formData.get("title") as string).trim()
+    const description = (formData.get("description") as string).trim()
+    const category = (formData.get("category") as string).trim()
+    const priority = (formData.get("priority") as string).toUpperCase()
+    
+    if (!title) {
+      toast.error("Title is required")
+      setIsSubmitting(false)
+      return
     }
-
+    
+    if (!description) {
+      toast.error("Description is required")
+      setIsSubmitting(false)
+      return
+    }
+    
+    if (!category) {
+      toast.error("Category is required")
+      setIsSubmitting(false)
+      return
+    }
+    
+    // Build payload for API
+    const payload: any = {
+      title,
+      description,
+      category,
+      priority,
+      source: "PORTAL", // Default source
+      impact: "LOW", // Default impact
+      urgency: "LOW", // Default urgency
+    }
+    
+    // Add user information for admin/agent creating tickets for others
+    if (isAdminOrAgent) {
+      const customerName = (formData.get("customer") as string).trim()
+      const customerEmail = (formData.get("email") as string).trim()
+      const department = (formData.get("department") as string).trim()
+      
+      if (customerEmail) {
+        payload.userEmail = customerEmail
+        if (customerName) {
+          payload.userName = customerName
+        }
+        if (department) {
+          payload.department = department
+        }
+      } else {
+        toast.error("Customer email is required when creating tickets for others")
+        setIsSubmitting(false)
+        return
+      }
+    }
+    
+    // Add tags if we had a tags field (optional)
+    // payload.tags = []
+    
     try {
-      await createTicket(data)
+      const response = await fetch("/api/tickets", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `Failed to create ticket: ${response.status}`)
+      }
+      
+      const ticket = await response.json()
+      
       toast.success("Ticket created successfully", {
         description: "Your ticket has been submitted and is now in the queue.",
       })
+      
       // Redirect to tickets list after a short delay
       setTimeout(() => {
-        router.push("/tickets")
+        router.push(`/tickets?created=true&highlight=${ticket.id}`)
       }, 1500)
     } catch (err) {
       toast.error("Failed to create ticket", {
@@ -48,6 +132,63 @@ export default function NewTicketPage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Show loading state while session is being fetched
+  if (status === "loading") {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/tickets">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Create New Ticket</h1>
+            <p className="text-muted-foreground">Loading session...</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Verifying your permissions...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Check if user has permission to create tickets
+  const userPermissions = (session?.user as any)?.permissions as string[] || []
+  const canCreateTicket = userPermissions.includes('tickets.create')
+  
+  if (!canCreateTicket) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/tickets">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Create New Ticket</h1>
+            <p className="text-muted-foreground">You don't have permission to create tickets.</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground mb-4">You need the "tickets.create" permission to create tickets.</p>
+            <Button asChild>
+              <Link href="/tickets">Back to Tickets</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -121,22 +262,48 @@ export default function NewTicketPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="customer">Customer Name *</Label>
-                <Input id="customer" name="customer" placeholder="Customer name" required disabled={isSubmitting} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Customer Email *</Label>
-                <Input id="email" name="email" type="email" placeholder="customer@example.com" required disabled={isSubmitting} />
-              </div>
+              
+              {isAdminOrAgent ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="customer">Customer Name *</Label>
+                    <Input id="customer" name="customer" placeholder="Customer name" required disabled={isSubmitting} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Customer Email *</Label>
+                    <Input id="email" name="email" type="email" placeholder="customer@example.com" required disabled={isSubmitting} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="customer" className="text-muted-foreground">Requester</Label>
+                    <Input 
+                      id="customer" 
+                      value={session?.user?.name || session?.user?.email || "You"} 
+                      disabled 
+                      className="bg-muted"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-muted-foreground">Requester Email</Label>
+                    <Input 
+                      id="email" 
+                      value={session?.user?.email || "Your email"} 
+                      disabled 
+                      className="bg-muted"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            {isAdminOrAgent && (
               <div className="space-y-2">
                 <Label htmlFor="department">Department</Label>
                 <Select name="department" disabled={isSubmitting}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder="Select department (optional)" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="it">IT</SelectItem>
@@ -147,11 +314,7 @@ export default function NewTicketPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="attachment">Attachment</Label>
-                <Input id="attachment" name="attachment" type="file" disabled={isSubmitting} />
-              </div>
-            </div>
+            )}
 
             <div className="flex flex-col-reverse md:flex-row justify-end gap-4 pt-4">
               <Button variant="outline" type="button" asChild disabled={isSubmitting}>

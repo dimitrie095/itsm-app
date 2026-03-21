@@ -1,18 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { downloadReport } from '@/app/reports/actions'
+import { checkApiAuth } from '@/lib/api-auth'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Check authentication and permission to view reports
+    const authResult = await checkApiAuth(request, undefined, ['reports.view'])
+    if (!authResult.isAuthorized) {
+      return authResult.errorResponse!
+    }
+    
     const { id } = await params
     
     // Report-Download-Daten erhalten
     const result = await downloadReport(id)
     
     // Response mit den Download-Daten
-    return new NextResponse(result.content, {
+    // Handle both string and Buffer content
+    const responseBody = result.content instanceof Buffer 
+      ? result.content 
+      : result.content
+    
+    return new NextResponse(responseBody as any, {
       status: 200,
       headers: {
         'Content-Type': result.contentType,

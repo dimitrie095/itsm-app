@@ -28,7 +28,8 @@ import {
   deleteCustomRole,
   assignRoleToUser 
 } from "./actions"
-import { Role, Permission, CustomRole } from "@prisma/client"
+import { Role } from "@/lib/generated/prisma/enums"
+import type { PermissionModel as Permission, CustomRoleModel as CustomRole } from "@/lib/generated/prisma/models"
 
 interface RolePermissionsData {
   permissions: Record<string, Permission[]>
@@ -130,7 +131,7 @@ export default function RolesPermissionsClient({ initialData }: RolesPermissions
       })
 
       if (result.success && result.role) {
-        setCustomRoles([...customRoles, result.role])
+        setCustomRoles([...customRoles, result.role as any])
         setNewRoleForm({ name: "", description: "", permissions: [] })
         setMessage({ type: "success", text: "Custom role created successfully" })
       } else {
@@ -188,7 +189,7 @@ export default function RolesPermissionsClient({ initialData }: RolesPermissions
       name: role.name,
       description: role.description || "",
       isActive: role.isActive,
-      permissions: role.permissions.map(p => p.permission.name)
+      permissions: role.permissions.map((p: { permission: { name: string } }) => p.permission.name)
     })
   }
 
@@ -536,7 +537,7 @@ export default function RolesPermissionsClient({ initialData }: RolesPermissions
                           <div className="text-sm">
                             <div className="font-medium mb-1">Permissions:</div>
                             <div className="flex flex-wrap gap-1">
-                              {role.permissions.slice(0, 5).map((p) => (
+                              {role.permissions.slice(0, 5).map((p: { permission: { id: string; description: string | null } }) => (
                                 <Badge key={p.permission.id} variant="outline" className="text-xs">
                                   {p.permission.description}
                                 </Badge>

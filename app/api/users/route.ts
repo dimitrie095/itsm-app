@@ -1,26 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { checkApiAuth } from "@/lib/api-auth";
+import { Role } from "@/lib/generated/prisma/enums";
 import bcrypt from "bcryptjs";
-import { Role } from "@prisma/client";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Only admins can list users
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
-    const user = await prisma.user.findUnique({
-      where: { email: session.user?.email || "" },
-    });
-    
-    if (!user || user.role !== Role.ADMIN) {
-      return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
+    const authResult = await checkApiAuth(request, Role.ADMIN, ['users.view']);
+    if (!authResult.isAuthorized) {
+      return authResult.errorResponse!;
     }
     
     const users = await prisma.user.findMany({
@@ -48,18 +39,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    // Check authentication and authorization
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
-    const currentUser = await prisma.user.findUnique({
-      where: { email: session.user?.email || "" },
-    });
-    
-    if (!currentUser || currentUser.role !== Role.ADMIN) {
-      return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
+    // Check authentication and authorization - only admins can create users
+    const authResult = await checkApiAuth(request, Role.ADMIN, ['users.create']);
+    if (!authResult.isAuthorized) {
+      return authResult.errorResponse!;
     }
     
     const body = await request.json();

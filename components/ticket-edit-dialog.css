@@ -1,0 +1,172 @@
+/* Modern CSS for Ticket Edit Dialog */
+/* Enhancements for animations, responsiveness, and contemporary design */
+
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialog-exit {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.95);
+  }
+}
+
+@keyframes backdrop-blur {
+  from {
+    backdrop-filter: blur(0px);
+    background-color: rgba(0, 0, 0, 0);
+  }
+  to {
+    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Custom dialog overlay with backdrop blur */
+[data-radix-dialog-overlay] {
+  backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+[data-radix-dialog-overlay][data-state="open"] {
+  animation: backdrop-blur 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Enhanced dialog content with glass effect */
+.ticket-edit-dialog-content {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--card)) 0%,
+    hsl(var(--card) / 0.98) 100%
+  ) !important;
+  border: 1px solid hsl(var(--border) / 0.3) !important;
+  box-shadow:
+    0 20px 40px -12px rgba(0, 0, 0, 0.5),
+    0 8px 16px -8px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset !important;
+  animation: dialog-enter 200ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.ticket-edit-dialog-content[data-state='closed'] {
+  animation: dialog-exit 150ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Status badge animations */
+.status-badge {
+  transition: all 0.2s ease;
+}
+
+.status-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Form field focus effects */
+.ticket-edit-input:focus {
+  border-color: hsl(var(--primary)) !important;
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2) !important;
+  transition: all 0.2s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .ticket-edit-dialog-content {
+    width: 95vw !important;
+    margin: 0 2.5vw !important;
+    max-width: none !important;
+    border-radius: 0.75rem !important;
+    padding: 1.25rem !important;
+  }
+  
+  .ticket-edit-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .ticket-edit-label {
+    text-align: left !important;
+    padding-bottom: 0.25rem !important;
+  }
+}
+
+/* Loading spinner animation */
+@keyframes spin-slow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.ticket-edit-spinner {
+  animation: spin-slow 1s linear infinite;
+}
+
+/* Save button pulse effect */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0);
+  }
+}
+
+.ticket-edit-save-button:disabled {
+  animation: pulse-glow 2s infinite;
+}
+
+/* Hover effects for interactive elements */
+.ticket-edit-select-item:hover {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--accent)) 0%,
+    hsl(var(--accent) / 0.9) 100%
+  ) !important;
+  transform: translateX(4px);
+  transition: all 0.2s ease;
+}
+
+/* Gradient border for selected items */
+.ticket-edit-selected {
+  position: relative;
+}
+
+.ticket-edit-selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary)),
+    hsl(var(--primary) / 0.5)
+  );
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Smooth transitions for all interactive elements */
+.ticket-edit-dialog-content * {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}

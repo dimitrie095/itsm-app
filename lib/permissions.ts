@@ -1,8 +1,9 @@
-import { Role } from "@prisma/client";
+import { Role } from "@/lib/generated/prisma/enums";
 
 export type Permission = 
   | "view_dashboard"
   | "create_ticket"
+  | "update_ticket"
   | "manage_tickets"
   | "assign_tickets"
   | "view_assets"
@@ -13,9 +14,10 @@ export type Permission =
   | "manage_reports"
   | "manage_users"
   | "manage_automation"
+  | "view_settings"
   | "manage_settings";
 
-export const rolePermissions: Record<Role, Permission[]> = {
+export const rolePermissions: Record<Exclude<Role, "CUSTOM">, Permission[]> = {
   ADMIN: [
     "view_dashboard",
     "create_ticket",
@@ -46,14 +48,24 @@ export const rolePermissions: Record<Role, Permission[]> = {
   END_USER: [
     "view_dashboard",
     "create_ticket",
+    "update_ticket",
     "view_knowledge",
+    "view_settings",
   ],
 };
 
 export function hasPermission(role: Role, permission: Permission): boolean {
-  return rolePermissions[role]?.includes(permission) ?? false;
+  if (role === "CUSTOM") {
+    // CUSTOM roles have permissions stored in database, not in static mapping
+    return false;
+  }
+  return rolePermissions[role as Exclude<Role, "CUSTOM">]?.includes(permission) ?? false;
 }
 
 export function getPermissionsForRole(role: Role): Permission[] {
-  return rolePermissions[role] ?? [];
+  if (role === "CUSTOM") {
+    // CUSTOM roles have permissions stored in database
+    return [];
+  }
+  return rolePermissions[role as Exclude<Role, "CUSTOM">] ?? [];
 }

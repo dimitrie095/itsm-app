@@ -1,110 +1,14 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
-import { Role } from "@prisma/client"
+import { Role } from "@/lib/generated/prisma/enums"
 
-// Permission categories and actions for ITSM system
-const DEFAULT_PERMISSIONS = [
-  // Tickets
-  { name: "tickets.view", description: "View tickets", category: "tickets", action: "read" },
-  { name: "tickets.create", description: "Create new tickets", category: "tickets", action: "create" },
-  { name: "tickets.update", description: "Update ticket details", category: "tickets", action: "update" },
-  { name: "tickets.delete", description: "Delete tickets", category: "tickets", action: "delete" },
-  { name: "tickets.assign", description: "Assign tickets to agents", category: "tickets", action: "assign" },
-  { name: "tickets.resolve", description: "Resolve tickets", category: "tickets", action: "resolve" },
-  { name: "tickets.close", description: "Close tickets", category: "tickets", action: "close" },
-  { name: "tickets.escalate", description: "Escalate tickets", category: "tickets", action: "escalate" },
-  
-  // Users
-  { name: "users.view", description: "View users", category: "users", action: "read" },
-  { name: "users.create", description: "Create new users", category: "users", action: "create" },
-  { name: "users.update", description: "Update user details", category: "users", action: "update" },
-  { name: "users.delete", description: "Delete users", category: "users", action: "delete" },
-  { name: "users.manage_roles", description: "Manage user roles and permissions", category: "users", action: "manage" },
-  
-  // Assets
-  { name: "assets.view", description: "View assets", category: "assets", action: "read" },
-  { name: "assets.create", description: "Create new assets", category: "assets", action: "create" },
-  { name: "assets.update", description: "Update asset details", category: "assets", action: "update" },
-  { name: "assets.delete", description: "Delete assets", category: "assets", action: "delete" },
-  { name: "assets.assign", description: "Assign assets to users", category: "assets", action: "assign" },
-  
-  // Knowledge Base
-  { name: "knowledge.view", description: "View knowledge base articles", category: "knowledge", action: "read" },
-  { name: "knowledge.create", description: "Create knowledge base articles", category: "knowledge", action: "create" },
-  { name: "knowledge.update", description: "Update knowledge base articles", category: "knowledge", action: "update" },
-  { name: "knowledge.delete", description: "Delete knowledge base articles", category: "knowledge", action: "delete" },
-  { name: "knowledge.publish", description: "Publish knowledge base articles", category: "knowledge", action: "publish" },
-  
-  // Reports
-  { name: "reports.view", description: "View reports", category: "reports", action: "read" },
-  { name: "reports.create", description: "Create reports", category: "reports", action: "create" },
-  { name: "reports.export", description: "Export reports", category: "reports", action: "export" },
-  
-  // Settings
-  { name: "settings.view", description: "View system settings", category: "settings", action: "read" },
-  { name: "settings.update", description: "Update system settings", category: "settings", action: "update" },
-  { name: "settings.manage_integrations", description: "Manage integrations", category: "settings", action: "manage" },
-  
-  // Automation
-  { name: "automation.view", description: "View automation rules", category: "automation", action: "read" },
-  { name: "automation.create", description: "Create automation rules", category: "automation", action: "create" },
-  { name: "automation.update", description: "Update automation rules", category: "automation", action: "update" },
-  { name: "automation.delete", description: "Delete automation rules", category: "automation", action: "delete" },
-  { name: "automation.execute", description: "Execute automation rules", category: "automation", action: "execute" },
-  
-  // Analytics
-  { name: "analytics.view", description: "View analytics dashboard", category: "analytics", action: "read" },
-  
-  // Roles & Permissions
-  { name: "roles.view", description: "View roles and permissions", category: "roles", action: "read" },
-  { name: "roles.create", description: "Create custom roles", category: "roles", action: "create" },
-  { name: "roles.update", description: "Update roles and permissions", category: "roles", action: "update" },
-  { name: "roles.delete", description: "Delete custom roles", category: "roles", action: "delete" },
-  { name: "roles.assign", description: "Assign roles to users", category: "roles", action: "assign" },
-]
-
-// Permission categories with ordering
-const PERMISSION_CATEGORIES = [
-  { name: "tickets", description: "Ticket Management", order: 1 },
-  { name: "users", description: "User Management", order: 2 },
-  { name: "assets", description: "Asset Management", order: 3 },
-  { name: "knowledge", description: "Knowledge Base", order: 4 },
-  { name: "reports", description: "Reporting", order: 5 },
-  { name: "settings", description: "System Settings", order: 6 },
-  { name: "automation", description: "Automation Rules", order: 7 },
-  { name: "analytics", description: "Analytics Dashboard", order: 8 },
-  { name: "roles", description: "Roles & Permissions", order: 9 },
-]
-
-// Default role permissions mapping
-const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, 'CUSTOM'>, string[]> = {
-  ADMIN: [
-    "tickets.view", "tickets.create", "tickets.update", "tickets.delete", "tickets.assign", "tickets.resolve", "tickets.close", "tickets.escalate",
-    "users.view", "users.create", "users.update", "users.delete", "users.manage_roles",
-    "assets.view", "assets.create", "assets.update", "assets.delete", "assets.assign",
-    "knowledge.view", "knowledge.create", "knowledge.update", "knowledge.delete", "knowledge.publish",
-    "reports.view", "reports.create", "reports.export",
-    "settings.view", "settings.update", "settings.manage_integrations",
-    "automation.view", "automation.create", "automation.update", "automation.delete", "automation.execute",
-    "analytics.view",
-    "roles.view", "roles.create", "roles.update", "roles.delete", "roles.assign"
-  ],
-  AGENT: [
-    "tickets.view", "tickets.create", "tickets.update", "tickets.assign", "tickets.resolve", "tickets.close",
-    "users.view",
-    "assets.view", "assets.update", "assets.assign",
-    "knowledge.view", "knowledge.create", "knowledge.update", "knowledge.publish",
-    "reports.view", "reports.create",
-    "automation.view",
-    "analytics.view"
-  ],
-  END_USER: [
-    "tickets.view", "tickets.create", "tickets.update",
-    "knowledge.view",
-    "assets.view"
-  ]
-}
+// Import default permissions from shared module
+import {
+  PERMISSION_CATEGORIES,
+  DEFAULT_PERMISSIONS,
+  DEFAULT_ROLE_PERMISSIONS
+} from "@/lib/default-permissions"
 
 export async function initializePermissions() {
   try {
@@ -235,15 +139,18 @@ export async function getRolesAndPermissions() {
     }
 
     rolePermissions.forEach(rp => {
-      if (rp.role) {
-        standardRolePermissions[rp.role].push(rp.permission.name)
+      if (rp.role && rp.role !== 'CUSTOM') {
+        standardRolePermissions[rp.role as Exclude<Role, 'CUSTOM'>].push(rp.permission.name)
       }
     })
+
+    // Add CUSTOM key to satisfy type (empty array)
+    ;(standardRolePermissions as any).CUSTOM = []
 
     return {
       permissions: permissionsByCategory,
       customRoles,
-      standardRolePermissions,
+      standardRolePermissions: { ...standardRolePermissions, CUSTOM: [] },
       users,
       allPermissions: permissions
     }
@@ -252,7 +159,7 @@ export async function getRolesAndPermissions() {
     return {
       permissions: {},
       customRoles: [],
-      standardRolePermissions: { ADMIN: [], AGENT: [], END_USER: [] },
+      standardRolePermissions: { ADMIN: [], AGENT: [], END_USER: [], CUSTOM: [] },
       users: [],
       allPermissions: []
     }

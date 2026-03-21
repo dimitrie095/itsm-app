@@ -1,0 +1,30 @@
+
+> itsm-app@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 4.2s
+  Running TypeScript ...
+Failed to compile.
+
+./app/roles/page.tsx:103:35
+Type error: Type '{ permissions: Record<string, { id: string; name: string; createdAt: Date; updatedAt: Date; description: string | null; category: string; action: string; categoryId: string | null; }[]>; customRoles: ({ ...; } & { ...; })[]; standardRolePermissions: Record<...>; users: { ...; }[]; allPermissions: { id: string; name:...' is not assignable to type 'RolePermissionsData'.
+  Types of property 'users' are incompatible.
+    Type '{ id: string; email: string; name: string | null; role: Role; customRole: { id: string; name: string; } | null; }[]' is not assignable to type '{ id: string; name: string | null; email: string; role: Role; customRole: { id: string; name: string; } | null; }[]'.
+      Type '{ id: string; email: string; name: string | null; role: Role; customRole: { id: string; name: string; } | null; }' is not assignable to type '{ id: string; name: string | null; email: string; role: Role; customRole: { id: string; name: string; } | null; }'.
+        Types of property 'role' are incompatible.
+          Type 'import("F:/hub/itsm-app/lib/generated/prisma/enums").Role' is not assignable to type 'import("F:/hub/itsm-app/node_modules/.prisma/client/index").$Enums.Role'.
+            Type '"CUSTOM"' is not assignable to type 'Role'.
+
+[0m [90m 101 |[39m
+ [90m 102 |[39m         [33m<[39m[33mTabsContent[39m value[33m=[39m[32m"roles"[39m className[33m=[39m[32m"space-y-6"[39m[33m>[39m
+[31m[1m>[22m[39m[90m 103 |[39m           [33m<[39m[33mRolesPermissionsClient[39m initialData[33m=[39m{standardData} [33m/[39m[33m>[39m
+ [90m     |[39m                                   [31m[1m^[22m[39m
+ [90m 104 |[39m         [33m<[39m[33m/[39m[33mTabsContent[39m[33m>[39m
+ [90m 105 |[39m
+ [90m 106 |[39m         [33m<[39m[33mTabsContent[39m value[33m=[39m[32m"assignments"[39m className[33m=[39m[32m"space-y-6"[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 and signal: null

@@ -14,7 +14,8 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-
+import { useSession } from "next-auth/react"
+import { Role } from "@/lib/generated/prisma/enums"
 
 import { Separator } from "@/components/ui/separator"
 import {
@@ -43,8 +44,114 @@ const navItems = [
   { label: "Settings", href: "/settings", icon: Settings },
 ]
 
+// Route to permission mapping (database permission names)
+// Sorted by path length descending to ensure most specific matches are found first
+const routePermissions: { path: string; permissions: string[] }[] = [
+  { path: "/tickets/new", permissions: ["tickets.create"] },
+  { path: "/assets/new", permissions: ["assets.create"] },
+  { path: "/knowledge/new", permissions: ["knowledge.create"] },
+  { path: "/reports/new", permissions: ["reports.create"] },
+  { path: "/tickets", permissions: ["tickets.view"] },
+  { path: "/assets", permissions: ["assets.view"] },
+  { path: "/knowledge", permissions: ["knowledge.view"] },
+  { path: "/users", permissions: ["users.view"] },
+  { path: "/analytics", permissions: ["analytics.view"] },
+  { path: "/reports", permissions: ["reports.view"] },
+  { path: "/automation", permissions: ["automation.view"] },
+  { path: "/settings", permissions: ["settings.view"] },
+  { path: "/roles", permissions: ["roles.view"] },
+  { path: "/", permissions: ["dashboard.view"] },
+]
+
+// Quick action permissions
+const quickActionPermissions: Record<string, string[]> = {
+  "/tickets/new": ["tickets.create"],
+  "/knowledge/new": ["knowledge.create"],
+  "/reports/new": ["reports.create"],
+  "/assets/new": ["assets.create"],
+}
+
+function canAccessRoute(href: string, userPermissions: string[] | undefined, userRole: Role | undefined): boolean {
+  // First try permission-based check
+  if (userPermissions) {
+    const route = routePermissions.find(r => href.startsWith(r.path))
+    if (route) {
+      return route.permissions.some(permission => userPermissions.includes(permission))
+    }
+    // No route mapping -> deny by default (security first)
+    return false
+  }
+  
+  // Fallback to explicit role-based filtering
+  if (userRole) {
+    // END_USER: Only Dashboard, Tickets, Knowledge Base, Settings
+    if (userRole === "END_USER") {
+      const allowedPaths = ["/", "/tickets", "/knowledge", "/settings"]
+      return allowedPaths.some(path => href.startsWith(path))
+    }
+    // AGENT: Most items except Roles
+    if (userRole === "AGENT") {
+      const disallowedPaths = ["/roles"]
+      return !disallowedPaths.some(path => href.startsWith(path))
+    }
+    // ADMIN: All access
+    if (userRole === "ADMIN") {
+      return true
+    }
+    // CUSTOM: Use permission-based (already handled above)
+  }
+  
+  return false
+}
+
+function canAccessQuickAction(href: string, userPermissions: string[] | undefined, userRole: Role | undefined): boolean {
+  if (userPermissions) {
+    const perms = quickActionPermissions[href]
+    if (perms) {
+      return perms.some(permission => userPermissions.includes(permission))
+    }
+    return false
+  }
+  
+  // Fallback to role-based
+  if (userRole) {
+    // END_USER: Only New Ticket
+    if (userRole === "END_USER") {
+      return href === "/tickets/new"
+    }
+    // AGENT: All quick actions except New Report (AGENT doesn't have reports.create)
+    if (userRole === "AGENT") {
+      return href !== "/reports/new"
+    }
+    // ADMIN: All quick actions
+    if (userRole === "ADMIN") {
+      return true
+    }
+  }
+  
+  return false
+}
+
 export function Sidebar() {
   const pathname = usePathname()
+  const { data: session, status } = useSession()
+  const isLoading = status === "loading"
+
+  const userPermissions = session?.user?.permissions
+  const userRole = session?.user?.role
+
+  // Filter navigation items based on permissions
+  const filteredNavItems = navItems.filter(item => 
+    canAccessRoute(item.href, userPermissions, userRole)
+  )
+
+  // Filter quick actions
+  const quickActions = [
+    { label: "New Ticket", href: "/tickets/new", icon: Ticket },
+    { label: "New Article", href: "/knowledge/new", icon: BookOpen },
+    { label: "New Report", href: "/reports/new", icon: FileText },
+    { label: "New Asset", href: "/assets/new", icon: Cpu },
+  ].filter(action => canAccessQuickAction(action.href, userPermissions, userRole))
 
   return (
     /*
@@ -62,7 +169,7 @@ export function Sidebar() {
     */
     <ShadcnSidebar
       collapsible="icon"
-      className="border-r bg-gradient-to-b from-sidebar to-sidebar-accent/80 sidebar-container"
+      className="border-r bg-gradient-to-b from-sidebar to-sidebar-accent/80 sidebar-container shadow-sidebar"
       data-sidebar="true"
     >
       <SidebarHeader className="p-4">
@@ -88,7 +195,7 @@ export function Sidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
+              {filteredNavItems.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
                 return (
@@ -116,75 +223,54 @@ export function Sidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <Separator className="my-2 bg-sidebar-border" />
+        {quickActions.length > 0 && (
+          <>
+            <Separator className="my-2 bg-sidebar-border" />
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/60">
-            Quick Actions
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="New Ticket"
-                  className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  <Link href="/tickets/new">
-                    <Ticket className="h-4 w-4 shrink-0" />
-                    <span>New Ticket</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="New Article"
-                  className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  <Link href="/knowledge/new">
-                    <BookOpen className="h-4 w-4 shrink-0" />
-                    <span>New Article</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="New Report"
-                  className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  <Link href="/reports/new">
-                    <FileText className="h-4 w-4 shrink-0" />
-                    <span>New Report</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="New Asset"
-                  className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  <Link href="/assets/new">
-                    <Cpu className="h-4 w-4 shrink-0" />
-                    <span>New Asset</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-sidebar-foreground/60">
+                Quick Actions
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {quickActions.map((action) => {
+                    const Icon = action.icon
+                    return (
+                      <SidebarMenuItem key={action.href}>
+                        <SidebarMenuButton
+                          asChild
+                          tooltip={action.label}
+                          className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        >
+                          <Link href={action.href}>
+                            <Icon className="h-4 w-4 shrink-0" />
+                            <span>{action.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
-        {/* 
-          Minimal footer — just version info, hidden in collapsed mode.
-          Functional buttons (Bell, Help, Settings) live in TopBar only.
-        */}
-        <p className="text-xs text-sidebar-foreground/40 group-data-[collapsible=icon]:hidden">
-          v1.0.0
-        </p>
+      <SidebarFooter className="p-4 border-t border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            >
+              <Link href="/settings">
+                <Settings className="h-4 w-4 shrink-0" />
+                <span>Settings</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </ShadcnSidebar>
   )

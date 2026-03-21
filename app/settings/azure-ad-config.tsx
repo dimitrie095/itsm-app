@@ -9,14 +9,15 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CheckCircle, AlertCircle, Globe, RefreshCw } from "lucide-react"
-import { saveAzureADConfig, testAzureADConnection, getAzureADConfig, triggerUserSync, AzureADConfig } from "./actions"
+import { saveAzureADConfig, testAzureADConnection, getAzureADConfig, triggerUserSync } from "./actions"
+import type { AzureADConfig } from "./actions"
 
 export default function AzureADConfig() {
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [loadingConfig, setLoadingConfig] = useState(true)
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [testResult, setTestResult] = useState<{ success: boolean; message?: string; error?: string } | null>(null)
   const [config, setConfig] = useState<AzureADConfig>({
     enabled: false,
     clientId: "",

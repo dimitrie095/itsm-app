@@ -1,0 +1,26 @@
+
+> itsm-app@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.4s
+  Running TypeScript ...
+Failed to compile.
+
+./app/roles/roles-permissions-client.tsx:135:25
+Type error: Type '({ permissions: ({ permission: { id: string; name: string; createdAt: Date; updatedAt: Date; description: string | null; category: string; action: string; categoryId: string | null; }; } & { ...; })[]; } & { ...; }) | ({ ...; } & { ...; })' is not assignable to type '{ id: string; name: string; createdAt: Date; updatedAt: Date; description: string | null; isActive: boolean; } & { permissions: { permission: { id: string; name: string; createdAt: Date; ... 4 more ...; categoryId: string | null; }; }[]; users: { ...; }[]; }'.
+  Type '{ permissions: ({ permission: { id: string; name: string; createdAt: Date; updatedAt: Date; description: string | null; category: string; action: string; categoryId: string | null; }; } & { ...; })[]; } & { ...; }' is not assignable to type '{ id: string; name: string; createdAt: Date; updatedAt: Date; description: string | null; isActive: boolean; } & { permissions: { permission: { id: string; name: string; createdAt: Date; ... 4 more ...; categoryId: string | null; }; }[]; users: { ...; }[]; }'.
+    Property 'users' is missing in type '{ permissions: ({ permission: { id: string; name: string; createdAt: Date; updatedAt: Date; description: string | null; category: string; action: string; categoryId: string | null; }; } & { ...; })[]; } & { ...; }' but required in type '{ permissions: { permission: { id: string; name: string; createdAt: Date; updatedAt: Date; description: string | null; category: string; action: string; categoryId: string | null; }; }[]; users: { ...; }[]; }'.
+
+[0m [90m 133 |[39m
+ [90m 134 |[39m       [36mif[39m (result[33m.[39msuccess [33m&&[39m result[33m.[39mrole) {
+[31m[1m>[22m[39m[90m 135 |[39m         setCustomRoles([[33m...[39mcustomRoles[33m,[39m result[33m.[39mrole])
+ [90m     |[39m                         [31m[1m^[22m[39m
+ [90m 136 |[39m         setNewRoleForm({ name[33m:[39m [32m""[39m[33m,[39m description[33m:[39m [32m""[39m[33m,[39m permissions[33m:[39m [] })
+ [90m 137 |[39m         setMessage({ type[33m:[39m [32m"success"[39m[33m,[39m text[33m:[39m [32m"Custom role created successfully"[39m })
+ [90m 138 |[39m       } [36melse[39m {[0m
+Next.js build worker exited with code: 1 and signal: null

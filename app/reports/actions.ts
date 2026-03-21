@@ -53,23 +53,62 @@ const reportTypes = {
 // Dashboard-Daten für Report-Generierung
 async function getDashboardDataForReport() {
   try {
-    // Tickets und Artikel lesen
-    const ticketsPath = path.join(process.cwd(), 'tickets.json')
-    const articlesPath = path.join(process.cwd(), 'articles.json')
+    // Tickets und Artikel aus Datenbank lesen
+    const { prisma } = await import('@/lib/prisma')
     
-    const tickets = JSON.parse(await fs.readFile(ticketsPath, 'utf-8'))
-    const articles = JSON.parse(await fs.readFile(articlesPath, 'utf-8'))
+    // Fetch tickets from database
+    const dbTickets = await prisma.ticket.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            department: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
     
-    // Nur veröffentlichte Artikel
-    const publishedArticles = articles.filter((article: any) => article.isPublished)
+    // Fetch published articles from database
+    const dbArticles = await prisma.knowledgeBaseArticle.findMany({
+      where: { isPublished: true },
+      orderBy: { createdAt: 'desc' }
+    })
+    
+    // Transform tickets to match expected shape (similar to JSON)
+    const tickets = dbTickets.map(ticket => {
+      // Map priority to lowercase for compatibility
+      const priority = ticket.priority.toLowerCase()
+      
+      // Map status to have first letter capitalized
+      const status = ticket.status.charAt(0) + ticket.status.slice(1).toLowerCase()
+      
+      // Get category or default
+      const category = ticket.category || 'Other'
+      
+      return {
+        id: ticket.id,
+        title: ticket.title,
+        priority,
+        status,
+        category,
+        createdAt: ticket.createdAt.toISOString(),
+        // Keep original for reference
+        _original: ticket
+      }
+    })
     
     // Metriken berechnen
-    const openTickets = tickets.filter((ticket: any) => 
-      ticket.status === 'New' || ticket.status === 'Assigned' || ticket.status === 'In Progress'
+    const openTickets = dbTickets.filter(ticket => 
+      ticket.status === 'NEW' || ticket.status === 'ASSIGNED' || ticket.status === 'IN_PROGRESS'
     ).length
     
-    const resolvedTickets = tickets.filter((ticket: any) => 
-      ticket.status === 'Resolved' || ticket.status === 'Closed'
+    const resolvedTickets = dbTickets.filter(ticket => 
+      ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'
     ).length
     
     // Kategorie-Verteilung
@@ -97,7 +136,7 @@ async function getDashboardDataForReport() {
       openTickets,
       resolvedTickets,
       resolutionRate: tickets.length > 0 ? Math.round((resolvedTickets / tickets.length) * 100) : 0,
-      totalArticles: publishedArticles.length,
+      totalArticles: dbArticles.length,
       categoryDistribution,
       priorityDistribution,
       topCategories,
@@ -244,12 +283,10 @@ export async function downloadReport(id: string) {
     throw new Error('Report not found')
   }
   
-  // Hier würde die PDF/HTML-Generierung stattfinden
-  // Für Demo: JSON-Daten zurückgeben
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const filename = `${report.type}_report_${timestamp}.${report.format}`
+  let filename = `${report.type}_report_${timestamp}.${report.format}`
   
-  let content = ''
+  let content: string | Buffer = ''
   let contentType = 'application/json'
   
   switch (report.format) {
@@ -262,10 +299,42 @@ export async function downloadReport(id: string) {
       contentType = 'text/html'
       break
     case 'pdf':
-      // Für PDF würde man eine Library wie puppeteer oder jsPDF verwenden
-      // Hier geben wir HTML zurück, das zu PDF konvertiert werden könnte
-      content = generateHTMLReport(report)
-      contentType = 'text/html'
+      try {
+        // Generate PDF using the PDFReport component
+        const { renderToStream } = await import('@react-pdf/renderer')
+        const React = await import('react')
+        const { PDFReport } = await import('@/components/pdf-report')
+        
+        console.log('Starting PDF generation for report:', report.id)
+        
+        // Create PDF component using React.createElement
+        const pdfComponent = React.createElement(PDFReport, { report })
+        
+        const pdfStream = await renderToStream(pdfComponent as any)
+        
+        // Convert stream to buffer
+        const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
+          const chunks: Buffer[] = []
+          pdfStream.on('data', (chunk) => {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+          })
+          pdfStream.on('end', () => {
+            resolve(Buffer.concat(chunks))
+          })
+          pdfStream.on('error', reject)
+        })
+        
+        console.log('PDF generation successful, buffer size:', pdfBuffer.length)
+        content = pdfBuffer
+        contentType = 'application/pdf'
+      } catch (pdfError) {
+        console.error('Failed to generate PDF, falling back to HTML:', pdfError)
+        // Fallback to HTML if PDF generation fails
+        content = generateHTMLReport(report)
+        contentType = 'text/html'
+        // Change filename to .html for clarity
+        filename = `${report.type}_report_${timestamp}.html`
+      }
       break
   }
   

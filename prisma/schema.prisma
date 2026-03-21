@@ -142,17 +142,32 @@ model KnowledgeBaseArticle {
 }
 
 model AutomationRule {
-  id          String   @id @default(uuid())
+  id          String                @id @default(uuid())
   name        String
   description String?
+  category    String                @default("General")
   trigger     String
   condition   String?
   action      String
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  executions  AutomationExecution[]
 
   @@map("automation_rules")
+}
+
+model AutomationExecution {
+  id          String   @id @default(uuid())
+  ruleId      String
+  ticketId    String?
+  success     Boolean  @default(true)
+  executedAt  DateTime @default(now())
+  rule        AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+  @@index([executedAt])
+  @@map("automation_executions")
 }
 
 model Account {

@@ -1,0 +1,73 @@
+
+> itsm-app@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.2s
+  Running TypeScript ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/26) ...
+  Generating static pages using 15 workers (6/26) 
+  Generating static pages using 15 workers (12/26) 
+  Generating static pages using 15 workers (19/26) 
+Error reading SLA from database: Error: Command failed: sqlite3 "./itsm.db" "SELECT priority, responseTime, resolutionTime FROM slas WHERE isActive = 1 ORDER BY CASE priority WHEN "CRITICAL" THEN 1 WHEN "HIGH" THEN 2 WHEN "MEDIUM" THEN 3 WHEN "LOW" THEN 4 ELSE 5 END"
+Error: in prepare, no such column: CRITICAL
+  as WHERE isActive = 1 ORDER BY CASE priority WHEN CRITICAL THEN 1 WHEN HIGH TH
+                                      error here ---^
+
+    at ignore-listed frames {
+  code: 1,
+  killed: false,
+  signal: null,
+  cmd: 'sqlite3 "./itsm.db" "SELECT priority, responseTime, resolutionTime FROM slas WHERE isActive = 1 ORDER BY CASE priority WHEN "CRITICAL" THEN 1 WHEN "HIGH" THEN 2 WHEN "MEDIUM" THEN 3 WHEN "LOW" THEN 4 ELSE 5 END"',
+  stdout: '',
+  stderr: 'Error: in prepare, no such column: CRITICAL\r\n' +
+    '  as WHERE isActive = 1 ORDER BY CASE priority WHEN CRITICAL THEN 1 WHEN HIGH TH\r\n' +
+    '                                      error here ---^\r\n'
+}
+✓ Generating static pages using 15 workers (26/26) in 2.8s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /analytics
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/debug
+├ ƒ /api/knowledge
+├ ƒ /api/reports/[id]/download
+├ ƒ /api/test
+├ ƒ /api/tickets
+├ ƒ /api/users
+├ ○ /assets
+├ ƒ /assets/[id]
+├ ƒ /assets/[id]/delete
+├ ƒ /assets/[id]/edit
+├ ○ /assets/new
+├ ○ /automation
+├ ○ /forgot-password
+├ ○ /knowledge
+├ ○ /knowledge/new
+├ ○ /login
+├ ○ /reports
+├ ƒ /reports/[id]
+├ ƒ /reports/[id]/send
+├ ○ /reports/new
+├ ○ /roles
+├ ○ /settings
+├ ƒ /tickets
+├ ○ /tickets/new
+├ ○ /unauthorized
+├ ○ /users
+└ ○ /users/new
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

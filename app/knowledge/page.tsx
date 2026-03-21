@@ -7,6 +7,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { MoreHorizontal, Plus, Search, Filter, Eye, ThumbsUp, BookOpen, Tag } from "lucide-react"
 import fs from 'fs/promises'
 import path from 'path'
+import { redirect } from "next/navigation"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { hasPermission } from "@/lib/permission-utils"
 
 const articlesFilePath = path.join(process.cwd(), 'articles.json')
 
@@ -21,7 +25,20 @@ async function getArticles() {
 }
 
 export default async function KnowledgePage() {
+  const session = await getServerSession(authOptions)
+  
+  // Check if user has permission to view knowledge base
+  const canViewKnowledge = hasPermission(session, "knowledge.view")
+  if (!canViewKnowledge) {
+    redirect('/unauthorized')
+  }
+  
   const articles = await getArticles()
+  const canCreateArticle = hasPermission(session, "knowledge.create")
+  const userPermissions = (session?.user as any)?.permissions as string[] || []
+  const canUpdateArticle = userPermissions.includes("knowledge.update")
+  const canDeleteArticle = userPermissions.includes("knowledge.delete")
+  const canPublishArticle = userPermissions.includes("knowledge.publish")
 
   // If no articles, fallback to static data for demo
   const displayArticles = articles.length > 0 ? articles : [
@@ -65,12 +82,14 @@ export default async function KnowledgePage() {
           <h1 className="text-3xl font-bold tracking-tight">Knowledge Base</h1>
           <p className="text-muted-foreground">Central repository of solutions and FAQs.</p>
         </div>
-        <Button asChild>
-          <a href="/knowledge/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Article
-          </a>
-        </Button>
+        {canCreateArticle && (
+          <Button asChild>
+            <a href="/knowledge/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New Article
+            </a>
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -181,10 +200,10 @@ export default async function KnowledgePage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem>View Article</DropdownMenuItem>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                          {canUpdateArticle && <DropdownMenuItem>Edit</DropdownMenuItem>}
+                          {canCreateArticle && <DropdownMenuItem>Duplicate</DropdownMenuItem>}
+                          {(canUpdateArticle || canCreateArticle || canDeleteArticle) && <DropdownMenuSeparator />}
+                          {canDeleteArticle && <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

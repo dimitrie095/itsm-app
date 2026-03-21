@@ -109,5 +109,35 @@
     "department": "HR",
     "createdAt": "2026-03-13T23:02:35.248Z",
     "updatedAt": "2026-03-13T23:02:35.248Z"
+  },
+  {
+    "id": "00AST-8",
+    "name": "test",
+    "type": "Monitor",
+    "status": "Active",
+    "assignedTo": "Alice Johnson",
+    "location": "Floor 4",
+    "warranty": "2034-07-06",
+    "serialNumber": "SN140253058932",
+    "purchaseDate": "2026-03-05",
+    "purchasePrice": 1500,
+    "department": "Marketing",
+    "createdAt": "2026-03-20T09:47:05.995Z",
+    "updatedAt": "2026-03-20T09:47:05.995Z"
+  },
+  {
+    "id": "00AST-9",
+    "name": "test-asset",
+    "type": "Software",
+    "status": "Active",
+    "assignedTo": "Alice Johnson",
+    "location": "Floor 4",
+    "warranty": "2030-10-20",
+    "serialNumber": "SN-00234567",
+    "purchaseDate": "2026-03-20",
+    "purchasePrice": 140,
+    "department": "Engineering",
+    "createdAt": "2026-03-20T14:14:54.637Z",
+    "updatedAt": "2026-03-20T14:14:54.637Z"
   }
 ]

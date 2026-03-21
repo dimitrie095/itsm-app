@@ -1,7 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
-import { Role } from "@prisma/client"
+import { Role } from "@/lib/generated/prisma/enums"
 import { initializePermissions } from "../actions"
 
 export interface PermissionMatrixData {

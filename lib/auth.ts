@@ -1,11 +1,12 @@
 import { NextAuthOptions } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
+import { getUserPermissionNames } from "./access";
 import CredentialsProvider from "next-auth/providers/credentials";
 import AzureADProvider from "next-auth/providers/azure-ad";
 import OktaProvider from "next-auth/providers/okta";
 import bcryptjs from "bcryptjs";
-import { Role } from "@prisma/client";
+import { Role } from "@/lib/generated/prisma/enums";
 
 // Extend the built-in session types
 declare module "next-auth" {
@@ -15,6 +16,7 @@ declare module "next-auth" {
     name?: string | null;
     role: Role;
     department?: string | null;
+    permissions?: string[];
   }
   
   interface Session {
@@ -24,6 +26,7 @@ declare module "next-auth" {
       name?: string | null;
       role: Role;
       department?: string | null;
+      permissions: string[];
     }
   }
 }
@@ -33,11 +36,12 @@ declare module "next-auth/jwt" {
     id: string;
     role: Role;
     department?: string | null;
+    permissions: string[];
   }
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prisma as any) as any,
   session: {
     strategy: "jwt",
   },
@@ -78,7 +82,7 @@ export const authOptions: NextAuthOptions = {
               data: {
                 email: demoUser.email,
                 name: demoUser.name,
-                role: demoUser.role,
+                role: demoUser.role as Role,
                 department: demoUser.department,
                 passwordHash: await bcryptjs.hash("demo123", 10),
                 emailVerified: new Date(),
@@ -135,6 +139,10 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.department = user.department;
+        // Fetch user permissions
+        const permissions = await getUserPermissionNames(user.id);
+        console.log(`[auth] User ${user.id} permissions:`, permissions);
+        token.permissions = permissions;
       }
       return token;
     },
@@ -143,6 +151,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id;
         session.user.role = token.role;
         session.user.department = token.department;
+        session.user.permissions = token.permissions || [];
       }
       return session;
     },

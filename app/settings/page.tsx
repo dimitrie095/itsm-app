@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation"
+import { getServerSession } from "next-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,8 +10,20 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Save, Database, Users, Globe } from "lucide-react"
 import AzureADConfig from "./azure-ad-config"
+import { authOptions } from "@/lib/auth"
+import { hasPermission } from "@/lib/permission-utils"
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const session = await getServerSession(authOptions)
+  
+  // Check if user has permission to view settings
+  const canViewSettings = hasPermission(session, "settings.view")
+  if (!canViewSettings) {
+    redirect('/unauthorized')
+  }
+  
+  // Check if user can manage integrations
+  const canManageIntegrations = hasPermission(session, "settings.manage_integrations")
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -28,7 +42,9 @@ export default function SettingsPage() {
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          {canManageIntegrations && (
+            <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">
@@ -191,43 +207,45 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="integrations" className="space-y-6">
-          <AzureADConfig />
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Other Integrations</CardTitle>
-              <CardDescription>Connect with other tools and services.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
-                    <Database className="h-5 w-5 text-green-600" />
+{canManageIntegrations && (
+          <TabsContent value="integrations" className="space-y-6">
+            <AzureADConfig />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Other Integrations</CardTitle>
+                <CardDescription>Connect with other tools and services.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
+                      <Database className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <Label>Monitoring Tools</Label>
+                      <p className="text-sm text-muted-foreground">Connect with Nagios, Zabbix, etc.</p>
+                    </div>
                   </div>
-                  <div>
-                    <Label>Monitoring Tools</Label>
-                    <p className="text-sm text-muted-foreground">Connect with Nagios, Zabbix, etc.</p>
-                  </div>
+                  <Switch />
                 </div>
-                <Switch />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
-                    <Users className="h-5 w-5 text-purple-600" />
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
+                      <Users className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <Label>Chat Platforms</Label>
+                      <p className="text-sm text-muted-foreground">Slack, Microsoft Teams integration.</p>
+                    </div>
                   </div>
-                  <div>
-                    <Label>Chat Platforms</Label>
-                    <p className="text-sm text-muted-foreground">Slack, Microsoft Teams integration.</p>
-                  </div>
+                  <Switch />
                 </div>
-                <Switch />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

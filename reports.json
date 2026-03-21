@@ -24,9 +24,18 @@
         "low": 3
       },
       "topCategories": [
-        { "category": "software", "count": 6 },
-        { "category": "hardware", "count": 4 },
-        { "category": "network", "count": 3 }
+        {
+          "category": "software",
+          "count": 6
+        },
+        {
+          "category": "hardware",
+          "count": 4
+        },
+        {
+          "category": "network",
+          "count": 3
+        }
       ],
       "recentTickets": [
         {
@@ -54,7 +63,10 @@
         "start": "2025-03-06T00:00:00.000Z",
         "end": "2025-03-13T23:59:59.999Z"
       },
-      "emailRecipients": ["admin@example.com", "manager@example.com"],
+      "emailRecipients": [
+        "admin@example.com",
+        "manager@example.com"
+      ],
       "sentAt": "2025-03-13T10:05:00.000Z"
     },
     "createdAt": "2025-03-13T10:00:00.000Z",
@@ -86,9 +98,18 @@
         "low": 10
       },
       "topCategories": [
-        { "category": "software", "count": 18 },
-        { "category": "hardware", "count": 12 },
-        { "category": "network", "count": 8 }
+        {
+          "category": "software",
+          "count": 18
+        },
+        {
+          "category": "hardware",
+          "count": 12
+        },
+        {
+          "category": "network",
+          "count": 8
+        }
       ],
       "recentTickets": []
     },
@@ -103,5 +124,1013 @@
     },
     "createdAt": "2025-03-31T14:30:00.000Z",
     "updatedAt": "2025-03-31T14:30:00.000Z"
+  },
+  {
+    "id": "6a222376-deb1-40ed-9053-3e2cd106d77e",
+    "name": "Weekly Summary - 20.3.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 31,
+      "openTickets": 22,
+      "resolvedTickets": 9,
+      "resolutionRate": 29,
+      "totalArticles": 6,
+      "categoryDistribution": {
+        "software": 1,
+        "Access": 8,
+        "Network": 9,
+        "Other": 5,
+        "Software": 2,
+        "Hardware": 6
+      },
+      "priorityDistribution": {
+        "high": 7,
+        "low": 10,
+        "medium": 9,
+        "critical": 5
+      },
+      "topCategories": [
+        {
+          "category": "Network",
+          "count": 9
+        },
+        {
+          "category": "Access",
+          "count": 8
+        },
+        {
+          "category": "Hardware",
+          "count": 6
+        },
+        {
+          "category": "Other",
+          "count": 5
+        },
+        {
+          "category": "Software",
+          "count": 2
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "84a20018-400b-4c39-a29a-5d97dfaad274",
+          "title": "test-tick",
+          "priority": "high",
+          "status": "Assigned",
+          "category": "software",
+          "createdAt": "2026-03-16T19:30:28.201Z"
+        },
+        {
+          "id": "9c9369b2-d227-4cc5-ac4c-fbd5144602ff",
+          "title": "We need to calculate the bluetooth SMTP microchip!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.189Z"
+        },
+        {
+          "id": "7edcbfa6-cf75-4b1c-8f95-76787f35c5d8",
+          "title": "You can't bypass the hard drive without synthesizing the haptic IP circuit!",
+          "priority": "medium",
+          "status": "Assigned",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.174Z"
+        },
+        {
+          "id": "a8171b2a-701a-4fe3-918b-be24f5751905",
+          "title": "The UDP matrix is down, compress the 1080p sensor so we can calculate the UTF8 circuit!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-03-15T20:05:08.160Z"
+        },
+        {
+          "id": "d6b7aa7b-4ec2-4ded-b88e-4e1ae0985d90",
+          "title": "If we bypass the interface, we can get to the OCR bandwidth through the auxiliary SAS port!",
+          "priority": "low",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.144Z"
+        },
+        {
+          "id": "5228b924-0e79-4f7e-a7db-16d5af304d0e",
+          "title": "You can't bypass the card without synthesizing the mobile DRAM pixel!",
+          "priority": "high",
+          "status": "Closed",
+          "category": "Software",
+          "createdAt": "2026-03-15T20:05:08.127Z"
+        },
+        {
+          "id": "d9c6d868-f65c-456b-a182-07b4afb26e4c",
+          "title": "If we generate the pixel, we can get to the DNS transmitter through the bluetooth XSS panel!",
+          "priority": "critical",
+          "status": "In_progress",
+          "category": "Hardware",
+          "createdAt": "2026-03-15T20:05:08.114Z"
+        },
+        {
+          "id": "83d723a2-a894-44b0-a245-c00038ba4105",
+          "title": "You can't quantify the card without synthesizing the virtual HEX bandwidth!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.100Z"
+        },
+        {
+          "id": "5b76a813-33cf-4c6b-92a1-37e1e68277e6",
+          "title": "The XML hard drive is down, override the primary array so we can program the CSS sensor!",
+          "priority": "critical",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.087Z"
+        },
+        {
+          "id": "f8ad9a49-c339-44e3-b2f7-b4ba4413d557",
+          "title": "Try to bypass the AI bandwidth, maybe it will synthesize the bluetooth port!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.074Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-03-20T05:27:34.161Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-02-18T05:27:34.080Z",
+        "end": "2026-03-20T05:27:34.080Z"
+      },
+      "emailRecipients": []
+    },
+    "createdAt": "2026-03-20T05:27:34.161Z",
+    "updatedAt": "2026-03-20T05:27:34.161Z"
+  },
+  {
+    "id": "b036cd05-5a77-4abd-8542-70839164c3b5",
+    "name": "Weekly Summary - 20.3.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 31,
+      "openTickets": 22,
+      "resolvedTickets": 9,
+      "resolutionRate": 29,
+      "totalArticles": 6,
+      "categoryDistribution": {
+        "software": 1,
+        "Access": 8,
+        "Network": 9,
+        "Other": 5,
+        "Software": 2,
+        "Hardware": 6
+      },
+      "priorityDistribution": {
+        "high": 7,
+        "low": 10,
+        "medium": 9,
+        "critical": 5
+      },
+      "topCategories": [
+        {
+          "category": "Network",
+          "count": 9
+        },
+        {
+          "category": "Access",
+          "count": 8
+        },
+        {
+          "category": "Hardware",
+          "count": 6
+        },
+        {
+          "category": "Other",
+          "count": 5
+        },
+        {
+          "category": "Software",
+          "count": 2
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "84a20018-400b-4c39-a29a-5d97dfaad274",
+          "title": "test-tick",
+          "priority": "high",
+          "status": "Assigned",
+          "category": "software",
+          "createdAt": "2026-03-16T19:30:28.201Z"
+        },
+        {
+          "id": "9c9369b2-d227-4cc5-ac4c-fbd5144602ff",
+          "title": "We need to calculate the bluetooth SMTP microchip!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.189Z"
+        },
+        {
+          "id": "7edcbfa6-cf75-4b1c-8f95-76787f35c5d8",
+          "title": "You can't bypass the hard drive without synthesizing the haptic IP circuit!",
+          "priority": "medium",
+          "status": "Assigned",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.174Z"
+        },
+        {
+          "id": "a8171b2a-701a-4fe3-918b-be24f5751905",
+          "title": "The UDP matrix is down, compress the 1080p sensor so we can calculate the UTF8 circuit!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-03-15T20:05:08.160Z"
+        },
+        {
+          "id": "d6b7aa7b-4ec2-4ded-b88e-4e1ae0985d90",
+          "title": "If we bypass the interface, we can get to the OCR bandwidth through the auxiliary SAS port!",
+          "priority": "low",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.144Z"
+        },
+        {
+          "id": "5228b924-0e79-4f7e-a7db-16d5af304d0e",
+          "title": "You can't bypass the card without synthesizing the mobile DRAM pixel!",
+          "priority": "high",
+          "status": "Closed",
+          "category": "Software",
+          "createdAt": "2026-03-15T20:05:08.127Z"
+        },
+        {
+          "id": "d9c6d868-f65c-456b-a182-07b4afb26e4c",
+          "title": "If we generate the pixel, we can get to the DNS transmitter through the bluetooth XSS panel!",
+          "priority": "critical",
+          "status": "In_progress",
+          "category": "Hardware",
+          "createdAt": "2026-03-15T20:05:08.114Z"
+        },
+        {
+          "id": "83d723a2-a894-44b0-a245-c00038ba4105",
+          "title": "You can't quantify the card without synthesizing the virtual HEX bandwidth!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.100Z"
+        },
+        {
+          "id": "5b76a813-33cf-4c6b-92a1-37e1e68277e6",
+          "title": "The XML hard drive is down, override the primary array so we can program the CSS sensor!",
+          "priority": "critical",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.087Z"
+        },
+        {
+          "id": "f8ad9a49-c339-44e3-b2f7-b4ba4413d557",
+          "title": "Try to bypass the AI bandwidth, maybe it will synthesize the bluetooth port!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.074Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-03-20T06:34:16.024Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-02-18T06:34:15.949Z",
+        "end": "2026-03-20T06:34:15.949Z"
+      },
+      "emailRecipients": []
+    },
+    "createdAt": "2026-03-20T06:34:16.024Z",
+    "updatedAt": "2026-03-20T06:34:16.024Z"
+  },
+  {
+    "id": "2b9db1a5-fb88-4c1b-a657-6454b8a50c3a",
+    "name": "Weekly Summary - 20.3.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 31,
+      "openTickets": 22,
+      "resolvedTickets": 9,
+      "resolutionRate": 29,
+      "totalArticles": 6,
+      "categoryDistribution": {
+        "software": 1,
+        "Access": 8,
+        "Network": 9,
+        "Other": 5,
+        "Software": 2,
+        "Hardware": 6
+      },
+      "priorityDistribution": {
+        "high": 7,
+        "low": 10,
+        "medium": 9,
+        "critical": 5
+      },
+      "topCategories": [
+        {
+          "category": "Network",
+          "count": 9
+        },
+        {
+          "category": "Access",
+          "count": 8
+        },
+        {
+          "category": "Hardware",
+          "count": 6
+        },
+        {
+          "category": "Other",
+          "count": 5
+        },
+        {
+          "category": "Software",
+          "count": 2
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "84a20018-400b-4c39-a29a-5d97dfaad274",
+          "title": "test-tick",
+          "priority": "high",
+          "status": "Assigned",
+          "category": "software",
+          "createdAt": "2026-03-16T19:30:28.201Z"
+        },
+        {
+          "id": "9c9369b2-d227-4cc5-ac4c-fbd5144602ff",
+          "title": "We need to calculate the bluetooth SMTP microchip!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.189Z"
+        },
+        {
+          "id": "7edcbfa6-cf75-4b1c-8f95-76787f35c5d8",
+          "title": "You can't bypass the hard drive without synthesizing the haptic IP circuit!",
+          "priority": "medium",
+          "status": "Assigned",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.174Z"
+        },
+        {
+          "id": "a8171b2a-701a-4fe3-918b-be24f5751905",
+          "title": "The UDP matrix is down, compress the 1080p sensor so we can calculate the UTF8 circuit!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-03-15T20:05:08.160Z"
+        },
+        {
+          "id": "d6b7aa7b-4ec2-4ded-b88e-4e1ae0985d90",
+          "title": "If we bypass the interface, we can get to the OCR bandwidth through the auxiliary SAS port!",
+          "priority": "low",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.144Z"
+        },
+        {
+          "id": "5228b924-0e79-4f7e-a7db-16d5af304d0e",
+          "title": "You can't bypass the card without synthesizing the mobile DRAM pixel!",
+          "priority": "high",
+          "status": "Closed",
+          "category": "Software",
+          "createdAt": "2026-03-15T20:05:08.127Z"
+        },
+        {
+          "id": "d9c6d868-f65c-456b-a182-07b4afb26e4c",
+          "title": "If we generate the pixel, we can get to the DNS transmitter through the bluetooth XSS panel!",
+          "priority": "critical",
+          "status": "In_progress",
+          "category": "Hardware",
+          "createdAt": "2026-03-15T20:05:08.114Z"
+        },
+        {
+          "id": "83d723a2-a894-44b0-a245-c00038ba4105",
+          "title": "You can't quantify the card without synthesizing the virtual HEX bandwidth!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.100Z"
+        },
+        {
+          "id": "5b76a813-33cf-4c6b-92a1-37e1e68277e6",
+          "title": "The XML hard drive is down, override the primary array so we can program the CSS sensor!",
+          "priority": "critical",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.087Z"
+        },
+        {
+          "id": "f8ad9a49-c339-44e3-b2f7-b4ba4413d557",
+          "title": "Try to bypass the AI bandwidth, maybe it will synthesize the bluetooth port!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.074Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-03-20T06:53:46.659Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-02-18T06:53:46.215Z",
+        "end": "2026-03-20T06:53:46.215Z"
+      },
+      "emailRecipients": []
+    },
+    "createdAt": "2026-03-20T06:53:46.659Z",
+    "updatedAt": "2026-03-20T06:53:46.659Z"
+  },
+  {
+    "id": "b7322720-a3c7-4690-b86e-266c08ac1f28",
+    "name": "Weekly Summary - 20.3.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 31,
+      "openTickets": 22,
+      "resolvedTickets": 9,
+      "resolutionRate": 29,
+      "totalArticles": 6,
+      "categoryDistribution": {
+        "software": 1,
+        "Access": 8,
+        "Network": 9,
+        "Other": 5,
+        "Software": 2,
+        "Hardware": 6
+      },
+      "priorityDistribution": {
+        "high": 7,
+        "low": 10,
+        "medium": 9,
+        "critical": 5
+      },
+      "topCategories": [
+        {
+          "category": "Network",
+          "count": 9
+        },
+        {
+          "category": "Access",
+          "count": 8
+        },
+        {
+          "category": "Hardware",
+          "count": 6
+        },
+        {
+          "category": "Other",
+          "count": 5
+        },
+        {
+          "category": "Software",
+          "count": 2
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "84a20018-400b-4c39-a29a-5d97dfaad274",
+          "title": "test-tick",
+          "priority": "high",
+          "status": "Assigned",
+          "category": "software",
+          "createdAt": "2026-03-16T19:30:28.201Z"
+        },
+        {
+          "id": "9c9369b2-d227-4cc5-ac4c-fbd5144602ff",
+          "title": "We need to calculate the bluetooth SMTP microchip!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.189Z"
+        },
+        {
+          "id": "7edcbfa6-cf75-4b1c-8f95-76787f35c5d8",
+          "title": "You can't bypass the hard drive without synthesizing the haptic IP circuit!",
+          "priority": "medium",
+          "status": "Assigned",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.174Z"
+        },
+        {
+          "id": "a8171b2a-701a-4fe3-918b-be24f5751905",
+          "title": "The UDP matrix is down, compress the 1080p sensor so we can calculate the UTF8 circuit!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-03-15T20:05:08.160Z"
+        },
+        {
+          "id": "d6b7aa7b-4ec2-4ded-b88e-4e1ae0985d90",
+          "title": "If we bypass the interface, we can get to the OCR bandwidth through the auxiliary SAS port!",
+          "priority": "low",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.144Z"
+        },
+        {
+          "id": "5228b924-0e79-4f7e-a7db-16d5af304d0e",
+          "title": "You can't bypass the card without synthesizing the mobile DRAM pixel!",
+          "priority": "high",
+          "status": "Closed",
+          "category": "Software",
+          "createdAt": "2026-03-15T20:05:08.127Z"
+        },
+        {
+          "id": "d9c6d868-f65c-456b-a182-07b4afb26e4c",
+          "title": "If we generate the pixel, we can get to the DNS transmitter through the bluetooth XSS panel!",
+          "priority": "critical",
+          "status": "In_progress",
+          "category": "Hardware",
+          "createdAt": "2026-03-15T20:05:08.114Z"
+        },
+        {
+          "id": "83d723a2-a894-44b0-a245-c00038ba4105",
+          "title": "You can't quantify the card without synthesizing the virtual HEX bandwidth!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.100Z"
+        },
+        {
+          "id": "5b76a813-33cf-4c6b-92a1-37e1e68277e6",
+          "title": "The XML hard drive is down, override the primary array so we can program the CSS sensor!",
+          "priority": "critical",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.087Z"
+        },
+        {
+          "id": "f8ad9a49-c339-44e3-b2f7-b4ba4413d557",
+          "title": "Try to bypass the AI bandwidth, maybe it will synthesize the bluetooth port!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.074Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-03-20T06:54:27.430Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-02-18T06:54:27.378Z",
+        "end": "2026-03-20T06:54:27.378Z"
+      },
+      "emailRecipients": []
+    },
+    "createdAt": "2026-03-20T06:54:27.430Z",
+    "updatedAt": "2026-03-20T06:54:27.430Z"
+  },
+  {
+    "id": "91249d36-4e08-49d8-b83e-5355284fedc4",
+    "name": "Weekly Summary - 20.3.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 31,
+      "openTickets": 22,
+      "resolvedTickets": 9,
+      "resolutionRate": 29,
+      "totalArticles": 6,
+      "categoryDistribution": {
+        "software": 1,
+        "Access": 8,
+        "Network": 9,
+        "Other": 5,
+        "Software": 2,
+        "Hardware": 6
+      },
+      "priorityDistribution": {
+        "high": 7,
+        "low": 10,
+        "medium": 9,
+        "critical": 5
+      },
+      "topCategories": [
+        {
+          "category": "Network",
+          "count": 9
+        },
+        {
+          "category": "Access",
+          "count": 8
+        },
+        {
+          "category": "Hardware",
+          "count": 6
+        },
+        {
+          "category": "Other",
+          "count": 5
+        },
+        {
+          "category": "Software",
+          "count": 2
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "84a20018-400b-4c39-a29a-5d97dfaad274",
+          "title": "test-tick",
+          "priority": "high",
+          "status": "Assigned",
+          "category": "software",
+          "createdAt": "2026-03-16T19:30:28.201Z"
+        },
+        {
+          "id": "9c9369b2-d227-4cc5-ac4c-fbd5144602ff",
+          "title": "We need to calculate the bluetooth SMTP microchip!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.189Z"
+        },
+        {
+          "id": "7edcbfa6-cf75-4b1c-8f95-76787f35c5d8",
+          "title": "You can't bypass the hard drive without synthesizing the haptic IP circuit!",
+          "priority": "medium",
+          "status": "Assigned",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.174Z"
+        },
+        {
+          "id": "a8171b2a-701a-4fe3-918b-be24f5751905",
+          "title": "The UDP matrix is down, compress the 1080p sensor so we can calculate the UTF8 circuit!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-03-15T20:05:08.160Z"
+        },
+        {
+          "id": "d6b7aa7b-4ec2-4ded-b88e-4e1ae0985d90",
+          "title": "If we bypass the interface, we can get to the OCR bandwidth through the auxiliary SAS port!",
+          "priority": "low",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.144Z"
+        },
+        {
+          "id": "5228b924-0e79-4f7e-a7db-16d5af304d0e",
+          "title": "You can't bypass the card without synthesizing the mobile DRAM pixel!",
+          "priority": "high",
+          "status": "Closed",
+          "category": "Software",
+          "createdAt": "2026-03-15T20:05:08.127Z"
+        },
+        {
+          "id": "d9c6d868-f65c-456b-a182-07b4afb26e4c",
+          "title": "If we generate the pixel, we can get to the DNS transmitter through the bluetooth XSS panel!",
+          "priority": "critical",
+          "status": "In_progress",
+          "category": "Hardware",
+          "createdAt": "2026-03-15T20:05:08.114Z"
+        },
+        {
+          "id": "83d723a2-a894-44b0-a245-c00038ba4105",
+          "title": "You can't quantify the card without synthesizing the virtual HEX bandwidth!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.100Z"
+        },
+        {
+          "id": "5b76a813-33cf-4c6b-92a1-37e1e68277e6",
+          "title": "The XML hard drive is down, override the primary array so we can program the CSS sensor!",
+          "priority": "critical",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.087Z"
+        },
+        {
+          "id": "f8ad9a49-c339-44e3-b2f7-b4ba4413d557",
+          "title": "Try to bypass the AI bandwidth, maybe it will synthesize the bluetooth port!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.074Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-03-20T07:11:15.708Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-02-18T07:11:15.627Z",
+        "end": "2026-03-20T07:11:15.627Z"
+      },
+      "emailRecipients": []
+    },
+    "createdAt": "2026-03-20T07:11:15.708Z",
+    "updatedAt": "2026-03-20T07:11:15.708Z"
+  },
+  {
+    "id": "231f2507-7189-41c4-88e3-f9bcaf01dc86",
+    "name": "Test PDF Report",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 32,
+      "openTickets": 23,
+      "resolvedTickets": 9,
+      "resolutionRate": 28,
+      "totalArticles": 6,
+      "categoryDistribution": {
+        "software": 2,
+        "Access": 8,
+        "Network": 9,
+        "Other": 5,
+        "Software": 2,
+        "Hardware": 6
+      },
+      "priorityDistribution": {
+        "high": 8,
+        "low": 10,
+        "medium": 9,
+        "critical": 5
+      },
+      "topCategories": [
+        {
+          "category": "Network",
+          "count": 9
+        },
+        {
+          "category": "Access",
+          "count": 8
+        },
+        {
+          "category": "Hardware",
+          "count": 6
+        },
+        {
+          "category": "Other",
+          "count": 5
+        },
+        {
+          "category": "software",
+          "count": 2
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "038de479-afb5-4c55-a8d7-91eae1afb134",
+          "title": "Test-ticket-01",
+          "priority": "high",
+          "status": "Assigned",
+          "category": "software",
+          "createdAt": "2026-03-20T09:13:38.959Z"
+        },
+        {
+          "id": "84a20018-400b-4c39-a29a-5d97dfaad274",
+          "title": "test-tick",
+          "priority": "high",
+          "status": "Assigned",
+          "category": "software",
+          "createdAt": "2026-03-16T19:30:28.201Z"
+        },
+        {
+          "id": "9c9369b2-d227-4cc5-ac4c-fbd5144602ff",
+          "title": "We need to calculate the bluetooth SMTP microchip!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.189Z"
+        },
+        {
+          "id": "7edcbfa6-cf75-4b1c-8f95-76787f35c5d8",
+          "title": "You can't bypass the hard drive without synthesizing the haptic IP circuit!",
+          "priority": "medium",
+          "status": "Assigned",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.174Z"
+        },
+        {
+          "id": "a8171b2a-701a-4fe3-918b-be24f5751905",
+          "title": "The UDP matrix is down, compress the 1080p sensor so we can calculate the UTF8 circuit!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-03-15T20:05:08.160Z"
+        },
+        {
+          "id": "d6b7aa7b-4ec2-4ded-b88e-4e1ae0985d90",
+          "title": "If we bypass the interface, we can get to the OCR bandwidth through the auxiliary SAS port!",
+          "priority": "low",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.144Z"
+        },
+        {
+          "id": "5228b924-0e79-4f7e-a7db-16d5af304d0e",
+          "title": "You can't bypass the card without synthesizing the mobile DRAM pixel!",
+          "priority": "high",
+          "status": "Closed",
+          "category": "Software",
+          "createdAt": "2026-03-15T20:05:08.127Z"
+        },
+        {
+          "id": "d9c6d868-f65c-456b-a182-07b4afb26e4c",
+          "title": "If we generate the pixel, we can get to the DNS transmitter through the bluetooth XSS panel!",
+          "priority": "critical",
+          "status": "In_progress",
+          "category": "Hardware",
+          "createdAt": "2026-03-15T20:05:08.114Z"
+        },
+        {
+          "id": "83d723a2-a894-44b0-a245-c00038ba4105",
+          "title": "You can't quantify the card without synthesizing the virtual HEX bandwidth!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.100Z"
+        },
+        {
+          "id": "5b76a813-33cf-4c6b-92a1-37e1e68277e6",
+          "title": "The XML hard drive is down, override the primary array so we can program the CSS sensor!",
+          "priority": "critical",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.087Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-03-20T09:17:06.602Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-02-18T09:17:06.353Z",
+        "end": "2026-03-20T09:17:06.354Z"
+      },
+      "emailRecipients": []
+    },
+    "createdAt": "2026-03-20T09:17:06.602Z",
+    "updatedAt": "2026-03-20T09:17:06.602Z"
+  },
+  {
+    "id": "2801e51e-0429-4a8f-8ebe-39bffe251bed",
+    "name": "Weekly Summary - 20.3.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 32,
+      "openTickets": 23,
+      "resolvedTickets": 9,
+      "resolutionRate": 28,
+      "totalArticles": 6,
+      "categoryDistribution": {
+        "software": 2,
+        "Access": 8,
+        "Network": 9,
+        "Other": 5,
+        "Software": 2,
+        "Hardware": 6
+      },
+      "priorityDistribution": {
+        "high": 8,
+        "low": 10,
+        "medium": 9,
+        "critical": 5
+      },
+      "topCategories": [
+        {
+          "category": "Network",
+          "count": 9
+        },
+        {
+          "category": "Access",
+          "count": 8
+        },
+        {
+          "category": "Hardware",
+          "count": 6
+        },
+        {
+          "category": "Other",
+          "count": 5
+        },
+        {
+          "category": "software",
+          "count": 2
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "038de479-afb5-4c55-a8d7-91eae1afb134",
+          "title": "Test-ticket-01",
+          "priority": "high",
+          "status": "Assigned",
+          "category": "software",
+          "createdAt": "2026-03-20T09:13:38.959Z"
+        },
+        {
+          "id": "84a20018-400b-4c39-a29a-5d97dfaad274",
+          "title": "test-tick",
+          "priority": "high",
+          "status": "Assigned",
+          "category": "software",
+          "createdAt": "2026-03-16T19:30:28.201Z"
+        },
+        {
+          "id": "9c9369b2-d227-4cc5-ac4c-fbd5144602ff",
+          "title": "We need to calculate the bluetooth SMTP microchip!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.189Z"
+        },
+        {
+          "id": "7edcbfa6-cf75-4b1c-8f95-76787f35c5d8",
+          "title": "You can't bypass the hard drive without synthesizing the haptic IP circuit!",
+          "priority": "medium",
+          "status": "Assigned",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.174Z"
+        },
+        {
+          "id": "a8171b2a-701a-4fe3-918b-be24f5751905",
+          "title": "The UDP matrix is down, compress the 1080p sensor so we can calculate the UTF8 circuit!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-03-15T20:05:08.160Z"
+        },
+        {
+          "id": "d6b7aa7b-4ec2-4ded-b88e-4e1ae0985d90",
+          "title": "If we bypass the interface, we can get to the OCR bandwidth through the auxiliary SAS port!",
+          "priority": "low",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.144Z"
+        },
+        {
+          "id": "5228b924-0e79-4f7e-a7db-16d5af304d0e",
+          "title": "You can't bypass the card without synthesizing the mobile DRAM pixel!",
+          "priority": "high",
+          "status": "Closed",
+          "category": "Software",
+          "createdAt": "2026-03-15T20:05:08.127Z"
+        },
+        {
+          "id": "d9c6d868-f65c-456b-a182-07b4afb26e4c",
+          "title": "If we generate the pixel, we can get to the DNS transmitter through the bluetooth XSS panel!",
+          "priority": "critical",
+          "status": "In_progress",
+          "category": "Hardware",
+          "createdAt": "2026-03-15T20:05:08.114Z"
+        },
+        {
+          "id": "83d723a2-a894-44b0-a245-c00038ba4105",
+          "title": "You can't quantify the card without synthesizing the virtual HEX bandwidth!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Network",
+          "createdAt": "2026-03-15T20:05:08.100Z"
+        },
+        {
+          "id": "5b76a813-33cf-4c6b-92a1-37e1e68277e6",
+          "title": "The XML hard drive is down, override the primary array so we can program the CSS sensor!",
+          "priority": "critical",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-03-15T20:05:08.087Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-03-20T09:33:36.240Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-02-18T09:33:36.195Z",
+        "end": "2026-03-20T09:33:36.195Z"
+      },
+      "emailRecipients": []
+    },
+    "createdAt": "2026-03-20T09:33:36.240Z",
+    "updatedAt": "2026-03-20T09:33:36.240Z"
   }
 ]

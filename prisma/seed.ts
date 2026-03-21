@@ -1,12 +1,28 @@
 import 'dotenv/config';
 import { prisma } from '../lib/prisma';
 import { faker } from '@faker-js/faker';
-import { Priority, AssetType, AssetStatus, TicketStatus, TicketSource, ImpactLevel, UrgencyLevel } from '@prisma/client';
+import { Priority, AssetType, AssetStatus, TicketStatus, TicketSource, ImpactLevel, UrgencyLevel, Role } from '@prisma/client';
+import {
+  PERMISSION_CATEGORIES,
+  DEFAULT_PERMISSIONS,
+  DEFAULT_ROLE_PERMISSIONS
+} from '../lib/default-permissions';
 
 async function main() {
   console.log('🌱 Starting seed...');
 
   // Clear existing data (optional)
+  // Clear permission-related tables first (due to foreign key constraints)
+  await prisma.rolePermission.deleteMany({});
+  await prisma.userPermission.deleteMany({});
+  await prisma.permission.deleteMany({});
+  await prisma.permissionCategory.deleteMany({});
+  await prisma.customRole.deleteMany({});
+  await prisma.roleHierarchy.deleteMany({});
+  await prisma.auditLog.deleteMany({});
+  await prisma.integrationConfig.deleteMany({});
+  
+  // Clear other tables
   await prisma.automationRule.deleteMany({});
   await prisma.comment.deleteMany({});
   await prisma.knowledgeBaseArticle.deleteMany({});
@@ -15,6 +31,71 @@ async function main() {
   await prisma.sLA.deleteMany({});
   await prisma.user.deleteMany({});
   console.log('Cleared all tables');
+
+  // Seed permission categories and permissions
+  console.log('🌱 Seeding permission categories...');
+  const categoryMap = new Map<string, string>();
+  for (const categoryData of PERMISSION_CATEGORIES) {
+    const category = await prisma.permissionCategory.upsert({
+      where: { name: categoryData.name },
+      update: {
+        description: categoryData.description,
+        order: categoryData.order
+      },
+      create: {
+        name: categoryData.name,
+        description: categoryData.description,
+        order: categoryData.order
+      }
+    });
+    categoryMap.set(category.name, category.id);
+  }
+
+  console.log('🌱 Seeding permissions...');
+  const permissionMap = new Map<string, string>();
+  for (const permData of DEFAULT_PERMISSIONS) {
+    const categoryId = categoryMap.get(permData.category);
+    const permission = await prisma.permission.upsert({
+      where: { name: permData.name },
+      update: {
+        description: permData.description,
+        category: permData.category,
+        action: permData.action,
+        categoryId: categoryId || null
+      },
+      create: {
+        name: permData.name,
+        description: permData.description,
+        category: permData.category,
+        action: permData.action,
+        categoryId: categoryId || null
+      }
+    });
+    permissionMap.set(permission.name, permission.id);
+  }
+
+  console.log('🌱 Seeding default role permissions...');
+  for (const [role, permissionNames] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
+    for (const permName of permissionNames) {
+      const permissionId = permissionMap.get(permName);
+      if (permissionId) {
+        await prisma.rolePermission.upsert({
+          where: {
+            role_permissionId: {
+              role: role as Role,
+              permissionId
+            }
+          },
+          update: {},
+          create: {
+            role: role as Role,
+            permissionId
+          }
+        });
+      }
+    }
+  }
+  console.log('✅ Permissions seeded successfully');
 
   // Create users
   const users = [];

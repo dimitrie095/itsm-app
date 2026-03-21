@@ -37,14 +37,14 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
 
   // Status-Icon und Farbe
   const statusConfig = {
-    generated: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-100' },
-    pending: { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-100' },
-    failed: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-100' }
+    generated: { icon: CheckCircle, color: 'text-green-800 dark:text-green-300', bg: 'bg-green-100 dark:bg-green-900' },
+    pending: { icon: Clock, color: 'text-yellow-800 dark:text-yellow-300', bg: 'bg-yellow-100 dark:bg-yellow-900' },
+    failed: { icon: AlertCircle, color: 'text-red-800 dark:text-red-300', bg: 'bg-red-100 dark:bg-red-900' }
   }
 
   const StatusIcon = statusConfig[report.status as keyof typeof statusConfig]?.icon || AlertCircle
-  const statusColor = statusConfig[report.status as keyof typeof statusConfig]?.color || 'text-gray-600'
-  const statusBg = statusConfig[report.status as keyof typeof statusConfig]?.bg || 'bg-gray-100'
+  const statusColor = statusConfig[report.status as keyof typeof statusConfig]?.color || 'text-gray-600 dark:text-gray-300'
+  const statusBg = statusConfig[report.status as keyof typeof statusConfig]?.bg || 'bg-gray-100 dark:bg-gray-800'
 
   // Type-Icon
   const typeIcons = {

@@ -6,9 +6,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Plus, FileText, Download, Mail, Eye, MoreHorizontal, Calendar, User, BarChart } from "lucide-react"
 import Link from "next/link"
 import { getReports } from "./actions"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { hasPermission } from "@/lib/permission-utils"
 
 export default async function ReportsPage() {
+  const session = await getServerSession(authOptions)
   const reports = await getReports()
+  const canCreateReport = hasPermission(session, "reports.create")
+  const userPermissions = (session?.user as any)?.permissions as string[] || []
+  const canExportReport = userPermissions.includes("reports.export")
 
   // Kategorien für Filter
   const reportTypes = [
@@ -22,10 +29,10 @@ export default async function ReportsPage() {
   // Status-Farben
   const statusColor = (status: string) => {
     switch (status) {
-      case 'generated': return 'bg-green-100 text-green-800'
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'failed': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'generated': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+      case 'failed': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
     }
   }
 
@@ -48,12 +55,14 @@ export default async function ReportsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
           <p className="text-muted-foreground">Generate, view, and share analytical reports.</p>
         </div>
-        <Button asChild>
-          <Link href="/reports/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Generate Report
-          </Link>
-        </Button>
+        {canCreateReport && (
+          <Button asChild>
+            <Link href="/reports/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Generate Report
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -65,26 +74,33 @@ export default async function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {reportTypes.map((type) => (
-                <Button
-                  key={type.id}
-                  variant="outline"
-                  className="w-full justify-start h-auto py-3"
-                  asChild
-                >
-                  <Link href={`/reports/new?type=${type.id}`}>
-                    <div className="flex items-center gap-3 text-left">
-                      <div className="p-2 rounded-md bg-primary/10">
-                        {typeIcon(type.id)}
+              {canCreateReport ? (
+                reportTypes.map((type) => (
+                  <Button
+                    key={type.id}
+                    variant="outline"
+                    className="w-full justify-start h-auto py-3"
+                    asChild
+                  >
+                    <Link href={`/reports/new?type=${type.id}`}>
+                      <div className="flex items-center gap-3 text-left">
+                        <div className="p-2 rounded-md bg-primary/10">
+                          {typeIcon(type.id)}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">{type.label}</p>
+                          <p className="text-xs text-muted-foreground">{type.description}</p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{type.label}</p>
-                        <p className="text-xs text-muted-foreground">{type.description}</p>
-                      </div>
-                    </div>
-                  </Link>
-                </Button>
-              ))}
+                    </Link>
+                  </Button>
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-8 w-8 mx-auto mb-2" />
+                  <p>You don't have permission to generate reports.</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -97,9 +113,11 @@ export default async function ReportsPage() {
                 <CardTitle>Recent Reports</CardTitle>
                 <CardDescription>Your recently generated reports.</CardDescription>
               </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/reports/new">Generate New</Link>
-              </Button>
+              {canCreateReport && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/reports/new">Generate New</Link>
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -153,19 +171,25 @@ export default async function ReportsPage() {
                                 View Report
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/api/reports/${report.id}/download`}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Download
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/reports/${report.id}/send`}>
-                                <Mail className="mr-2 h-4 w-4" />
-                                Send via Email
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            {canExportReport && (
+                              <DropdownMenuItem asChild>
+                                <Link href={`/api/reports/${report.id}/download`}>
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Download
+                                </Link>
+                              </DropdownMenuItem>
+                            )}
+                            {canExportReport && (
+                              <DropdownMenuItem asChild>
+                                <Link href={`/reports/${report.id}/send`}>
+                                  <Mail className="mr-2 h-4 w-4" />
+                                  Send via Email
+                                </Link>
+                              </DropdownMenuItem>
+                            )}
+                            {canExportReport && (
+                              <DropdownMenuSeparator />
+                            )}
                             <DropdownMenuItem className="text-red-600">
                               Delete
                             </DropdownMenuItem>

@@ -1,7 +1,7 @@
 "use server"
 
-import fs from 'fs/promises'
-import path from 'path'
+import * as fs from 'fs/promises'
+import * as path from 'path'
 
 // Hilfsfunktion zum Lesen von JSON-Dateien
 async function readJsonFile(filePath: string) {
@@ -137,11 +137,59 @@ function calculateAverageResponseTime(tickets: any[]) {
 
 // Dashboard-Daten sammeln
 export async function getDashboardData() {
-  // Tickets aus JSON lesen
-  const ticketsPath = path.join(process.cwd(), 'tickets.json')
-  const tickets = await readJsonFile(ticketsPath)
+  // Tickets aus Datenbank lesen
+  const { prisma } = await import('@/lib/prisma')
+  const dbTickets = await prisma.ticket.findMany({
+    include: {
+      assignedTo: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        }
+      },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          department: true,
+        }
+      }
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  })
   
-  // Artikel aus JSON lesen
+  // Transform tickets to match the expected JSON shape
+  const tickets = dbTickets.map(ticket => {
+    // Map priority to lowercase for compatibility
+    const priority = ticket.priority.toLowerCase()
+    
+    // Get SLA based on priority
+    const sla = getSlaForPriority(ticket.priority)
+    
+    return {
+      id: ticket.id,
+      title: ticket.title,
+      description: ticket.description,
+      category: ticket.category || 'other',
+      priority,
+      customer: ticket.user?.name || ticket.user?.email || 'Unknown',
+      email: ticket.user?.email || '',
+      department: ticket.user?.department || 'Unknown',
+      status: ticket.status.charAt(0) + ticket.status.slice(1).toLowerCase(), // Capitalize first letter
+      assignedTo: ticket.assignedTo?.name || ticket.assignedTo?.email || 'Unassigned',
+      sla,
+      createdAt: ticket.createdAt.toISOString(),
+      updatedAt: ticket.updatedAt.toISOString(),
+      // Keep original database ticket for popup
+      original: ticket
+    }
+  })
+  
+  // Artikel aus JSON lesen (temporarily keep JSON for articles)
   const articlesPath = path.join(process.cwd(), 'articles.json')
   const articles = await readJsonFile(articlesPath)
   
@@ -154,23 +202,22 @@ export async function getDashboardData() {
   // Durchschnittliche Antwortzeit berechnen
   const responseTime = calculateAverageResponseTime(tickets)
   
-  // User-Anzahl (für Demo: 1, da nur Demo-Admin existiert)
-  const userCount = 1
+  // User-Anzahl aus Datenbank
+  const userCount = await prisma.user.count()
   
-  // Sortiere Tickets nach Datum (neueste zuerst)
-  const sortedTickets = tickets.sort((a: any, b: any) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
+  // Sortiere Tickets nach Datum (neueste zuerst) - already sorted by query
+  const sortedTickets = tickets
   
   // Nur veröffentlichte Artikel
   const publishedArticles = articles.filter((article: any) => article.isPublished)
   
   // Berechnete Metriken
-  const openTickets = tickets.filter((ticket: any) => 
-    ticket.status === 'New' || ticket.status === 'Assigned' || ticket.status === 'In Progress'
+  const openTickets = dbTickets.filter(ticket => 
+    ticket.status === 'NEW' || ticket.status === 'ASSIGNED' || ticket.status === 'IN_PROGRESS'
   ).length
   
-  const managedAssets = 0 // Keine Assets in der Datenbank
+  // Assets count from database
+  const managedAssets = await prisma.asset.count()
   
   return {
     tickets: sortedTickets,
@@ -182,5 +229,16 @@ export async function getDashboardData() {
     slaCompliance,
     averageResponseTime: responseTime.average,
     isWithinSLA: responseTime.withinSLA
+  }
+}
+
+// Helper function to get SLA string based on priority
+function getSlaForPriority(priority: string): string {
+  switch (priority.toUpperCase()) {
+    case 'CRITICAL': return '2h'
+    case 'HIGH': return '24h'
+    case 'MEDIUM': return '48h'
+    case 'LOW': return '72h'
+    default: return '72h'
   }
 }

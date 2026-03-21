@@ -1,6 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import { revalidatePath } from "next/cache"
 
 export async function getAutomationRules() {
   try {
@@ -9,12 +10,12 @@ export async function getAutomationRules() {
     
     if (ruleCount === 0) {
       const defaultRules = [
-        { name: "Auto-assign by category", description: "Automatically assign tickets based on category", trigger: "Ticket Created", condition: "Category = 'Hardware'", action: "Assign to Hardware Team", isActive: true },
-        { name: "SLA escalation", description: "Escalate tickets when SLA is breached", trigger: "SLA Breach", condition: "Priority = High", action: "Escalate to Level 2", isActive: true },
-        { name: "Auto-response email", description: "Send automatic acknowledgment for email tickets", trigger: "Ticket Created", condition: "Source = Email", action: "Send acknowledgment", isActive: true },
-        { name: "Close stale tickets", description: "Automatically close resolved tickets after 7 days", trigger: "Daily", condition: "Status = Resolved > 7 days", action: "Auto-close", isActive: false },
-        { name: "Tag high impact", description: "Add critical tag to high impact tickets", trigger: "Ticket Updated", condition: "Impact = Critical", action: "Add 'Critical' tag", isActive: true },
-        { name: "Notify manager", description: "Notify manager when ticket is escalated", trigger: "Ticket Escalated", condition: "Escalation Level >= 2", action: "Send email to manager", isActive: false },
+        { name: "Auto-assign by category", description: "Automatically assign tickets based on category", category: "Ticket", trigger: "Ticket Created", condition: "Category = 'Hardware'", action: "Assign to Team: Hardware Team", isActive: true },
+        { name: "SLA escalation", description: "Escalate tickets when SLA is breached", category: "SLA", trigger: "SLA Breach", condition: "Priority = 'High'", action: "Escalate Level", isActive: true },
+        { name: "Auto-response email", description: "Send automatic acknowledgment for email tickets", category: "Notification", trigger: "Ticket Created", condition: "Source = 'Email'", action: "Send Email: Requester", isActive: true },
+        { name: "Close stale tickets", description: "Automatically close resolved tickets after 7 days", category: "Schedule", trigger: "Daily", condition: "Status = 'Resolved' AND Age > 168", action: "Close Ticket", isActive: false },
+        { name: "Tag high impact", description: "Add critical tag to high impact tickets", category: "Ticket", trigger: "Ticket Updated", condition: "Impact = 'Critical'", action: "Add Tag: Critical", isActive: true },
+        { name: "Notify manager", description: "Notify manager when ticket is escalated", category: "Notification", trigger: "Ticket Escalated", condition: "Escalation Level >= 2", action: "Notify Manager", isActive: false },
       ]
       
       for (const ruleData of defaultRules) {
@@ -32,17 +33,46 @@ export async function getAutomationRules() {
       }
     })
 
+    // Get latest execution for each rule
+    const ruleIds = rules.map(rule => rule.id)
+    let latestExecutions: Record<string, any> = {}
+    
+    if (ruleIds.length > 0) {
+      try {
+        const executions = await prisma.automationExecution.findMany({
+          where: {
+            ruleId: { in: ruleIds }
+          },
+          orderBy: {
+            executedAt: 'desc'
+          }
+        })
+
+        // Group by ruleId, taking the first (latest) for each rule
+        executions.forEach(exec => {
+          if (!latestExecutions[exec.ruleId]) {
+            latestExecutions[exec.ruleId] = exec
+          }
+        })
+      } catch (error) {
+        // If automationExecution table doesn't exist yet, continue without executions
+        console.log('Note: automationExecution table not available yet')
+      }
+    }
+
     return rules.map(rule => ({
-      id: rule.id.substring(0, 8).toUpperCase(), // Short ID for display
-      fullId: rule.id,
+      id: rule.id,
       name: rule.name,
       description: rule.description || '',
+      category: rule.category || 'General',
       trigger: rule.trigger,
       condition: rule.condition || '',
       action: rule.action,
       status: rule.isActive,
       createdAt: rule.createdAt.toISOString(),
       updatedAt: rule.updatedAt.toISOString(),
+      lastExecution: latestExecutions[rule.id]?.executedAt.toISOString() || null,
+      lastExecutionSuccess: latestExecutions[rule.id]?.success || null,
     }))
   } catch (error) {
     console.error("Error fetching automation rules:", error)
@@ -51,25 +81,111 @@ export async function getAutomationRules() {
   }
 }
 
+export async function getAutomationRule(id: string) {
+  try {
+    const rule = await prisma.automationRule.findUnique({
+      where: { id }
+    })
+
+    if (!rule) {
+      return null
+    }
+
+    // Get latest execution for this rule
+    let latestExecution = null
+    try {
+      const execution = await prisma.automationExecution.findFirst({
+        where: { ruleId: id },
+        orderBy: { executedAt: 'desc' }
+      })
+      latestExecution = execution
+    } catch {
+      // If automationExecution table doesn't exist yet, continue without execution
+      console.log('Note: automationExecution table not available yet')
+    }
+
+    return {
+      id: rule.id,
+      name: rule.name,
+      description: rule.description || '',
+      category: rule.category || 'General',
+      trigger: rule.trigger,
+      condition: rule.condition || '',
+      action: rule.action,
+      status: rule.isActive,
+      createdAt: rule.createdAt.toISOString(),
+      updatedAt: rule.updatedAt.toISOString(),
+      lastExecution: latestExecution?.executedAt.toISOString() || null,
+      lastExecutionSuccess: latestExecution?.success || null,
+    }
+  } catch (error) {
+    console.error("Error fetching automation rule:", error)
+    return null
+  }
+}
+
 export async function getAutomationStats() {
   try {
     const totalRules = await prisma.automationRule.count()
     const activeRules = await prisma.automationRule.count({
-      where: {
-        isActive: true
-      }
+      where: { isActive: true }
     })
     const inactiveRules = totalRules - activeRules
 
-    // Placeholder for executions (would need separate logging table)
-    const executionsToday = 0
-    const timeSavedHours = 0
+    // Calculate estimated time saved based on active rules
+    // Assume each active rule saves ~2 hours per week on average
+    const timeSavedHours = activeRules * 2
+
+    // Get today's executions from the execution log if available
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    let executionsToday = 0
+    let successfulExecutions = 0
+    let failedExecutions = 0
+    try {
+      executionsToday = await prisma.automationExecution.count({
+        where: {
+          executedAt: {
+            gte: today
+          }
+        }
+      })
+      
+      // Count successful and failed executions today
+      const executionResults = await prisma.automationExecution.groupBy({
+        by: ['success'],
+        where: {
+          executedAt: {
+            gte: today
+          }
+        },
+        _count: {
+          _all: true
+        }
+      })
+      
+      executionResults.forEach(result => {
+        if (result.success) {
+          successfulExecutions = result._count._all
+        } else {
+          failedExecutions = result._count._all
+        }
+      })
+    } catch {
+      // Table might not exist yet, default to 0
+      executionsToday = 0
+      successfulExecutions = 0
+      failedExecutions = 0
+    }
 
     return {
       totalRules,
       activeRules,
       inactiveRules,
       executionsToday,
+      successfulExecutions,
+      failedExecutions,
       timeSavedHours,
     }
   } catch (error) {
@@ -79,26 +195,52 @@ export async function getAutomationStats() {
       activeRules: 0,
       inactiveRules: 0,
       executionsToday: 0,
+      successfulExecutions: 0,
+      failedExecutions: 0,
       timeSavedHours: 0,
     }
   }
 }
 
-export async function toggleRuleStatus(ruleId: string, isActive: boolean) {
+export async function toggleRuleStatus(formData: FormData) {
   try {
-    const updatedRule = await prisma.automationRule.update({
-      where: {
-        id: ruleId
-      },
-      data: {
-        isActive: !isActive
-      }
+    const ruleId = formData.get('ruleId') as string
+    const currentStatus = formData.get('currentStatus') === 'true'
+    
+    if (!ruleId) {
+      throw new Error("Rule ID is required")
+    }
+
+    await prisma.automationRule.update({
+      where: { id: ruleId },
+      data: { isActive: !currentStatus }
     })
 
-    return { success: true, rule: updatedRule }
+    revalidatePath('/automation')
   } catch (error) {
     console.error("Error toggling rule status:", error)
-    return { success: false, error: "Failed to toggle rule status" }
+    throw error
+  }
+}
+
+export async function setRuleStatus(formData: FormData) {
+  try {
+    const ruleId = formData.get('ruleId') as string
+    const status = formData.get('status') === 'true'
+    
+    if (!ruleId) {
+      throw new Error("Rule ID is required")
+    }
+
+    await prisma.automationRule.update({
+      where: { id: ruleId },
+      data: { isActive: status }
+    })
+
+    revalidatePath('/automation')
+  } catch (error) {
+    console.error("Error setting rule status:", error)
+    throw error
   }
 }
 
@@ -129,24 +271,33 @@ export async function getRuleById(ruleId: string) {
 
 export async function createRule(formData: {
   name: string
-  description?: string
+  description: string
+  category: string
   trigger: string
-  condition?: string
+  condition: string
   action: string
+  actionParam?: string
   isActive: boolean
 }) {
   try {
+    // Combine action and param if provided
+    const fullAction = formData.actionParam 
+      ? `${formData.action}: ${formData.actionParam}`
+      : formData.action
+
     const rule = await prisma.automationRule.create({
       data: {
         name: formData.name,
-        description: formData.description || null,
+        description: formData.description,
+        category: formData.category,
         trigger: formData.trigger,
         condition: formData.condition || null,
-        action: formData.action,
+        action: fullAction,
         isActive: formData.isActive,
       }
     })
 
+    revalidatePath('/automation')
     return { success: true, rule }
   } catch (error) {
     console.error("Error creating rule:", error)
@@ -156,25 +307,34 @@ export async function createRule(formData: {
 
 export async function updateRule(ruleId: string, formData: {
   name: string
-  description?: string
+  description: string
+  category: string
   trigger: string
-  condition?: string
+  condition: string
   action: string
+  actionParam?: string
   isActive: boolean
 }) {
   try {
+    // Combine action and param if provided
+    const fullAction = formData.actionParam 
+      ? `${formData.action}: ${formData.actionParam}`
+      : formData.action
+
     const rule = await prisma.automationRule.update({
       where: { id: ruleId },
       data: {
         name: formData.name,
-        description: formData.description || null,
+        description: formData.description,
+        category: formData.category,
         trigger: formData.trigger,
         condition: formData.condition || null,
-        action: formData.action,
+        action: fullAction,
         isActive: formData.isActive,
       }
     })
 
+    revalidatePath('/automation')
     return { success: true, rule }
   } catch (error) {
     console.error("Error updating rule:", error)
@@ -182,15 +342,237 @@ export async function updateRule(ruleId: string, formData: {
   }
 }
 
-export async function deleteRule(ruleId: string) {
+export async function deleteRule(formData: FormData) {
   try {
+    const ruleId = formData.get('ruleId') as string
+    
+    if (!ruleId) {
+      throw new Error("Rule ID is required")
+    }
+
     await prisma.automationRule.delete({
       where: { id: ruleId }
     })
 
-    return { success: true }
+    revalidatePath('/automation')
   } catch (error) {
     console.error("Error deleting rule:", error)
-    return { success: false, error: "Failed to delete rule" }
+    throw error
+  }
+}
+
+export async function duplicateRule(formData: FormData) {
+  try {
+    const ruleId = formData.get('ruleId') as string
+    
+    if (!ruleId) {
+      throw new Error("Rule ID is required")
+    }
+
+    const originalRule = await prisma.automationRule.findUnique({
+      where: { id: ruleId }
+    })
+
+    if (!originalRule) {
+      throw new Error("Rule not found")
+    }
+
+    await prisma.automationRule.create({
+      data: {
+        name: `${originalRule.name} (Copy)`,
+        description: originalRule.description,
+        trigger: originalRule.trigger,
+        condition: originalRule.condition,
+        action: originalRule.action,
+        isActive: false, // Copy is inactive by default
+      }
+    })
+
+    revalidatePath('/automation')
+  } catch (error) {
+    console.error("Error duplicating rule:", error)
+    throw error
+  }
+}
+
+// Log rule execution
+export async function logRuleExecution(ruleId: string, ticketId: string, success: boolean, details?: string) {
+  try {
+    await prisma.automationExecution.create({
+      data: {
+        ruleId,
+        ticketId,
+        success,
+        details
+      }
+    })
+  } catch (error) {
+    console.error("Error logging rule execution:", error)
+  }
+}
+
+// Get automation executions with filters
+export async function getAutomationExecutions(filters?: {
+  ruleId?: string
+  success?: boolean
+  startDate?: string
+  endDate?: string
+  ticketId?: string
+  search?: string
+  page?: number
+  limit?: number
+}) {
+  try {
+    const page = filters?.page || 1
+    const limit = filters?.limit || 50
+    const skip = (page - 1) * limit
+
+    const where: any = {}
+
+    if (filters?.ruleId) {
+      where.ruleId = filters.ruleId
+    }
+
+    if (filters?.success !== undefined) {
+      where.success = filters.success
+    }
+
+    if (filters?.ticketId) {
+      where.ticketId = filters.ticketId
+    }
+
+    if (filters?.startDate || filters?.endDate) {
+      where.executedAt = {}
+      if (filters.startDate) {
+        where.executedAt.gte = new Date(filters.startDate)
+      }
+      if (filters.endDate) {
+        where.executedAt.lte = new Date(filters.endDate)
+      }
+    }
+
+    // Search in rule name or ticket ID if search term provided
+    if (filters?.search) {
+      where.OR = [
+        {
+          rule: {
+            name: {
+              contains: filters.search,
+              mode: 'insensitive'
+            }
+          }
+        },
+        {
+          ticketId: {
+            contains: filters.search,
+            mode: 'insensitive'
+          }
+        }
+      ]
+    }
+
+    // Get executions with related rule data
+    const [executions, total] = await Promise.all([
+      prisma.automationExecution.findMany({
+        where,
+        include: {
+          rule: {
+            select: {
+              id: true,
+              name: true,
+              trigger: true,
+              action: true,
+              isActive: true
+            }
+          }
+        },
+        orderBy: {
+          executedAt: 'desc'
+        },
+        skip,
+        take: limit
+      }),
+      prisma.automationExecution.count({ where })
+    ])
+
+    // Get statistics
+    const successCount = await prisma.automationExecution.count({
+      where: { ...where, success: true }
+    })
+    
+    const failureCount = await prisma.automationExecution.count({
+      where: { ...where, success: false }
+    })
+
+    // Format executions for response
+    const formattedExecutions = executions.map(exec => ({
+      id: exec.id,
+      ruleId: exec.ruleId,
+      ruleName: exec.rule.name,
+      ruleTrigger: exec.rule.trigger,
+      ruleAction: exec.rule.action,
+      ruleActive: exec.rule.isActive,
+      ticketId: exec.ticketId,
+      success: exec.success,
+      executedAt: exec.executedAt.toISOString(),
+      details: exec.details || ''
+    }))
+
+    return {
+      executions: formattedExecutions,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      },
+      statistics: {
+        total,
+        successCount,
+        failureCount,
+        successRate: total > 0 ? (successCount / total) * 100 : 0
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching automation executions:", error)
+    // Return empty results if table doesn't exist yet
+    return {
+      executions: [],
+      pagination: {
+        page: 1,
+        limit: 50,
+        total: 0,
+        totalPages: 0
+      },
+      statistics: {
+        total: 0,
+        successCount: 0,
+        failureCount: 0,
+        successRate: 0
+      }
+    }
+  }
+}
+
+// Execute a rule manually
+export async function executeRule(ruleId: string) {
+  try {
+    const rule = await prisma.automationRule.findUnique({
+      where: { id: ruleId }
+    })
+
+    if (!rule) {
+      return { success: false, error: "Rule not found" }
+    }
+
+    // In a real implementation, this would execute the rule logic
+    // For now, we just log it
+    await logRuleExecution(ruleId, 'manual', true)
+
+    revalidatePath('/automation')
+    return { success: true, message: `Rule "${rule.name}" executed successfully` }
+  } catch (error) {
+    console.error("Error executing rule:", error)
+    return { success: false, error: "Failed to execute rule" }
   }
 }

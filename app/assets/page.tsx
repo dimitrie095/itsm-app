@@ -5,12 +5,30 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Plus, Search, Filter, Cpu, Monitor, Printer, Server, Smartphone, HardDrive, Database } from "lucide-react"
+import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getAssets, getAssetStats } from "./actions"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { hasPermission } from "@/lib/permission-utils"
 
 export default async function AssetsPage() {
+  const session = await getServerSession(authOptions)
+  
+  // Check if user has permission to view assets
+  const canViewAssets = hasPermission(session, "assets.view")
+  if (!canViewAssets) {
+    redirect('/unauthorized')
+  }
+  
   const assets = await getAssets()
   const stats = await getAssetStats()
+  
+  const canCreateAsset = hasPermission(session, "assets.create")
+  const userPermissions = (session?.user as any)?.permissions as string[] || []
+  const canUpdateAsset = userPermissions.includes("assets.update")
+  const canDeleteAsset = userPermissions.includes("assets.delete")
+  const canAssignAsset = userPermissions.includes("assets.assign")
 
   const typeIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -27,12 +45,12 @@ export default async function AssetsPage() {
 
   const statusColor = (status: string) => {
     switch (status) {
-      case "Active": return "bg-green-100 text-green-800"
-      case "Maintenance": return "bg-yellow-100 text-yellow-800"
-      case "Retired": return "bg-gray-100 text-gray-800"
-      case "Lost": return "bg-red-100 text-red-800"
-      case "Damaged": return "bg-orange-100 text-orange-800"
-      default: return "bg-gray-100 text-gray-800"
+      case "Active": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+      case "Maintenance": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+      case "Retired": return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+      case "Lost": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+      case "Damaged": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
     }
   }
 
@@ -55,12 +73,14 @@ export default async function AssetsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Assets</h1>
           <p className="text-muted-foreground">Manage IT assets, inventory, and warranties.</p>
         </div>
-        <Button asChild>
-          <Link href="/assets/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Asset
-          </Link>
-        </Button>
+        {canCreateAsset && (
+          <Button asChild>
+            <Link href="/assets/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New Asset
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -168,15 +188,25 @@ export default async function AssetsPage() {
                           <DropdownMenuItem asChild>
                             <Link href={`/assets/${asset.id}`}>View Details</Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/assets/${asset.id}/edit`}>Edit Asset</Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>Assign to User</DropdownMenuItem>
-                          <DropdownMenuItem>Update Status</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600" asChild>
-                            <Link href={`/assets/${asset.id}/delete`}>Delete Asset</Link>
-                          </DropdownMenuItem>
+                          {canUpdateAsset && (
+                            <DropdownMenuItem asChild>
+                              <Link href={`/assets/${asset.id}/edit`}>Edit Asset</Link>
+                            </DropdownMenuItem>
+                          )}
+                          {canAssignAsset && (
+                            <DropdownMenuItem>Assign to User</DropdownMenuItem>
+                          )}
+                          {canUpdateAsset && (
+                            <DropdownMenuItem>Update Status</DropdownMenuItem>
+                          )}
+                          {(canUpdateAsset || canAssignAsset) && (
+                            <DropdownMenuSeparator />
+                          )}
+                          {canDeleteAsset && (
+                            <DropdownMenuItem className="text-red-600" asChild>
+                              <Link href={`/assets/${asset.id}/delete`}>Delete Asset</Link>
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

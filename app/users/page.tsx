@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { MoreHorizontal, Plus, Search, Filter, Mail, Building, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { usePermission } from "@/hooks/use-permission";
 
 interface User {
   id: string;
@@ -27,6 +28,13 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const { hasPermission, hasAnyPermission, getUserPermissions } = usePermission();
+  
+  const userPermissions = getUserPermissions();
+  const canCreateUser = hasPermission("users.create");
+  const canUpdateUser = hasPermission("users.update");
+  const canDeleteUser = hasPermission("users.delete");
+  const canManageRoles = hasPermission("users.manage_roles");
 
   useEffect(() => {
     fetchUsers();
@@ -99,10 +107,12 @@ export default function UsersPage() {
             <h1 className="text-3xl font-bold tracking-tight">Users</h1>
             <p className="text-muted-foreground">Manage user accounts, roles, and permissions.</p>
           </div>
-          <Button disabled>
-            <Plus className="mr-2 h-4 w-4" />
-            New User
-          </Button>
+          {canCreateUser && (
+            <Button disabled>
+              <Plus className="mr-2 h-4 w-4" />
+              New User
+            </Button>
+          )}
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -119,10 +129,12 @@ export default function UsersPage() {
             <h1 className="text-3xl font-bold tracking-tight">Users</h1>
             <p className="text-muted-foreground">Manage user accounts, roles, and permissions.</p>
           </div>
-          <Button disabled>
-            <Plus className="mr-2 h-4 w-4" />
-            New User
-          </Button>
+          {canCreateUser && (
+            <Button disabled>
+              <Plus className="mr-2 h-4 w-4" />
+              New User
+            </Button>
+          )}
         </div>
         <Card>
           <CardContent className="flex flex-col items-center justify-center h-64 gap-4">
@@ -145,12 +157,14 @@ export default function UsersPage() {
           <h1 className="text-3xl font-bold tracking-tight">Users</h1>
           <p className="text-muted-foreground">Manage user accounts, roles, and permissions.</p>
         </div>
-        <Button asChild>
-          <Link href="/users/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New User
-          </Link>
-        </Button>
+        {canCreateUser && (
+          <Button asChild>
+            <Link href="/users/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New User
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -283,10 +297,21 @@ export default function UsersPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem>View Profile</DropdownMenuItem>
-                          <DropdownMenuItem>Edit User</DropdownMenuItem>
-                          <DropdownMenuItem>Reset Password</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
+                          {canUpdateUser && (
+                            <DropdownMenuItem>Edit User</DropdownMenuItem>
+                          )}
+                          {canUpdateUser && (
+                            <DropdownMenuItem>Reset Password</DropdownMenuItem>
+                          )}
+                          {canManageRoles && (
+                            <DropdownMenuItem>Change Role</DropdownMenuItem>
+                          )}
+                          {(canUpdateUser || canManageRoles) && (
+                            <DropdownMenuSeparator />
+                          )}
+                          {canDeleteUser && (
+                            <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

@@ -43,5 +43,20 @@
     "sla": "72h",
     "createdAt": "2026-03-12T10:00:00.000Z",
     "updatedAt": "2026-03-12T15:00:00.000Z"
+  },
+  {
+    "id": "TKT-004",
+    "title": "test end user ticket",
+    "description": "test end user ticket",
+    "category": "software",
+    "priority": "high",
+    "customer": "sta",
+    "email": "tayondimitrie@gmail.com",
+    "department": "sales",
+    "status": "New",
+    "assignedTo": "Unassigned",
+    "sla": "24h",
+    "createdAt": "2026-03-16T12:11:38.013Z",
+    "updatedAt": "2026-03-16T12:11:38.013Z"
   }
 ]
