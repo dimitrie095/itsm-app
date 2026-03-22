@@ -14,8 +14,8 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:reset": "prisma migrate reset --force",
-    "migrate:postgresql": "node scripts/migrate-dev.js",
-    "test:security": "node scripts/run-security-tests.js",
+    "migrate:postgresql": "node utils/scripts/js/migrate-dev.js",
+    "test:security": "node utils/scripts/js/run-security-tests.js",
     "test:security:auth": "npx jest tests/security/auth.test.ts --config=tests/security/jest.config.js",
     "test:security:validation": "npx jest tests/security/validation.test.ts --config=tests/security/jest.config.js",
     "test:security:api": "npx jest tests/security/api.test.ts --config=tests/security/jest.config.js"

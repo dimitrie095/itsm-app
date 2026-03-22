@@ -53,7 +53,7 @@ fi
 # Run the migration script
 echo ""
 echo "Starting data migration..."
-node scripts/migrate-data.js
+node ../js/migrate-data.js
 
 if [ $? -eq 0 ]; then
     echo ""

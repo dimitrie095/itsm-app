@@ -47,7 +47,7 @@ if %ERRORLEVEL% equ 0 (
 REM Run the migration script
 echo.
 echo Starting data migration...
-node scripts/migrate-data.js
+node ../js/migrate-data.js
 
 if %ERRORLEVEL% equ 0 (
     echo.

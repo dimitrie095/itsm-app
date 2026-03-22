@@ -19,7 +19,7 @@ echo [%date% %time%] [INFO] Starting emergency security monitoring... > security
 
 REM Run the monitor
 echo Press Ctrl+C to stop the monitoring...
-node scripts/emergency-monitor.js
+node ../js/emergency-monitor.js
 
 if %ERRORLEVEL% equ 0 (
     echo.

@@ -23,7 +23,7 @@ fi
 
 # Fallback to using Prisma CLI
 echo "Trying Prisma CLI..."
-npx prisma db execute --file test_postgresql.sql &> /dev/null
+npx prisma db execute --file ../../db/test_postgresql.sql &> /dev/null
 if [ $? -eq 0 ]; then
     echo "SUCCESS: PostgreSQL connection test passed via Prisma."
     exit 0

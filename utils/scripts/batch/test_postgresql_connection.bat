@@ -24,7 +24,7 @@ if %errorlevel% equ 0 (
 
 REM Fallback to using Prisma CLI
 echo Trying Prisma CLI...
-npx prisma db execute --file test_postgresql.sql >nul 2>nul
+npx prisma db execute --file ../../db/test_postgresql.sql >nul 2>nul
 if %errorlevel% equ 0 (
     echo SUCCESS: PostgreSQL connection test passed via Prisma.
     exit /b 0
