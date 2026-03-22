@@ -44,10 +44,10 @@ interface ExecutionLog {
   ruleTrigger: string
   ruleAction: string
   ruleActive: boolean
-  ticketId: string
+  ticketId: string | null
   success: boolean
   executedAt: string
-  details: string
+  details?: string
 }
 
 interface AutomationRule {

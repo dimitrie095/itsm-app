@@ -1,7 +1,7 @@
 "use server"
 
-import fs from 'fs/promises'
-import path from 'path'
+import * as fs from 'fs/promises'
+import * as path from 'path'
 import { revalidatePath } from 'next/cache'
 
 const reportsFilePath = path.join(process.cwd(), 'reports.json')
@@ -51,6 +51,72 @@ const reportTypes = {
 }
 
 // Dashboard-Daten für Report-Generierung
+// Helper function to transform ticket data
+function transformTicketForReport(ticket: any) {
+  // Map priority to lowercase for compatibility
+  const priority = ticket.priority.toLowerCase()
+  
+  // Map status to have first letter capitalized
+  const status = ticket.status.charAt(0) + ticket.status.slice(1).toLowerCase()
+  
+  // Get category or default
+  const category = ticket.category || 'Other'
+  
+  return {
+    id: ticket.id,
+    title: ticket.title,
+    priority,
+    status,
+    category,
+    createdAt: ticket.createdAt.toISOString(),
+    // Keep original for reference
+    _original: ticket
+  }
+}
+
+// Helper function to calculate ticket metrics
+function calculateTicketMetrics(dbTickets: any[]) {
+  const openTickets = dbTickets.filter(ticket => 
+    ticket.status === 'NEW' || ticket.status === 'ASSIGNED' || ticket.status === 'IN_PROGRESS'
+  ).length
+  
+  const resolvedTickets = dbTickets.filter(ticket => 
+    ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'
+  ).length
+  
+  return { openTickets, resolvedTickets }
+}
+
+// Helper function to calculate distribution
+function calculateDistribution(items: any[], key: string, defaultValue = 'Other') {
+  return items.reduce((acc: any, item: any) => {
+    const value = item[key]?.toLowerCase() || defaultValue
+    acc[value] = (acc[value] || 0) + 1
+    return acc
+  }, {})
+}
+
+// Helper function to get top categories
+function getTopCategories(distribution: any, limit = 5) {
+  return Object.entries(distribution)
+    .sort(([, a]: any, [, b]: any) => b - a)
+    .slice(0, limit)
+    .map(([category, count]: any) => ({ category, count }))
+}
+
+// Helper function to get recent tickets
+function getRecentTickets(tickets: any[], limit = 10) {
+  return tickets.slice(0, limit).map((ticket: any) => ({
+    id: ticket.id,
+    title: ticket.title,
+    priority: ticket.priority,
+    status: ticket.status,
+    category: ticket.category,
+    createdAt: ticket.createdAt
+  }))
+}
+
+// Main function - refactored into smaller parts
 async function getDashboardDataForReport() {
   try {
     // Tickets und Artikel aus Datenbank lesen
@@ -79,90 +145,55 @@ async function getDashboardDataForReport() {
       orderBy: { createdAt: 'desc' }
     })
     
-    // Transform tickets to match expected shape (similar to JSON)
-    const tickets = dbTickets.map(ticket => {
-      // Map priority to lowercase for compatibility
-      const priority = ticket.priority.toLowerCase()
-      
-      // Map status to have first letter capitalized
-      const status = ticket.status.charAt(0) + ticket.status.slice(1).toLowerCase()
-      
-      // Get category or default
-      const category = ticket.category || 'Other'
-      
-      return {
-        id: ticket.id,
-        title: ticket.title,
-        priority,
-        status,
-        category,
-        createdAt: ticket.createdAt.toISOString(),
-        // Keep original for reference
-        _original: ticket
-      }
-    })
+    // Transform tickets to match expected shape
+    const tickets = dbTickets.map(transformTicketForReport)
     
-    // Metriken berechnen
-    const openTickets = dbTickets.filter(ticket => 
-      ticket.status === 'NEW' || ticket.status === 'ASSIGNED' || ticket.status === 'IN_PROGRESS'
-    ).length
+    // Calculate metrics
+    const { openTickets, resolvedTickets } = calculateTicketMetrics(dbTickets)
     
-    const resolvedTickets = dbTickets.filter(ticket => 
-      ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'
-    ).length
+    // Calculate distributions
+    const categoryDistribution = calculateDistribution(tickets, 'category', 'Other')
+    const priorityDistribution = calculateDistribution(tickets, 'priority', 'medium')
     
-    // Kategorie-Verteilung
-    const categoryDistribution = tickets.reduce((acc: any, ticket: any) => {
-      const category = ticket.category || 'Other'
-      acc[category] = (acc[category] || 0) + 1
-      return acc
-    }, {})
+    // Get top categories
+    const topCategories = getTopCategories(categoryDistribution)
     
-    // Prioritäts-Verteilung
-    const priorityDistribution = tickets.reduce((acc: any, ticket: any) => {
-      const priority = ticket.priority?.toLowerCase() || 'medium'
-      acc[priority] = (acc[priority] || 0) + 1
-      return acc
-    }, {})
+    // Get recent tickets
+    const recentTickets = getRecentTickets(tickets)
     
-    // Top-Kategorien
-    const topCategories = Object.entries(categoryDistribution)
-      .sort(([, a]: any, [, b]: any) => b - a)
-      .slice(0, 5)
-      .map(([category, count]: any) => ({ category, count }))
+    // Calculate resolution rate
+    const resolutionRate = tickets.length > 0 ? Math.round((resolvedTickets / tickets.length) * 100) : 0
     
     return {
       totalTickets: tickets.length,
       openTickets,
       resolvedTickets,
-      resolutionRate: tickets.length > 0 ? Math.round((resolvedTickets / tickets.length) * 100) : 0,
+      resolutionRate,
       totalArticles: dbArticles.length,
       categoryDistribution,
       priorityDistribution,
       topCategories,
-      recentTickets: tickets.slice(0, 10).map((ticket: any) => ({
-        id: ticket.id,
-        title: ticket.title,
-        priority: ticket.priority,
-        status: ticket.status,
-        category: ticket.category,
-        createdAt: ticket.createdAt
-      }))
+      recentTickets
     }
   } catch (error) {
     console.error('Error getting dashboard data for report:', error)
     // Fallback-Daten
-    return {
-      totalTickets: 0,
-      openTickets: 0,
-      resolvedTickets: 0,
-      resolutionRate: 0,
-      totalArticles: 0,
-      categoryDistribution: {},
-      priorityDistribution: {},
-      topCategories: [],
-      recentTickets: []
-    }
+    return getFallbackDashboardData()
+  }
+}
+
+// Helper function for fallback data
+function getFallbackDashboardData() {
+  return {
+    totalTickets: 0,
+    openTickets: 0,
+    resolvedTickets: 0,
+    resolutionRate: 0,
+    totalArticles: 0,
+    categoryDistribution: {},
+    priorityDistribution: {},
+    topCategories: [],
+    recentTickets: []
   }
 }
 
@@ -348,29 +379,53 @@ export async function downloadReport(id: string) {
 
 // HTML-Report-Generierung (vereinfacht)
 function generateHTMLReport(report: any) {
+  const css = getReportCSS()
+  const header = generateReportHeader(report)
+  const summary = generateExecutiveSummary(report)
+  const topCategories = generateTopCategoriesSection(report)
+  const recentTickets = generateRecentTicketsSection(report)
+  const footer = generateReportFooter(report)
+  
   return `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <title>${report.name}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .header { border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
-        .header h1 { margin: 0; color: #333; }
-        .header .meta { color: #666; font-size: 14px; }
-        .section { margin-bottom: 30px; }
-        .section h2 { color: #444; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .stat-card { background: #f5f5f5; padding: 20px; border-radius: 8px; }
-        .stat-card .value { font-size: 24px; font-weight: bold; color: #333; }
-        .stat-card .label { font-size: 14px; color: #666; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background: #f5f5f5; }
-    </style>
+    <style>${css}</style>
 </head>
 <body>
+    ${header}
+    ${summary}
+    ${topCategories}
+    ${recentTickets}
+    ${footer}
+</body>
+</html>
+  `
+}
+
+// Helper functions for HTML report generation
+function getReportCSS() {
+  return `
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    .header { border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+    .header h1 { margin: 0; color: #333; }
+    .header .meta { color: #666; font-size: 14px; }
+    .section { margin-bottom: 30px; }
+    .section h2 { color: #444; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    .stat-card { background: #f5f5f5; padding: 20px; border-radius: 8px; }
+    .stat-card .value { font-size: 24px; font-weight: bold; color: #333; }
+    .stat-card .label { font-size: 14px; color: #666; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background: #f5f5f5; }
+  `
+}
+
+function generateReportHeader(report: any) {
+  return `
     <div class="header">
         <h1>${report.name}</h1>
         <div class="meta">
@@ -378,7 +433,11 @@ function generateHTMLReport(report: any) {
             Type: ${report.type} | Format: ${report.format.toUpperCase()}
         </div>
     </div>
-    
+  `
+}
+
+function generateExecutiveSummary(report: any) {
+  return `
     <div class="section">
         <h2>Executive Summary</h2>
         <div class="stats">
@@ -400,8 +459,20 @@ function generateHTMLReport(report: any) {
             </div>
         </div>
     </div>
-    
-    ${report.data.topCategories.length > 0 ? `
+  `
+}
+
+function generateTopCategoriesSection(report: any) {
+  if (report.data.topCategories.length === 0) return ''
+  
+  const rows = report.data.topCategories.map((cat: any) => `
+    <tr>
+        <td>${cat.category}</td>
+        <td>${cat.count}</td>
+    </tr>
+  `).join('')
+  
+  return `
     <div class="section">
         <h2>Top Categories</h2>
         <table>
@@ -412,18 +483,27 @@ function generateHTMLReport(report: any) {
                 </tr>
             </thead>
             <tbody>
-                ${report.data.topCategories.map((cat: any) => `
-                <tr>
-                    <td>${cat.category}</td>
-                    <td>${cat.count}</td>
-                </tr>
-                `).join('')}
+                ${rows}
             </tbody>
         </table>
     </div>
-    ` : ''}
-    
-    ${report.data.recentTickets.length > 0 ? `
+  `
+}
+
+function generateRecentTicketsSection(report: any) {
+  if (report.data.recentTickets.length === 0) return ''
+  
+  const rows = report.data.recentTickets.map((ticket: any) => `
+    <tr>
+        <td>${ticket.id}</td>
+        <td>${ticket.title}</td>
+        <td>${ticket.priority}</td>
+        <td>${ticket.status}</td>
+        <td>${ticket.category || 'N/A'}</td>
+    </tr>
+  `).join('')
+  
+  return `
     <div class="section">
         <h2>Recent Tickets</h2>
         <table>
@@ -437,25 +517,18 @@ function generateHTMLReport(report: any) {
                 </tr>
             </thead>
             <tbody>
-                ${report.data.recentTickets.map((ticket: any) => `
-                <tr>
-                    <td>${ticket.id}</td>
-                    <td>${ticket.title}</td>
-                    <td>${ticket.priority}</td>
-                    <td>${ticket.status}</td>
-                    <td>${ticket.category || 'N/A'}</td>
-                </tr>
-                `).join('')}
+                ${rows}
             </tbody>
         </table>
     </div>
-    ` : ''}
-    
+  `
+}
+
+function generateReportFooter(report: any) {
+  return `
     <div class="footer" style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666;">
         <p>Report generated by ITSM Portal</p>
         <p>${report.description}</p>
     </div>
-</body>
-</html>
   `
 }

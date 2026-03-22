@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { checkApiAuth } from "@/lib/api-auth";
+import { withAuth } from "@/lib/auth/middleware";
 import { Role } from "@/lib/generated/prisma/enums";
 import bcrypt from "bcryptjs";
 
@@ -8,11 +8,20 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   try {
+    // Convert Request to NextRequest for middleware compatibility
+    const nextRequest = new NextRequest(request.url, request)
+    
     // Only admins can list users
-    const authResult = await checkApiAuth(request, Role.ADMIN, ['users.view']);
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!;
+    const authResult = await withAuth({ 
+      roles: [Role.ADMIN],
+      permissions: ['users.view']
+    })(nextRequest)
+    
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
+    
+    const { user, session } = authResult
     
     const users = await prisma.user.findMany({
       select: {
@@ -39,11 +48,20 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    // Convert Request to NextRequest for middleware compatibility
+    const nextRequest = new NextRequest(request.url, request)
+    
     // Check authentication and authorization - only admins can create users
-    const authResult = await checkApiAuth(request, Role.ADMIN, ['users.create']);
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!;
+    const authResult = await withAuth({ 
+      roles: [Role.ADMIN],
+      permissions: ['users.create']
+    })(nextRequest)
+    
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
+    
+    const { user, session } = authResult
     
     const body = await request.json();
     const { email, name, role, department, password } = body;
@@ -70,7 +88,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Create user
-    const user = await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         email,
         name: name || null,
@@ -89,7 +107,7 @@ export async function POST(request: Request) {
       },
     });
     
-    return NextResponse.json(user, { status: 201 });
+    return NextResponse.json(newUser, { status: 201 });
   } catch (error) {
     console.error("POST /api/users error:", error);
     return NextResponse.json(

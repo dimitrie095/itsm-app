@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { Role } from "@/lib/generated/prisma/enums";
+import { getPermissionsForResource } from "./permission-shortcuts";
 
 /**
  * Get all permission names for a user, combining:
@@ -109,4 +110,10 @@ export async function getPermissionsForRole(role: Role, customRoleId?: string): 
   }
   
   return Array.from(permissionNames);
+}
+
+export async function checkShortcut(userId: string, resource: string, shortcut: string): Promise<boolean> {
+  const userPermissions = await getUserPermissionNames(userId);
+  const requiredPermissions = getPermissionsForResource(resource as any, shortcut);
+  return requiredPermissions.every(perm => userPermissions.includes(perm));
 }

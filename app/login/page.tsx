@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { signIn, getProviders } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { LogIn, Loader2, Shield, User } from "lucide-react";
+import { ChevronRight, Crown, Headphones, Key, Loader2, Lock, LogIn, Mail, Monitor, Shield, Sparkles } from "lucide-react";
+import { getProviders, signIn } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [providers, setProviders] = useState<Record<string, any> | null>(null);
+  
   useEffect(() => {
     const fetchProviders = async () => {
       const providers = await getProviders();
@@ -53,9 +54,30 @@ export default function LoginPage() {
 
   // Demo users for quick login
   const demoUsers = [
-    { email: "admin@example.com", name: "Admin User", role: "ADMIN", password: "demo123" },
-    { email: "agent@example.com", name: "Support Agent", role: "AGENT", password: "demo123" },
-    { email: "user@example.com", name: "End User", role: "END_USER", password: "demo123" },
+    { 
+      email: "admin@example.com", 
+      name: "Admin User", 
+      role: "ADMIN", 
+      password: process.env.DEMO_ADMIN_PASSWORD || "demo123",
+      icon: Crown,
+      color: "bg-purple-600"
+    },
+    { 
+      email: "agent@example.com", 
+      name: "Support Agent", 
+      role: "AGENT", 
+      password: process.env.DEMO_AGENT_PASSWORD || "demo123",
+      icon: Headphones,
+      color: "bg-blue-600"
+    },
+    { 
+      email: "user@example.com", 
+      name: "End User", 
+      role: "END_USER", 
+      password: process.env.DEMO_USER_PASSWORD || "demo123",
+      icon: Monitor,
+      color: "bg-emerald-600"
+    },
   ];
 
   const handleDemoLogin = (demoEmail: string, demoPassword: string) => {
@@ -69,7 +91,7 @@ export default function LoginPage() {
         redirect: false,
       }).then((result) => {
         if (result?.error) {
-          setError("Demo login failed");
+          setError("Demo login failed: " + result.error);
         } else {
           router.push("/");
           router.refresh();
@@ -79,166 +101,271 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Shield className="h-10 w-10 text-primary" />
-            <h1 className="text-3xl font-bold">ITSM Portal</h1>
-          </div>
-          <p className="text-muted-foreground">Sign in to access your IT service management dashboard</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <LogIn className="h-5 w-5" />
-              Sign In
-            </CardTitle>
-            <CardDescription>
-              Enter your credentials to access the system
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="john@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
+    <div className="min-h-screen bg-slate-950">
+      <div className="min-h-screen flex flex-col lg:flex-row">
+        {/* Left side - Branding and info for desktop */}
+        <div className="hidden lg:flex lg:w-1/2 p-8 lg:p-12 flex-col justify-between bg-slate-900 border-r border-slate-800">
+          <div className="space-y-8">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+                <Shield className="h-10 w-10 text-primary" />
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link 
-                    href="/forgot-password" 
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-white">ITSM Portal</h1>
+                <p className="text-slate-400">Modern IT Service Management Platform</p>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-lg bg-emerald-500/10">
+                  <Sparkles className="h-6 w-6 text-emerald-400" />
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Use <code className="text-primary">demo123</code> as password for demo accounts
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Streamlined Service Management</h3>
+                  <p className="text-slate-400 text-sm">Unified platform for tickets, assets, and knowledge base.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <Key className="h-6 w-6 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Role-Based Access</h3>
+                  <p className="text-slate-400 text-sm">Different access levels for admins, agents, and end users.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <Lock className="h-6 w-6 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Secure & Compliant</h3>
+                  <p className="text-slate-400 text-sm">Enterprise-grade security with audit logging.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Key className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-slate-300">
+                  <span className="font-medium text-white">Demo Access:</span> All accounts use{' '}
+                  <code className="px-2 py-0.5 rounded bg-slate-800 text-primary font-mono">demo123</code>
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
 
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Sign In
-                  </>
-                )}
-              </Button>
-            </form>
-
-            {providers && Object.values(providers).some((p: any) => p.id !== "credentials") && (
-              <>
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">Social Login</span>
-                  </div>
+        {/* Right side - Login form */}
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-12">
+          <div className="w-full max-w-md lg:max-w-lg">
+            {/* Mobile header */}
+            <div className="text-center mb-8 lg:hidden">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+                  <Shield className="h-10 w-10 text-primary" />
                 </div>
-
-                <div className="space-y-2 mb-6">
-                  {Object.values(providers).map((provider: any) => {
-                    if (provider.id === "credentials") return null;
-                    return (
-                      <Button
-                        key={provider.id}
-                        type="button"
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => signIn(provider.id)}
-                        disabled={isLoading}
-                      >
-                        Sign in with {provider.name}
-                      </Button>
-                    );
-                  })}
+                <div>
+                  <h1 className="text-3xl font-bold text-white">ITSM Portal</h1>
+                  <p className="text-slate-400">Modern IT Service Management</p>
                 </div>
-              </>
-            )}
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Quick Demo Login</span>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-sm text-center text-muted-foreground mb-3">
-                Try these demo accounts (click to login):
-              </p>
-              {demoUsers.map((user) => (
-                <Button
-                  key={user.email}
-                  type="button"
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => handleDemoLogin(user.email, user.password)}
-                  disabled={isLoading}
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  <div className="text-left">
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {user.email} • Role: {user.role}
+            <Card className="border-slate-800 bg-slate-900">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-xl text-white">
+                  <LogIn className="h-5 w-5 text-primary" />
+                  Sign In to Dashboard
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Enter your credentials or try a demo account
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="space-y-3">
+                    <Label htmlFor="email" className="text-slate-300">Email Address</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="john@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                      />
                     </div>
                   </div>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <div className="text-center text-xs text-muted-foreground">
-              By signing in, you agree to our{" "}
-              <Link href="/terms" className="text-primary hover:underline">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link href="/privacy" className="text-primary hover:underline">
-                Privacy Policy
-              </Link>
-            </div>
-          </CardFooter>
-        </Card>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password" className="text-slate-300">Password</Label>
+                      <Link 
+                        href="/forgot-password" 
+                        className="text-sm text-primary hover:text-primary/80 hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Demo accounts use password: <code className="px-1.5 py-0.5 rounded bg-slate-800 text-primary font-mono">demo123</code>
+                    </p>
+                  </div>
+
+                  {error && (
+                    <Alert variant="destructive" className="bg-red-900/30 border-red-800">
+                      <AlertDescription className="text-red-200">{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button 
+                    type="submit" 
+                    className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Sign In
+                      </>
+                    )}
+                  </Button>
+                </form>
+
+                {/* Social login providers */}
+                {providers && Object.values(providers).some((p: any) => p.id !== "credentials") && (
+                  <>
+                    <div className="relative my-6">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-slate-800" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-slate-900 px-3 text-slate-500">Or continue with</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                      {Object.values(providers).map((provider: any) => {
+                        if (provider.id === "credentials") return null;
+                        return (
+                          <Button
+                            key={provider.id}
+                            type="button"
+                            variant="outline"
+                            className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                            onClick={() => signIn(provider.id)}
+                            disabled={isLoading}
+                          >
+                            Sign in with {provider.name}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {/* Quick demo login */}
+                <div className="space-y-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-800" />
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="bg-slate-900 px-4 py-1 rounded-full border border-slate-800 text-sm text-slate-400">
+                        Quick Demo Access
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-center text-slate-400 mb-2">
+                    Try these demo accounts with different roles:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {demoUsers.map((user) => {
+                      const Icon = user.icon;
+                      return (
+                        <button
+                          key={user.email}
+                          type="button"
+                          onClick={() => handleDemoLogin(user.email, user.password)}
+                          disabled={isLoading}
+                          className="group p-4 rounded-lg bg-slate-800 border border-slate-700 hover:border-slate-600 hover:bg-slate-800/80 transition-colors duration-200 text-left"
+                        >
+                          <div className="flex flex-col items-center text-center space-y-3">
+                            <div className={`p-3 rounded-full ${user.color} shadow-lg`}>
+                              <Icon className="h-6 w-6 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium text-white group-hover:text-primary transition-colors">
+                                {user.name}
+                              </h4>
+                              <p className="text-xs text-slate-400 mt-1">{user.role.replace('_', ' ')}</p>
+                              <div className="mt-2 flex items-center justify-center gap-2">
+                                <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-primary transition-colors" />
+                                <span className="text-xs text-slate-500">Click to login</span>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+              
+              <CardFooter className="flex flex-col space-y-4 pt-6 border-t border-slate-800">
+                <div className="text-center text-sm text-slate-500">
+                  By signing in, you agree to our{" "}
+                  <Link href="/terms" className="text-primary hover:underline">
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" className="text-primary hover:underline">
+                    Privacy Policy
+                  </Link>
+                </div>
+                
+                <div className="lg:hidden p-3 rounded-lg bg-slate-800 border border-slate-700">
+                  <p className="text-xs text-slate-300 text-center">
+                    <span className="font-medium">Demo tip:</span> Use <code className="px-1.5 py-0.5 rounded bg-slate-800 text-primary font-mono">demo123</code> as password
+                  </p>
+                </div>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

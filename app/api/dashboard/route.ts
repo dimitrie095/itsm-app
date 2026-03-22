@@ -63,10 +63,10 @@ export async function GET(request: Request) {
 }
 
 // End User Dashboard Data
-async function getEndUserDashboardData(user: any) {
-  // Get user's tickets
-  const userTickets = await prisma.ticket.findMany({
-    where: { userId: user.id },
+// Helper function to get user tickets
+async function getUserTickets(userId: string) {
+  return await prisma.ticket.findMany({
+    where: { userId },
     orderBy: { createdAt: 'desc' },
     include: {
       assignedTo: {
@@ -78,8 +78,10 @@ async function getEndUserDashboardData(user: any) {
       }
     }
   })
-  
-  // Calculate metrics
+}
+
+// Helper function to calculate ticket metrics
+function calculateUserTicketMetrics(userTickets: any[]) {
   const openTickets = userTickets.filter(ticket => 
     ticket.status === 'NEW' || ticket.status === 'ASSIGNED' || ticket.status === 'IN_PROGRESS'
   ).length
@@ -88,7 +90,11 @@ async function getEndUserDashboardData(user: any) {
     ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'
   ).length
   
-  // Calculate average resolution time for resolved tickets
+  return { openTickets, resolvedTickets }
+}
+
+// Helper function to calculate average resolution time
+function calculateAverageResolutionTime(userTickets: any[]) {
   let avgResolutionTime = { formatted: 'N/A', withinSLA: true }
   const resolvedTicketsWithTimes = userTickets.filter(ticket => 
     (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') && ticket.resolvedAt
@@ -110,8 +116,12 @@ async function getEndUserDashboardData(user: any) {
     }
   }
   
-  // Get recent tickets (last 5)
-  const recentTickets = userTickets.slice(0, 5).map(ticket => ({
+  return avgResolutionTime
+}
+
+// Helper function to get recent tickets
+function getRecentUserTickets(userTickets: any[], limit = 5) {
+  return userTickets.slice(0, limit).map(ticket => ({
     id: ticket.id,
     title: ticket.title,
     priority: ticket.priority.charAt(0) + ticket.priority.slice(1).toLowerCase(),
@@ -120,12 +130,14 @@ async function getEndUserDashboardData(user: any) {
     time: timeAgo(ticket.updatedAt || ticket.createdAt),
     updatedAt: ticket.updatedAt
   }))
-  
-  // Get top knowledge base articles
-  const topArticles = await prisma.knowledgeBaseArticle.findMany({
+}
+
+// Helper function to get top articles
+async function getTopKnowledgeArticles(limit = 3) {
+  return await prisma.knowledgeBaseArticle.findMany({
     where: { isPublished: true },
     orderBy: { createdAt: 'desc' },
-    take: 3,
+    take: limit,
     select: {
       id: true,
       title: true,
@@ -133,6 +145,22 @@ async function getEndUserDashboardData(user: any) {
       createdAt: true
     }
   })
+}
+
+// Main function - refactored
+async function getEndUserDashboardData(user: any) {
+  // Get user's tickets
+  const userTickets = await getUserTickets(user.id)
+  
+  // Calculate metrics
+  const { openTickets, resolvedTickets } = calculateUserTicketMetrics(userTickets)
+  const avgResolutionTime = calculateAverageResolutionTime(userTickets)
+  
+  // Get recent tickets
+  const recentTickets = getRecentUserTickets(userTickets)
+  
+  // Get top knowledge base articles
+  const topArticles = await getTopKnowledgeArticles()
   
   return NextResponse.json({
     user: {

@@ -5,24 +5,12 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Plus, Search, Filter, Eye, ThumbsUp, BookOpen, Tag } from "lucide-react"
-import fs from 'fs/promises'
-import path from 'path'
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
-
-const articlesFilePath = path.join(process.cwd(), 'articles.json')
-
-async function getArticles() {
-  try {
-    const data = await fs.readFile(articlesFilePath, 'utf-8')
-    return JSON.parse(data)
-  } catch (error) {
-    // File doesn't exist, return empty array
-    return []
-  }
-}
+import { getArticles, deleteArticle } from "./actions"
 
 export default async function KnowledgePage() {
   const session = await getServerSession(authOptions)
@@ -168,7 +156,7 @@ export default async function KnowledgePage() {
                 {displayArticles.map((article: any) => (
                   <TableRow key={article.id}>
                     <TableCell className="font-medium">{article.id}</TableCell>
-                    <TableCell>{article.title}</TableCell>
+                    <TableCell><Link href={`/knowledge/${article.id}`} className="hover:underline">{article.title}</Link></TableCell>
                     <TableCell>
                       <Badge variant="outline">{article.category}</Badge>
                     </TableCell>
@@ -199,8 +187,8 @@ export default async function KnowledgePage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Article</DropdownMenuItem>
-                          {canUpdateArticle && <DropdownMenuItem>Edit</DropdownMenuItem>}
+                          <DropdownMenuItem asChild><Link href={`/knowledge/${article.id}`}>View Article</Link></DropdownMenuItem>
+                          {canUpdateArticle && <DropdownMenuItem asChild><Link href={`/knowledge/${article.id}/edit`}>Edit</Link></DropdownMenuItem>}
                           {canCreateArticle && <DropdownMenuItem>Duplicate</DropdownMenuItem>}
                           {(canUpdateArticle || canCreateArticle || canDeleteArticle) && <DropdownMenuSeparator />}
                           {canDeleteArticle && <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>}

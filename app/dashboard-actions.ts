@@ -20,36 +20,39 @@ async function readJsonFile(filePath: string) {
 // SLA-Daten aus Datenbank lesen
 async function getSLAFromDatabase() {
   try {
-    const { exec } = await import('child_process')
-    const { promisify } = await import('util')
-    const execAsync = promisify(exec)
+    const { prisma } = await import('@/lib/prisma')
     
-    const dbPath = './itsm.db'
-    const query = 'SELECT priority, responseTime, resolutionTime FROM slas WHERE isActive = 1 ORDER BY CASE priority WHEN "CRITICAL" THEN 1 WHEN "HIGH" THEN 2 WHEN "MEDIUM" THEN 3 WHEN "LOW" THEN 4 ELSE 5 END'
+    // Query SLAs from database using Prisma
+    const slas = await prisma.sLA.findMany({
+      where: { isActive: true },
+      select: {
+        priority: true,
+        responseTime: true,
+        resolutionTime: true
+      },
+      orderBy: [
+        {
+          priority: 'asc' // Priority enum order: CRITICAL, HIGH, MEDIUM, LOW
+        }
+      ]
+    })
     
-    const { stdout } = await execAsync(`sqlite3 "${dbPath}" "${query}"`)
-    
-    // Ergebnis parsen
-    const lines = stdout.trim().split('\n')
-    const slas = lines.map(line => {
-      const [priority, responseTime, resolutionTime] = line.split('|')
-      // Setze unterschiedliche Targets basierend auf Priorität
+    // Map to expected format with targets
+    return slas.map(sla => {
       let target = 95
-      switch (priority) {
+      switch (sla.priority) {
         case 'CRITICAL': target = 99; break
         case 'HIGH': target = 95; break
         case 'MEDIUM': target = 90; break
         case 'LOW': target = 85; break
       }
       return {
-        priority,
-        responseTime: parseInt(responseTime),
-        resolutionTime: parseInt(resolutionTime),
+        priority: sla.priority,
+        responseTime: sla.responseTime,
+        resolutionTime: sla.resolutionTime,
         target
       }
     })
-    
-    return slas
   } catch (error) {
     console.error('Error reading SLA from database:', error)
     // Fallback: Demo SLA-Daten

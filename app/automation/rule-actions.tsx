@@ -21,7 +21,7 @@ interface AutomationRule {
 interface RuleActionsDropdownProps {
   rule: AutomationRule
   canUpdateRule: boolean
-  canCreateRule: boolean
+  canCreateRule?: boolean
   canDeleteRule: boolean
 }
 

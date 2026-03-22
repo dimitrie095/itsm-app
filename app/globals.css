@@ -235,7 +235,6 @@
   body[data-path^="/login"] main > *,
   body[data-path^="/forgot-password"] main > * {
     width: 100%;
-    max-width: 28rem;
   }
 
   /* ── Auth via data-auth Attribut ── */
@@ -261,7 +260,6 @@
 
   body[data-auth="true"] main > * {
     width: 100%;
-    max-width: 28rem;
   }
 
   /* ── Spezielle Effekt-Klassen ── */

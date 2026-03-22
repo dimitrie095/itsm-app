@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { X, Save, Send, ArrowLeft } from "lucide-react"
-import { createArticle } from "./actions"
+import { createArticle } from "../actions"
 import { toast } from "sonner"
 
 const categories = ["Security", "Networking", "Hardware", "Software", "Email", "Process", "Other"]

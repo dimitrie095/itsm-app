@@ -1,7 +1,7 @@
 "use server"
 
-import fs from 'fs/promises'
-import path from 'path'
+import * as fs from 'fs/promises'
+import * as path from 'path'
 import { revalidatePath } from 'next/cache'
 
 const assetsFilePath = path.join(process.cwd(), 'assets.json')

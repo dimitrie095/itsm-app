@@ -402,8 +402,7 @@ export async function logRuleExecution(ruleId: string, ticketId: string, success
       data: {
         ruleId,
         ticketId,
-        success,
-        details
+        success
       }
     })
   } catch (error) {
@@ -514,8 +513,7 @@ export async function getAutomationExecutions(filters?: {
       ruleActive: exec.rule.isActive,
       ticketId: exec.ticketId,
       success: exec.success,
-      executedAt: exec.executedAt.toISOString(),
-      details: exec.details || ''
+      executedAt: exec.executedAt.toISOString()
     }))
 
     return {

@@ -2,14 +2,14 @@
   {
     "id": "KB-001",
     "title": "Test-Article",
-    "content": "Test-Article Software",
+    "content": "Test-Article Software test",
     "category": "Software",
     "tags": [],
     "isPublished": true,
-    "views": 0,
+    "views": 9,
     "helpful": 0,
     "createdAt": "2026-03-13T21:29:17.654Z",
-    "updatedAt": "2026-03-13T21:29:17.654Z",
+    "updatedAt": "2026-03-22T18:08:00.599Z",
     "authorId": "demo-admin"
   }
 ]

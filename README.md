@@ -120,7 +120,8 @@ Create a `.env` file in the root directory:
 
 ```env
 # Database
-DATABASE_URL="file:./itsm.db"
+# PostgreSQL connection string
+DATABASE_URL="postgresql://postgres:your_password@localhost:5432/itsm?schema=public"
 
 # Next.js
 NEXTAUTH_SECRET="your-secret-key-here-change-in-production"
