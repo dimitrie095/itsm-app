@@ -1,0 +1,88 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - img [ref=e10]
+        - text: ITSM Portal
+      - paragraph [ref=e12]: Service Management
+    - generic [ref=e14]:
+      - generic [ref=e15]: Navigation
+      - generic:
+        - list
+    - list [ref=e17]:
+      - listitem [ref=e18]:
+        - link "Settings" [ref=e19] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e20]
+          - text: Settings
+  - generic [ref=e23]:
+    - banner [ref=e24]:
+      - generic [ref=e26]:
+        - img [ref=e27]
+        - textbox "Search tickets, assets, knowledge..." [ref=e30]
+      - generic [ref=e31]:
+        - button "Toggle theme" [ref=e32]:
+          - img [ref=e33]
+          - img [ref=e39]
+        - button "Notifications" [ref=e41]:
+          - img [ref=e42]
+        - button "Help" [ref=e45]:
+          - img [ref=e46]
+        - generic [ref=e49]:
+          - generic [ref=e50]: ...
+          - generic [ref=e51]:
+            - paragraph [ref=e52]: Loading...
+            - paragraph [ref=e53]: Please wait
+    - main [ref=e54]:
+      - generic [ref=e56]:
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - img [ref=e59]
+            - heading "ITSM Portal" [level=1] [ref=e61]
+          - paragraph [ref=e62]: Access Control System
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - generic [ref=e65]:
+              - img [ref=e66]
+              - text: Access Denied
+            - generic [ref=e68]: You don't have permission to access this page
+          - generic [ref=e69]:
+            - generic [ref=e71]:
+              - img [ref=e72]
+              - generic [ref=e74]:
+                - heading "Unauthorized Access Attempt" [level=4] [ref=e75]
+                - paragraph [ref=e76]: Your account does not have the required permissions to access this resource.
+            - generic [ref=e77]:
+              - heading "Permission Levels" [level=3] [ref=e78]
+              - generic [ref=e79]:
+                - generic [ref=e80]:
+                  - generic [ref=e81]:
+                    - paragraph [ref=e82]: End User
+                    - paragraph [ref=e83]: Can create tickets and view knowledge base
+                  - generic [ref=e84]: Basic Access
+                - generic [ref=e85]:
+                  - generic [ref=e86]:
+                    - paragraph [ref=e87]: Support Agent
+                    - paragraph [ref=e88]: Can manage tickets, assets, and generate reports
+                  - generic [ref=e89]: Standard Access
+                - generic [ref=e90]:
+                  - generic [ref=e91]:
+                    - paragraph [ref=e92]: Administrator
+                    - paragraph [ref=e93]: Full system access and configuration
+                  - generic [ref=e94]: Full Access
+          - generic [ref=e95]:
+            - generic [ref=e96]:
+              - link "Dashboard" [ref=e97] [cursor=pointer]:
+                - /url: /
+                - img [ref=e98]
+                - text: Dashboard
+              - link "Sign In" [ref=e101] [cursor=pointer]:
+                - /url: /login
+                - img [ref=e102]
+                - text: Sign In
+            - paragraph [ref=e105]: Need elevated permissions? Contact your system administrator.
+    - region "Notifications alt+T"
+```
