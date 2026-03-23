@@ -3,8 +3,37 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { revalidatePath } from 'next/cache'
+import { prisma } from "@/lib/prisma"
+import { AssetType, AssetStatus } from "@/lib/generated/prisma/enums"
 
 const assetsFilePath = path.join(process.cwd(), 'assets.json')
+
+// Mapping functions for display values
+const mapAssetTypeToDisplay = (type: AssetType): string => {
+  const mapping: Record<AssetType, string> = {
+    [AssetType.LAPTOP]: 'Laptop',
+    [AssetType.DESKTOP]: 'Desktop',
+    [AssetType.MONITOR]: 'Monitor',
+    [AssetType.PHONE]: 'Phone',
+    [AssetType.PRINTER]: 'Printer',
+    [AssetType.SOFTWARE]: 'Software',
+    [AssetType.SERVER]: 'Server',
+    [AssetType.NETWORK]: 'Network',
+    [AssetType.OTHER]: 'Other',
+  }
+  return mapping[type] || type
+}
+
+const mapAssetStatusToDisplay = (status: AssetStatus): string => {
+  const mapping: Record<AssetStatus, string> = {
+    [AssetStatus.ACTIVE]: 'Active',
+    [AssetStatus.INACTIVE]: 'Inactive',
+    [AssetStatus.MAINTENANCE]: 'Maintenance',
+    [AssetStatus.RETIRED]: 'Retired',
+    [AssetStatus.LOST]: 'Lost',
+  }
+  return mapping[status] || status
+}
 
 // Hilfsfunktionen
 async function readAssets() {
@@ -42,11 +71,61 @@ export interface AssetInput {
 
 // Asset-Funktionen
 export async function getAssets() {
-  const assets = await readAssets()
-  // Sortiere nach Datum (neueste zuerst)
-  return assets.sort((a: any, b: any) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
+  try {
+    const assets = await prisma.asset.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    // Format assets for frontend
+    const formattedAssets = assets.map(asset => {
+      let warranty = 'N/A'
+      if (asset.warrantyEnd) {
+        const today = new Date()
+        const warrantyDate = new Date(asset.warrantyEnd)
+        if (warrantyDate < today) {
+          warranty = 'Expired'
+        } else {
+          warranty = warrantyDate.toISOString().split('T')[0] // YYYY-MM-DD
+        }
+      }
+      
+      return {
+        id: asset.id,
+        name: asset.name,
+        type: mapAssetTypeToDisplay(asset.type),
+        status: mapAssetStatusToDisplay(asset.status),
+        assignedTo: asset.user?.name || asset.user?.email || 'Unassigned',
+        location: asset.location || '',
+        warranty,
+        serialNumber: asset.serialNumber,
+        purchaseDate: asset.purchaseDate ? asset.purchaseDate.toISOString().split('T')[0] : '',
+        notes: asset.notes,
+        createdAt: asset.createdAt,
+        updatedAt: asset.updatedAt,
+      }
+    })
+
+    return formattedAssets
+  } catch (error) {
+    console.error('Error fetching assets from database:', error)
+    // Fallback to JSON file if database fails
+    const assets = await readAssets()
+    // Sortiere nach Datum (neueste zuerst)
+    return assets.sort((a: any, b: any) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+  }
 }
 
 export async function getAssetById(id: string) {
@@ -132,40 +211,81 @@ export async function deleteAsset(id: string) {
 
 // Statistik-Funktionen
 export async function getAssetStats() {
-  const assets = await readAssets()
-  
-  const totalAssets = assets.length
-  const activeAssets = assets.filter((asset: any) => asset.status === 'Active').length
-  const underWarranty = assets.filter((asset: any) => {
-    if (asset.warranty === 'Expired') return false
-    if (!asset.warranty || asset.warranty === 'N/A') return false
-    const warrantyDate = new Date(asset.warranty)
-    const today = new Date()
-    return warrantyDate > today
-  }).length
-  
-  const maintenanceAssets = assets.filter((asset: any) => 
-    asset.status === 'Maintenance'
-  ).length
-  
-  // Berechne expiring soon (innerhalb der nächsten 30 Tage)
-  const expiringSoon = assets.filter((asset: any) => {
-    if (!asset.warranty || asset.warranty === 'Expired' || asset.warranty === 'N/A') return false
-    try {
+  try {
+    console.log('getAssetStats called', new Date().toISOString())
+    const assets = await prisma.asset.findMany()
+    
+    const totalAssets = assets.length
+    const activeAssets = assets.filter(asset => asset.status === AssetStatus.ACTIVE).length
+    const underWarranty = assets.filter(asset => {
+      if (!asset.warrantyEnd) return false
+      const warrantyDate = new Date(asset.warrantyEnd)
+      const today = new Date()
+      return warrantyDate > today
+    }).length
+    
+    const maintenanceAssets = assets.filter(asset => 
+      asset.status === AssetStatus.MAINTENANCE
+    ).length
+    
+    // Berechne expiring soon (innerhalb der nächsten 30 Tage)
+    const expiringSoon = assets.filter(asset => {
+      if (!asset.warrantyEnd) return false
+      try {
+        const warrantyDate = new Date(asset.warrantyEnd)
+        const today = new Date()
+        const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
+        return warrantyDate > today && warrantyDate <= thirtyDaysFromNow
+      } catch {
+        return false
+      }
+    }).length
+    
+    return {
+      totalAssets,
+      activeAssets,
+      underWarranty,
+      maintenanceAssets,
+      expiringSoon
+    }
+  } catch (error) {
+    console.error('Error fetching asset stats from database:', error)
+    // Fallback to JSON file if database fails
+    const assets = await readAssets()
+    
+    const totalAssets = assets.length
+    const activeAssets = assets.filter((asset: any) => asset.status === 'Active').length
+    const underWarranty = assets.filter((asset: any) => {
+      if (asset.warranty === 'Expired') return false
+      if (!asset.warranty || asset.warranty === 'N/A') return false
       const warrantyDate = new Date(asset.warranty)
       const today = new Date()
-      const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
-      return warrantyDate > today && warrantyDate <= thirtyDaysFromNow
-    } catch {
-      return false
+      return warrantyDate > today
+    }).length
+    
+    const maintenanceAssets = assets.filter((asset: any) => 
+      asset.status === 'Maintenance'
+    ).length
+    
+    // Berechne expiring soon (innerhalb der nächsten 30 Tage)
+    const expiringSoon = assets.filter((asset: any) => {
+      if (!asset.warranty || asset.warranty === 'Expired' || asset.warranty === 'N/A') return false
+      try {
+        const warrantyDate = new Date(asset.warranty)
+        const today = new Date()
+        const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
+        return warrantyDate > today && warrantyDate <= thirtyDaysFromNow
+      } catch {
+        return false
+      }
+    }).length
+    
+    return {
+      totalAssets,
+      activeAssets,
+      underWarranty,
+      maintenanceAssets,
+      expiringSoon
     }
-  }).length
-  
-  return {
-    totalAssets,
-    activeAssets,
-    underWarranty,
-    maintenanceAssets,
-    expiringSoon
   }
 }

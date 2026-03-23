@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/middleware";
 import { Role } from "@/lib/generated/prisma/enums";
 import bcrypt from "bcryptjs";
+import { createAuditLogFromRequest } from "@/lib/logging/audit";
 
 export const runtime = "nodejs";
 
@@ -104,6 +105,21 @@ export async function POST(request: Request) {
         department: true,
         createdAt: true,
         avatarUrl: true,
+      },
+    });
+    
+    // Audit log for user creation
+    await createAuditLogFromRequest(nextRequest, {
+      action: "USER_CREATE",
+      entityType: "User",
+      entityId: newUser.id,
+      userId: user!.id,
+      details: {
+        createdBy: user!.id,
+        newUserId: newUser.id,
+        email: newUser.email,
+        role: newUser.role,
+        department: newUser.department,
       },
     });
     

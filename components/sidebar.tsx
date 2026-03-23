@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  Archive,
   BarChart3,
   BookOpen,
   Cpu,
@@ -41,6 +42,7 @@ const navItems = [
   { label: "Reports", href: "/reports", icon: FileText },
   { label: "Automation", href: "/automation", icon: Wrench },
   { label: "Roles & Permissions", href: "/roles", icon: Shield },
+  { label: "Audit Logs", href: "/audit", icon: Archive },
   { label: "Settings", href: "/settings", icon: Settings },
 ]
 
@@ -60,6 +62,7 @@ const routePermissions: { path: string; permissions: string[] }[] = [
   { path: "/automation", permissions: ["automation.view"] },
   { path: "/settings", permissions: ["settings.view"] },
   { path: "/roles", permissions: ["roles.view"] },
+  { path: "/audit", permissions: ["audit.view"] },
   { path: "/", permissions: ["dashboard.view"] },
 ]
 
@@ -72,6 +75,11 @@ const quickActionPermissions: Record<string, string[]> = {
 }
 
 function canAccessRoute(href: string, userPermissions: string[] | undefined, userRole: Role | undefined): boolean {
+  // ADMIN has full access regardless of permissions
+  if (userRole === "ADMIN") {
+    return true
+  }
+
   // First try permission-based check
   if (userPermissions) {
     const route = routePermissions.find(r => href.startsWith(r.path))
@@ -82,7 +90,7 @@ function canAccessRoute(href: string, userPermissions: string[] | undefined, use
     return false
   }
   
-  // Fallback to explicit role-based filtering
+  // Fallback to explicit role-based filtering for other roles
   if (userRole) {
     // END_USER: Only Dashboard, Tickets, Knowledge Base, Settings
     if (userRole === "END_USER") {
@@ -94,10 +102,6 @@ function canAccessRoute(href: string, userPermissions: string[] | undefined, use
       const disallowedPaths = ["/roles"]
       return !disallowedPaths.some(path => href.startsWith(path))
     }
-    // ADMIN: All access
-    if (userRole === "ADMIN") {
-      return true
-    }
     // CUSTOM: Use permission-based (already handled above)
   }
   
@@ -105,6 +109,11 @@ function canAccessRoute(href: string, userPermissions: string[] | undefined, use
 }
 
 function canAccessQuickAction(href: string, userPermissions: string[] | undefined, userRole: Role | undefined): boolean {
+  // ADMIN has full access
+  if (userRole === "ADMIN") {
+    return true
+  }
+
   if (userPermissions) {
     const perms = quickActionPermissions[href]
     if (perms) {
@@ -123,10 +132,7 @@ function canAccessQuickAction(href: string, userPermissions: string[] | undefine
     if (userRole === "AGENT") {
       return href !== "/reports/new"
     }
-    // ADMIN: All quick actions
-    if (userRole === "ADMIN") {
-      return true
-    }
+    // ADMIN: All quick actions (already handled above)
   }
   
   return false

@@ -3,6 +3,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createAuditLog } from "@/lib/logging/audit";
 import bcryptjs from "bcryptjs";
 import { revalidatePath } from "next/cache";
 
@@ -67,6 +68,17 @@ export async function changePassword(data: {
     await prisma.user.update({
       where: { id: session.user.id },
       data: { passwordHash: hashedPassword },
+    });
+    
+    // Create audit log for password change (self)
+    await createAuditLog({
+      action: "PASSWORD_CHANGE",
+      entityType: "User",
+      entityId: session.user.id,
+      userId: session.user.id,
+      details: {
+        changedBy: session.user.id,
+      },
     });
     
     return { success: true, message: "Password updated successfully" };

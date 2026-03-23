@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Mail, Shield, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { requestPasswordReset } from "./actions";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -22,12 +23,12 @@ export default function ForgotPasswordPage() {
     setSuccess("");
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, you would call your password reset endpoint
-      // For demo, we'll show success message
-      setSuccess("If an account exists with this email, you will receive password reset instructions.");
+      const result = await requestPasswordReset(email);
+      if (result.success) {
+        setSuccess(result.message);
+      } else {
+        setError(result.message);
+      }
     } catch (_error) {
       setError("An unexpected error occurred. Please try again.");
     } finally {

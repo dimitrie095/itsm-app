@@ -1,0 +1,148 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - img [ref=e10]
+        - text: ITSM Portal
+      - paragraph [ref=e12]: Service Management
+    - generic [ref=e14]:
+      - generic [ref=e15]: Navigation
+      - generic:
+        - list
+    - list [ref=e17]:
+      - listitem [ref=e18]:
+        - link "Settings" [ref=e19] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e20]
+          - text: Settings
+  - generic [ref=e23]:
+    - banner [ref=e24]:
+      - generic [ref=e26]:
+        - img [ref=e27]
+        - textbox "Search tickets, assets, knowledge..." [ref=e30]
+      - generic [ref=e31]:
+        - button "Toggle theme" [ref=e32]:
+          - img [ref=e33]
+          - img [ref=e39]
+        - button "Notifications" [ref=e41]:
+          - img [ref=e42]
+        - button "Help" [ref=e45]:
+          - img [ref=e46]
+        - generic [ref=e49]:
+          - generic [ref=e50]: ...
+          - generic [ref=e51]:
+            - paragraph [ref=e52]: Loading...
+            - paragraph [ref=e53]: Please wait
+    - main [ref=e54]:
+      - generic [ref=e56]:
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - generic [ref=e59]:
+              - img [ref=e61]
+              - generic [ref=e63]:
+                - heading "ITSM Portal" [level=1] [ref=e64]
+                - paragraph [ref=e65]: Modern IT Service Management Platform
+            - generic [ref=e66]:
+              - generic [ref=e67]:
+                - img [ref=e69]
+                - generic [ref=e72]:
+                  - heading "Streamlined Service Management" [level=3] [ref=e73]
+                  - paragraph [ref=e74]: Unified platform for tickets, assets, and knowledge base.
+              - generic [ref=e75]:
+                - img [ref=e77]
+                - generic [ref=e81]:
+                  - heading "Role-Based Access" [level=3] [ref=e82]
+                  - paragraph [ref=e83]: Different access levels for admins, agents, and end users.
+              - generic [ref=e84]:
+                - img [ref=e86]
+                - generic [ref=e89]:
+                  - heading "Secure & Compliant" [level=3] [ref=e90]
+                  - paragraph [ref=e91]: Enterprise-grade security with audit logging.
+          - generic [ref=e93]:
+            - img [ref=e95]
+            - paragraph [ref=e100]:
+              - text: "Demo Access: All accounts use"
+              - code [ref=e101]: demo123
+        - generic [ref=e103]:
+          - generic [ref=e105]:
+            - img [ref=e107]
+            - generic [ref=e109]:
+              - heading "ITSM Portal" [level=1] [ref=e110]
+              - paragraph [ref=e111]: Modern IT Service Management
+          - generic [ref=e112]:
+            - generic [ref=e113]:
+              - generic [ref=e114]:
+                - img [ref=e115]
+                - text: Sign In to Dashboard
+              - generic [ref=e118]: Enter your credentials or try a demo account
+            - generic [ref=e119]:
+              - generic [ref=e120]:
+                - generic [ref=e121]:
+                  - text: Email Address
+                  - generic [ref=e122]:
+                    - img [ref=e123]
+                    - textbox "Email Address" [ref=e126]:
+                      - /placeholder: john@example.com
+                - generic [ref=e127]:
+                  - generic [ref=e128]:
+                    - text: Password
+                    - link "Forgot password?" [ref=e129] [cursor=pointer]:
+                      - /url: /forgot-password
+                  - generic [ref=e130]:
+                    - img [ref=e131]
+                    - textbox "Password" [ref=e134]:
+                      - /placeholder: ••••••••
+                  - paragraph [ref=e135]:
+                    - text: "Demo accounts use password:"
+                    - code [ref=e136]: demo123
+                - button "Sign In" [ref=e137]:
+                  - img [ref=e138]
+                  - text: Sign In
+              - generic [ref=e141]:
+                - generic [ref=e143]: Quick Demo Access
+                - paragraph [ref=e144]: "Try these demo accounts with different roles:"
+                - generic [ref=e145]:
+                  - button "Admin User ADMIN Click to login" [active] [ref=e146]:
+                    - generic [ref=e147]:
+                      - img [ref=e149]
+                      - generic [ref=e151]:
+                        - heading "Admin User" [level=4] [ref=e152]
+                        - paragraph [ref=e153]: ADMIN
+                        - generic [ref=e154]:
+                          - img [ref=e155]
+                          - text: Click to login
+                  - button "Support Agent AGENT Click to login" [ref=e157]:
+                    - generic [ref=e158]:
+                      - img [ref=e160]
+                      - generic [ref=e162]:
+                        - heading "Support Agent" [level=4] [ref=e163]
+                        - paragraph [ref=e164]: AGENT
+                        - generic [ref=e165]:
+                          - img [ref=e166]
+                          - text: Click to login
+                  - button "End User END USER Click to login" [ref=e168]:
+                    - generic [ref=e169]:
+                      - img [ref=e171]
+                      - generic [ref=e173]:
+                        - heading "End User" [level=4] [ref=e174]
+                        - paragraph [ref=e175]: END USER
+                        - generic [ref=e176]:
+                          - img [ref=e177]
+                          - text: Click to login
+            - generic [ref=e179]:
+              - generic [ref=e180]:
+                - text: By signing in, you agree to our
+                - link "Terms of Service" [ref=e181] [cursor=pointer]:
+                  - /url: /terms
+                - text: and
+                - link "Privacy Policy" [ref=e182] [cursor=pointer]:
+                  - /url: /privacy
+              - paragraph [ref=e184]:
+                - text: "Demo tip: Use"
+                - code [ref=e185]: demo123
+                - text: as password
+    - region "Notifications alt+T"
+```

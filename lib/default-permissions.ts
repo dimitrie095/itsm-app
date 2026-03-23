@@ -61,6 +61,7 @@ export const DEFAULT_PERMISSIONS = [
   { name: "settings.view", description: "View system settings", category: "settings", action: "read" },
   { name: "settings.update", description: "Update system settings", category: "settings", action: "update" },
   { name: "settings.manage_integrations", description: "Manage integrations", category: "settings", action: "manage" },
+  { name: "audit.view", description: "View audit logs", category: "settings", action: "read" },
   
   // Automation
   { name: "automation.view", description: "View automation rules", category: "automation", action: "read" },
@@ -91,7 +92,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "assets.view", "assets.create", "assets.update", "assets.delete", "assets.assign",
     "knowledge.view", "knowledge.create", "knowledge.update", "knowledge.delete", "knowledge.publish",
     "reports.view", "reports.create", "reports.export",
-    "settings.view", "settings.update", "settings.manage_integrations",
+    "settings.view", "settings.update", "settings.manage_integrations", "audit.view",
     "automation.view", "automation.create", "automation.update", "automation.delete", "automation.execute",
     "analytics.view",
     "roles.view", "roles.create", "roles.update", "roles.delete", "roles.assign"

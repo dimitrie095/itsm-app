@@ -12,6 +12,11 @@ import { MoreHorizontal, Plus, Search, Filter, Mail, Building, Loader2, AlertCir
 import { toast } from "sonner";
 import Link from "next/link";
 import { usePermission } from "@/hooks/use-permission";
+import { UserProfileDialog } from "./components/UserProfileDialog";
+import { UserEditDialog } from "./components/UserEditDialog";
+import { UserResetPasswordDialog } from "./components/UserResetPasswordDialog";
+import { UserChangeRoleDialog } from "./components/UserChangeRoleDialog";
+import { UserDeactivateDialog } from "./components/UserDeactivateDialog";
 
 interface User {
   id: string;
@@ -28,6 +33,12 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [viewProfileOpen, setViewProfileOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
+  const [changeRoleOpen, setChangeRoleOpen] = useState(false);
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
   const { hasPermission, hasAnyPermission, getUserPermissions } = usePermission();
   
   const userPermissions = getUserPermissions();
@@ -296,21 +307,31 @@ export default function UsersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Profile</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setSelectedUser(user); setViewProfileOpen(true); }}>
+                            View Profile
+                          </DropdownMenuItem>
                           {canUpdateUser && (
-                            <DropdownMenuItem>Edit User</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setSelectedUser(user); setEditOpen(true); }}>
+                              Edit User
+                            </DropdownMenuItem>
                           )}
                           {canUpdateUser && (
-                            <DropdownMenuItem>Reset Password</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setSelectedUser(user); setResetPasswordOpen(true); }}>
+                              Reset Password
+                            </DropdownMenuItem>
                           )}
                           {canManageRoles && (
-                            <DropdownMenuItem>Change Role</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setSelectedUser(user); setChangeRoleOpen(true); }}>
+                              Change Role
+                            </DropdownMenuItem>
                           )}
                           {(canUpdateUser || canManageRoles) && (
                             <DropdownMenuSeparator />
                           )}
                           {canDeleteUser && (
-                            <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedUser(user); setDeactivateOpen(true); }}>
+                              Deactivate
+                            </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -322,6 +343,45 @@ export default function UsersPage() {
           </Table>
         </CardContent>
       </Card>
+      {selectedUser && (
+        <UserProfileDialog
+          user={selectedUser}
+          open={viewProfileOpen}
+          onOpenChange={setViewProfileOpen}
+        />
+      )}
+      {selectedUser && (
+        <UserEditDialog
+          user={selectedUser}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          onUserUpdated={fetchUsers}
+        />
+      )}
+      {selectedUser && (
+        <UserResetPasswordDialog
+          user={selectedUser}
+          open={resetPasswordOpen}
+          onOpenChange={setResetPasswordOpen}
+          onPasswordReset={fetchUsers}
+        />
+      )}
+      {selectedUser && (
+        <UserChangeRoleDialog
+          user={selectedUser}
+          open={changeRoleOpen}
+          onOpenChange={setChangeRoleOpen}
+          onRoleChanged={fetchUsers}
+        />
+      )}
+      {selectedUser && (
+        <UserDeactivateDialog
+          user={selectedUser}
+          open={deactivateOpen}
+          onOpenChange={setDeactivateOpen}
+          onUserDeactivated={fetchUsers}
+        />
+      )}
     </div>
   );
 }
