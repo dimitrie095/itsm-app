@@ -1,0 +1,263 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e7]:
+        - img [ref=e9]
+        - generic [ref=e11]: ITSM Portal
+      - paragraph [ref=e12]: Service Management
+    - generic [ref=e14]:
+      - generic [ref=e15]: Navigation
+      - generic:
+        - list
+    - list [ref=e17]:
+      - listitem [ref=e18]:
+        - link "Settings" [ref=e19] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e20]
+          - generic [ref=e23]: Settings
+  - generic [ref=e24]:
+    - banner [ref=e25]:
+      - generic [ref=e27]:
+        - img
+        - textbox "Search tickets, assets, knowledge..." [ref=e28]
+      - generic [ref=e29]:
+        - button "Toggle theme" [ref=e30]:
+          - img
+        - button "Notifications" [ref=e31]:
+          - img
+        - button "Help" [ref=e32]:
+          - img
+        - generic [ref=e33]:
+          - generic [ref=e35]: ...
+          - generic [ref=e36]:
+            - paragraph [ref=e37]: Loading...
+            - paragraph [ref=e38]: Please wait
+    - main [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - heading "Knowledge Base" [level=1] [ref=e43]
+            - paragraph [ref=e44]: Central repository of solutions and FAQs.
+          - link "New Article" [ref=e45] [cursor=pointer]:
+            - /url: /knowledge/new
+            - img
+            - text: New Article
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - generic [ref=e49]: Total Articles
+            - generic [ref=e50]:
+              - generic [ref=e51]: "6"
+              - paragraph [ref=e52]: +0 this month
+          - generic [ref=e53]:
+            - generic [ref=e55]: Total Views
+            - generic [ref=e56]:
+              - generic [ref=e57]: "906"
+              - paragraph [ref=e58]: +0% from last month
+          - generic [ref=e59]:
+            - generic [ref=e61]: Helpful Rate
+            - generic [ref=e62]:
+              - generic [ref=e63]: 100%
+              - paragraph [ref=e64]: Based on user feedback
+          - generic [ref=e65]:
+            - generic [ref=e67]: Draft Articles
+            - generic [ref=e68]:
+              - generic [ref=e69]: "1"
+              - paragraph [ref=e70]: Need review
+        - generic [ref=e71]:
+          - generic [ref=e72]:
+            - generic [ref=e74]:
+              - generic [ref=e75]:
+                - generic [ref=e76]: Articles
+                - generic [ref=e77]: All knowledge base articles.
+              - generic [ref=e78]:
+                - generic [ref=e79]:
+                  - img [ref=e80]
+                  - textbox "Search articles..." [ref=e83]
+                - button [ref=e84]:
+                  - img
+            - table [ref=e87]:
+              - rowgroup [ref=e88]:
+                - row "ID Title Category Views Helpful Status Last Updated Actions" [ref=e89]:
+                  - columnheader "ID" [ref=e90]
+                  - columnheader "Title" [ref=e91]
+                  - columnheader "Category" [ref=e92]
+                  - columnheader "Views" [ref=e93]
+                  - columnheader "Helpful" [ref=e94]
+                  - columnheader "Status" [ref=e95]
+                  - columnheader "Last Updated" [ref=e96]
+                  - columnheader "Actions" [ref=e97]
+              - rowgroup [ref=e98]:
+                - row "KB-001 How to reset your password Security 253 89 Published 2026-03-23" [ref=e99]:
+                  - cell "KB-001" [ref=e100]
+                  - cell "How to reset your password" [ref=e101]:
+                    - link "How to reset your password" [ref=e102] [cursor=pointer]:
+                      - /url: /knowledge/KB-001
+                  - cell "Security" [ref=e103]:
+                    - generic [ref=e104]: Security
+                  - cell "253" [ref=e105]:
+                    - generic [ref=e106]:
+                      - img [ref=e107]
+                      - text: "253"
+                  - cell "89" [ref=e110]:
+                    - generic [ref=e111]:
+                      - img [ref=e112]
+                      - text: "89"
+                  - cell "Published" [ref=e114]:
+                    - generic [ref=e115]: Published
+                  - cell "2026-03-23" [ref=e116]
+                  - cell [ref=e117]:
+                    - button [ref=e118]:
+                      - img
+                - row "KB-002 VPN setup guide for remote work Networking 189 67 Published 2025-03-09" [ref=e119]:
+                  - cell "KB-002" [ref=e120]
+                  - cell "VPN setup guide for remote work" [ref=e121]:
+                    - link "VPN setup guide for remote work" [ref=e122] [cursor=pointer]:
+                      - /url: /knowledge/KB-002
+                  - cell "Networking" [ref=e123]:
+                    - generic [ref=e124]: Networking
+                  - cell "189" [ref=e125]:
+                    - generic [ref=e126]:
+                      - img [ref=e127]
+                      - text: "189"
+                  - cell "67" [ref=e130]:
+                    - generic [ref=e131]:
+                      - img [ref=e132]
+                      - text: "67"
+                  - cell "Published" [ref=e134]:
+                    - generic [ref=e135]: Published
+                  - cell "2025-03-09" [ref=e136]
+                  - cell [ref=e137]:
+                    - button [ref=e138]:
+                      - img
+                - row "KB-003 Troubleshooting printer issues Hardware 156 42 Published 2025-03-08" [ref=e139]:
+                  - cell "KB-003" [ref=e140]
+                  - cell "Troubleshooting printer issues" [ref=e141]:
+                    - link "Troubleshooting printer issues" [ref=e142] [cursor=pointer]:
+                      - /url: /knowledge/KB-003
+                  - cell "Hardware" [ref=e143]:
+                    - generic [ref=e144]: Hardware
+                  - cell "156" [ref=e145]:
+                    - generic [ref=e146]:
+                      - img [ref=e147]
+                      - text: "156"
+                  - cell "42" [ref=e150]:
+                    - generic [ref=e151]:
+                      - img [ref=e152]
+                      - text: "42"
+                  - cell "Published" [ref=e154]:
+                    - generic [ref=e155]: Published
+                  - cell "2025-03-08" [ref=e156]
+                  - cell [ref=e157]:
+                    - button [ref=e158]:
+                      - img
+                - row "KB-004 Microsoft Teams installation Software 134 38 Draft 2025-03-07" [ref=e159]:
+                  - cell "KB-004" [ref=e160]
+                  - cell "Microsoft Teams installation" [ref=e161]:
+                    - link "Microsoft Teams installation" [ref=e162] [cursor=pointer]:
+                      - /url: /knowledge/KB-004
+                  - cell "Software" [ref=e163]:
+                    - generic [ref=e164]: Software
+                  - cell "134" [ref=e165]:
+                    - generic [ref=e166]:
+                      - img [ref=e167]
+                      - text: "134"
+                  - cell "38" [ref=e170]:
+                    - generic [ref=e171]:
+                      - img [ref=e172]
+                      - text: "38"
+                  - cell "Draft" [ref=e174]:
+                    - generic [ref=e175]: Draft
+                  - cell "2025-03-07" [ref=e176]
+                  - cell [ref=e177]:
+                    - button [ref=e178]:
+                      - img
+                - row "KB-005 Email signature configuration Email 98 25 Published 2025-03-06" [ref=e179]:
+                  - cell "KB-005" [ref=e180]
+                  - cell "Email signature configuration" [ref=e181]:
+                    - link "Email signature configuration" [ref=e182] [cursor=pointer]:
+                      - /url: /knowledge/KB-005
+                  - cell "Email" [ref=e183]:
+                    - generic [ref=e184]: Email
+                  - cell "98" [ref=e185]:
+                    - generic [ref=e186]:
+                      - img [ref=e187]
+                      - text: "98"
+                  - cell "25" [ref=e190]:
+                    - generic [ref=e191]:
+                      - img [ref=e192]
+                      - text: "25"
+                  - cell "Published" [ref=e194]:
+                    - generic [ref=e195]: Published
+                  - cell "2025-03-06" [ref=e196]
+                  - cell [ref=e197]:
+                    - button [ref=e198]:
+                      - img
+                - row "KB-006 Software license renewal process Process 76 18 Published 2025-03-05" [ref=e199]:
+                  - cell "KB-006" [ref=e200]
+                  - cell "Software license renewal process" [ref=e201]:
+                    - link "Software license renewal process" [ref=e202] [cursor=pointer]:
+                      - /url: /knowledge/KB-006
+                  - cell "Process" [ref=e203]:
+                    - generic [ref=e204]: Process
+                  - cell "76" [ref=e205]:
+                    - generic [ref=e206]:
+                      - img [ref=e207]
+                      - text: "76"
+                  - cell "18" [ref=e210]:
+                    - generic [ref=e211]:
+                      - img [ref=e212]
+                      - text: "18"
+                  - cell "Published" [ref=e214]:
+                    - generic [ref=e215]: Published
+                  - cell "2025-03-05" [ref=e216]
+                  - cell [ref=e217]:
+                    - button [ref=e218]:
+                      - img
+          - generic [ref=e219]:
+            - generic [ref=e220]:
+              - generic [ref=e221]: Categories
+              - generic [ref=e222]: Article distribution by category.
+            - generic [ref=e223]:
+              - generic [ref=e224]:
+                - generic [ref=e225]:
+                  - generic [ref=e226]:
+                    - img [ref=e227]
+                    - generic [ref=e230]: Security
+                  - generic [ref=e231]: "1"
+                - generic [ref=e232]:
+                  - generic [ref=e233]:
+                    - img [ref=e234]
+                    - generic [ref=e237]: Networking
+                  - generic [ref=e238]: "1"
+                - generic [ref=e239]:
+                  - generic [ref=e240]:
+                    - img [ref=e241]
+                    - generic [ref=e244]: Hardware
+                  - generic [ref=e245]: "1"
+                - generic [ref=e246]:
+                  - generic [ref=e247]:
+                    - img [ref=e248]
+                    - generic [ref=e251]: Software
+                  - generic [ref=e252]: "1"
+                - generic [ref=e253]:
+                  - generic [ref=e254]:
+                    - img [ref=e255]
+                    - generic [ref=e258]: Email
+                  - generic [ref=e259]: "1"
+                - generic [ref=e260]:
+                  - generic [ref=e261]:
+                    - img [ref=e262]
+                    - generic [ref=e265]: Process
+                  - generic [ref=e266]: "1"
+              - generic [ref=e267]:
+                - heading "Top Article" [level=3] [ref=e268]
+                - generic [ref=e271]:
+                  - img [ref=e272]
+                  - generic [ref=e274]:
+                    - paragraph [ref=e275]: How to reset your password
+                    - paragraph [ref=e276]: Security • 253 views
+    - region "Notifications alt+T"
+```

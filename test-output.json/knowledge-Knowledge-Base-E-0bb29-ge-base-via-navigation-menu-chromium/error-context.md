@@ -1,0 +1,312 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e7]:
+          - img [ref=e9]
+          - generic [ref=e11]: ITSM Portal
+        - paragraph [ref=e12]: Service Management
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - generic [ref=e15]: Navigation
+          - list [ref=e17]:
+            - listitem [ref=e18]:
+              - link "Dashboard" [ref=e19] [cursor=pointer]:
+                - /url: /
+                - img [ref=e20]
+                - generic [ref=e23]: Dashboard
+            - listitem [ref=e24]:
+              - link "Tickets" [ref=e25] [cursor=pointer]:
+                - /url: /tickets
+                - img [ref=e26]
+                - generic [ref=e28]: Tickets
+            - listitem [ref=e29]:
+              - link "Assets" [ref=e30] [cursor=pointer]:
+                - /url: /assets
+                - img [ref=e31]
+                - generic [ref=e34]: Assets
+            - listitem [ref=e35]:
+              - link "Knowledge Base" [ref=e36] [cursor=pointer]:
+                - /url: /knowledge
+                - img [ref=e37]
+                - generic [ref=e39]: Knowledge Base
+            - listitem [ref=e40]:
+              - link "Users" [ref=e41] [cursor=pointer]:
+                - /url: /users
+                - img [ref=e42]
+                - generic [ref=e47]: Users
+            - listitem [ref=e48]:
+              - link "Analytics" [ref=e49] [cursor=pointer]:
+                - /url: /analytics
+                - img [ref=e50]
+                - generic [ref=e52]: Analytics
+            - listitem [ref=e53]:
+              - link "Reports" [ref=e54] [cursor=pointer]:
+                - /url: /reports
+                - img [ref=e55]
+                - generic [ref=e58]: Reports
+            - listitem [ref=e59]:
+              - link "Automation" [ref=e60] [cursor=pointer]:
+                - /url: /automation
+                - img [ref=e61]
+                - generic [ref=e63]: Automation
+            - listitem [ref=e64]:
+              - link "Roles & Permissions" [ref=e65] [cursor=pointer]:
+                - /url: /roles
+                - img [ref=e66]
+                - generic [ref=e68]: Roles & Permissions
+            - listitem [ref=e69]:
+              - link "Audit Logs" [ref=e70] [cursor=pointer]:
+                - /url: /audit
+                - img [ref=e71]
+                - generic [ref=e74]: Audit Logs
+            - listitem [ref=e75]:
+              - link "Settings" [ref=e76] [cursor=pointer]:
+                - /url: /settings
+                - img [ref=e77]
+                - generic [ref=e80]: Settings
+        - generic [ref=e81]:
+          - generic [ref=e82]: Quick Actions
+          - list [ref=e84]:
+            - listitem [ref=e85]:
+              - link "New Ticket" [ref=e86] [cursor=pointer]:
+                - /url: /tickets/new
+                - img [ref=e87]
+                - generic [ref=e89]: New Ticket
+            - listitem [ref=e90]:
+              - link "New Article" [ref=e91] [cursor=pointer]:
+                - /url: /knowledge/new
+                - img [ref=e92]
+                - generic [ref=e94]: New Article
+            - listitem [ref=e95]:
+              - link "New Report" [ref=e96] [cursor=pointer]:
+                - /url: /reports/new
+                - img [ref=e97]
+                - generic [ref=e100]: New Report
+            - listitem [ref=e101]:
+              - link "New Asset" [ref=e102] [cursor=pointer]:
+                - /url: /assets/new
+                - img [ref=e103]
+                - generic [ref=e106]: New Asset
+      - list [ref=e108]:
+        - listitem [ref=e109]:
+          - link "Settings" [ref=e110] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e111]
+            - generic [ref=e114]: Settings
+    - generic [ref=e115]:
+      - banner [ref=e116]:
+        - generic [ref=e118]:
+          - img
+          - textbox "Search tickets, assets, knowledge..." [ref=e119]
+        - generic [ref=e120]:
+          - button "Toggle theme" [ref=e121]:
+            - img
+          - button "Notifications" [ref=e122]:
+            - img
+          - button "Help" [ref=e123]:
+            - img
+          - button "AU Admin User Administrator • IT" [ref=e124]:
+            - generic [ref=e126]: AU
+            - generic [ref=e127]:
+              - paragraph [ref=e128]: Admin User
+              - generic [ref=e129]:
+                - img
+                - generic [ref=e130]: Administrator
+                - generic [ref=e131]: •
+                - generic [ref=e132]: IT
+      - main [ref=e133]:
+        - generic [ref=e134]:
+          - generic [ref=e135]:
+            - generic [ref=e136]:
+              - heading "Dashboard" [level=1] [ref=e137]
+              - paragraph [ref=e138]: Welcome back! Here's what's happening with your IT service management.
+            - generic [ref=e139]:
+              - link "New Ticket" [ref=e140] [cursor=pointer]:
+                - /url: /tickets/new
+              - link "Generate Report" [ref=e141] [cursor=pointer]:
+                - /url: /reports/new
+          - generic [ref=e142]:
+            - generic [ref=e143]:
+              - generic [ref=e144]:
+                - generic [ref=e145]: Open Tickets
+                - img [ref=e147]
+              - generic [ref=e149]:
+                - generic [ref=e150]: "25"
+                - generic [ref=e151]:
+                  - img [ref=e152]
+                  - generic [ref=e154]: +12% from last month
+            - generic [ref=e155]:
+              - generic [ref=e156]:
+                - generic [ref=e157]: Active Users
+                - img [ref=e159]
+              - generic [ref=e164]:
+                - generic [ref=e165]: "23"
+                - generic [ref=e166]:
+                  - img [ref=e167]
+                  - generic [ref=e169]: +5% from last month
+            - generic [ref=e170]:
+              - generic [ref=e171]:
+                - generic [ref=e172]: Managed Assets
+                - img [ref=e174]
+              - generic [ref=e177]:
+                - generic [ref=e178]: "15"
+                - generic [ref=e180]: 0% from last month
+            - generic [ref=e181]:
+              - generic [ref=e182]:
+                - generic [ref=e183]: Knowledge Articles
+                - img [ref=e185]
+              - generic [ref=e187]:
+                - generic [ref=e188]: "5"
+                - generic [ref=e189]:
+                  - img [ref=e190]
+                  - generic [ref=e192]: +8% from last month
+          - generic [ref=e193]:
+            - generic [ref=e194]:
+              - generic [ref=e195]:
+                - generic [ref=e196]: Recent Tickets
+                - generic [ref=e197]: Latest tickets that need attention.
+              - generic [ref=e198]:
+                - table [ref=e202]:
+                  - rowgroup [ref=e203]:
+                    - row "ID Title Priority Status Assigned To Updated" [ref=e204]:
+                      - columnheader "ID" [ref=e205]
+                      - columnheader "Title" [ref=e206]
+                      - columnheader "Priority" [ref=e207]
+                      - columnheader "Status" [ref=e208]
+                      - columnheader "Assigned To" [ref=e209]
+                      - columnheader "Updated" [ref=e210]
+                  - rowgroup [ref=e211]:
+                    - row "82e0e659-cc23-4caa-8092-9b64eb9d6a07 Test-felix High Assigned Anastacio Stoltenberg DDS 3d ago" [ref=e212] [cursor=pointer]:
+                      - cell "82e0e659-cc23-4caa-8092-9b64eb9d6a07" [ref=e213]
+                      - cell "Test-felix" [ref=e214]
+                      - cell "High" [ref=e215]:
+                        - generic [ref=e216]: High
+                      - cell "Assigned" [ref=e217]:
+                        - generic [ref=e218]: Assigned
+                      - cell "Anastacio Stoltenberg DDS" [ref=e219]
+                      - cell "3d ago" [ref=e220]:
+                        - generic [ref=e221]:
+                          - img [ref=e222]
+                          - text: 3d ago
+                    - row "041b417c-10b2-4c3b-aea7-5c04e9048ed2 Test-ticket-03 High Assigned Anastacio Stoltenberg DDS 3d ago" [ref=e225] [cursor=pointer]:
+                      - cell "041b417c-10b2-4c3b-aea7-5c04e9048ed2" [ref=e226]
+                      - cell "Test-ticket-03" [ref=e227]
+                      - cell "High" [ref=e228]:
+                        - generic [ref=e229]: High
+                      - cell "Assigned" [ref=e230]:
+                        - generic [ref=e231]: Assigned
+                      - cell "Anastacio Stoltenberg DDS" [ref=e232]
+                      - cell "3d ago" [ref=e233]:
+                        - generic [ref=e234]:
+                          - img [ref=e235]
+                          - text: 3d ago
+                    - row "038de479-afb5-4c55-a8d7-91eae1afb134 Test-ticket-01 High Assigned Isaac Hansen 3d ago" [ref=e238] [cursor=pointer]:
+                      - cell "038de479-afb5-4c55-a8d7-91eae1afb134" [ref=e239]
+                      - cell "Test-ticket-01" [ref=e240]
+                      - cell "High" [ref=e241]:
+                        - generic [ref=e242]: High
+                      - cell "Assigned" [ref=e243]:
+                        - generic [ref=e244]: Assigned
+                      - cell "Isaac Hansen" [ref=e245]
+                      - cell "3d ago" [ref=e246]:
+                        - generic [ref=e247]:
+                          - img [ref=e248]
+                          - text: 3d ago
+                    - row "84a20018-400b-4c39-a29a-5d97dfaad274 test-tick High Assigned Orland McLaughlin 7d ago" [ref=e251] [cursor=pointer]:
+                      - cell "84a20018-400b-4c39-a29a-5d97dfaad274" [ref=e252]
+                      - cell "test-tick" [ref=e253]
+                      - cell "High" [ref=e254]:
+                        - generic [ref=e255]: High
+                      - cell "Assigned" [ref=e256]:
+                        - generic [ref=e257]: Assigned
+                      - cell "Orland McLaughlin" [ref=e258]
+                      - cell "7d ago" [ref=e259]:
+                        - generic [ref=e260]:
+                          - img [ref=e261]
+                          - text: 7d ago
+                    - row "9c9369b2-d227-4cc5-ac4c-fbd5144602ff We need to calculate the bluetooth SMTP microchip! Low Closed Isaac Hansen 8d ago" [ref=e264] [cursor=pointer]:
+                      - cell "9c9369b2-d227-4cc5-ac4c-fbd5144602ff" [ref=e265]
+                      - cell "We need to calculate the bluetooth SMTP microchip!" [ref=e266]
+                      - cell "Low" [ref=e267]:
+                        - generic [ref=e268]: Low
+                      - cell "Closed" [ref=e269]:
+                        - generic [ref=e270]: Closed
+                      - cell "Isaac Hansen" [ref=e271]
+                      - cell "8d ago" [ref=e272]:
+                        - generic [ref=e273]:
+                          - img [ref=e274]
+                          - text: 8d ago
+                - link "View All Tickets" [ref=e278] [cursor=pointer]:
+                  - /url: /tickets
+            - generic [ref=e279]:
+              - generic [ref=e280]:
+                - generic [ref=e281]: SLA Compliance
+                - generic [ref=e282]: Service Level Agreement performance.
+              - generic [ref=e283]:
+                - generic [ref=e284]:
+                  - generic [ref=e286]:
+                    - generic [ref=e287]:
+                      - generic [ref=e288]: Low
+                      - img [ref=e289]
+                    - generic [ref=e291]:
+                      - text: 40%
+                      - generic [ref=e292]: / 85%
+                  - generic [ref=e297]:
+                    - generic [ref=e298]:
+                      - generic [ref=e299]: Medium
+                      - img [ref=e300]
+                    - generic [ref=e302]:
+                      - text: 33%
+                      - generic [ref=e303]: / 90%
+                  - generic [ref=e308]:
+                    - generic [ref=e309]:
+                      - generic [ref=e310]: High
+                      - img [ref=e311]
+                    - generic [ref=e313]:
+                      - text: 20%
+                      - generic [ref=e314]: / 95%
+                  - generic [ref=e319]:
+                    - generic [ref=e320]:
+                      - generic [ref=e321]: Critical
+                      - img [ref=e322]
+                    - generic [ref=e324]:
+                      - text: 0%
+                      - generic [ref=e325]: / 99%
+                - generic [ref=e329]:
+                  - generic [ref=e330]:
+                    - paragraph [ref=e331]: Average Response Time
+                    - paragraph [ref=e332]: 173 min
+                  - generic [ref=e333]: Outside SLA
+          - generic [ref=e334]:
+            - generic [ref=e335]:
+              - generic [ref=e336]: Knowledge Base Highlights
+              - generic [ref=e337]: Most viewed articles this week.
+            - generic [ref=e339]:
+              - generic [ref=e340]:
+                - generic [ref=e341]:
+                  - generic [ref=e342]: How to reset your password
+                  - generic [ref=e343]: Security
+                - generic [ref=e345]:
+                  - generic [ref=e346]: 253 views
+                  - button "Read" [ref=e347]
+              - generic [ref=e348]:
+                - generic [ref=e349]:
+                  - generic [ref=e350]: VPN setup guide for remote work
+                  - generic [ref=e351]: Networking
+                - generic [ref=e353]:
+                  - generic [ref=e354]: 189 views
+                  - button "Read" [ref=e355]
+              - generic [ref=e356]:
+                - generic [ref=e357]:
+                  - generic [ref=e358]: Troubleshooting printer issues
+                  - generic [ref=e359]: Hardware
+                - generic [ref=e361]:
+                  - generic [ref=e362]: 156 views
+                  - button "Read" [ref=e363]
+      - region "Notifications alt+T"
+  - alert [ref=e364]
+```

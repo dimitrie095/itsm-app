@@ -1,0 +1,107 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - main [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - generic [ref=e9]:
+              - img [ref=e11]
+              - generic [ref=e13]:
+                - heading "ITSM Portal" [level=1] [ref=e14]
+                - paragraph [ref=e15]: Modern IT Service Management Platform
+            - generic [ref=e16]:
+              - generic [ref=e17]:
+                - img [ref=e19]
+                - generic [ref=e22]:
+                  - heading "Streamlined Service Management" [level=3] [ref=e23]
+                  - paragraph [ref=e24]: Unified platform for tickets, assets, and knowledge base.
+              - generic [ref=e25]:
+                - img [ref=e27]
+                - generic [ref=e31]:
+                  - heading "Role-Based Access" [level=3] [ref=e32]
+                  - paragraph [ref=e33]: Different access levels for admins, agents, and end users.
+              - generic [ref=e34]:
+                - img [ref=e36]
+                - generic [ref=e39]:
+                  - heading "Secure & Compliant" [level=3] [ref=e40]
+                  - paragraph [ref=e41]: Enterprise-grade security with audit logging.
+          - generic [ref=e43]:
+            - img [ref=e45]
+            - paragraph [ref=e50]:
+              - text: "Demo Access: All accounts use"
+              - code [ref=e51]: demo123
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - generic [ref=e56]:
+              - img [ref=e57]
+              - text: Sign In to Dashboard
+            - generic [ref=e60]: Enter your credentials or try a demo account
+          - generic [ref=e61]:
+            - generic [ref=e62]:
+              - generic [ref=e63]:
+                - text: Email Address
+                - generic [ref=e64]:
+                  - img [ref=e65]
+                  - textbox "Email Address" [ref=e68]:
+                    - /placeholder: john@example.com
+                    - text: admin@example.com
+              - generic [ref=e69]:
+                - generic [ref=e70]:
+                  - generic [ref=e71]: Password
+                  - link "Forgot password?" [ref=e72] [cursor=pointer]:
+                    - /url: /forgot-password
+                - generic [ref=e73]:
+                  - img [ref=e74]
+                  - textbox "Password" [ref=e77]:
+                    - /placeholder: ••••••••
+                    - text: demo123
+                - paragraph [ref=e78]:
+                  - text: "Demo accounts use password:"
+                  - code [ref=e79]: demo123
+              - button "Sign In" [ref=e80]:
+                - img
+                - text: Sign In
+            - generic [ref=e81]:
+              - generic [ref=e86]: Quick Demo Access
+              - paragraph [ref=e87]: "Try these demo accounts with different roles:"
+              - generic [ref=e88]:
+                - button "Admin User ADMIN Click to login" [ref=e89]:
+                  - generic [ref=e90]:
+                    - img [ref=e92]
+                    - generic [ref=e94]:
+                      - heading "Admin User" [level=4] [ref=e95]
+                      - paragraph [ref=e96]: ADMIN
+                      - generic [ref=e97]:
+                        - img [ref=e98]
+                        - generic [ref=e100]: Click to login
+                - button "Support Agent AGENT Click to login" [ref=e101]:
+                  - generic [ref=e102]:
+                    - img [ref=e104]
+                    - generic [ref=e106]:
+                      - heading "Support Agent" [level=4] [ref=e107]
+                      - paragraph [ref=e108]: AGENT
+                      - generic [ref=e109]:
+                        - img [ref=e110]
+                        - generic [ref=e112]: Click to login
+                - button "End User END USER Click to login" [ref=e113]:
+                  - generic [ref=e114]:
+                    - img [ref=e116]
+                    - generic [ref=e118]:
+                      - heading "End User" [level=4] [ref=e119]
+                      - paragraph [ref=e120]: END USER
+                      - generic [ref=e121]:
+                        - img [ref=e122]
+                        - generic [ref=e124]: Click to login
+          - generic [ref=e126]:
+            - text: By signing in, you agree to our
+            - link "Terms of Service" [ref=e127] [cursor=pointer]:
+              - /url: /terms
+            - text: and
+            - link "Privacy Policy" [ref=e128] [cursor=pointer]:
+              - /url: /privacy
+    - region "Notifications alt+T"
+  - alert [ref=e129]
+```
