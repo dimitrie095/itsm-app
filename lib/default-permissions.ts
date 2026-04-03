@@ -51,6 +51,9 @@ export const DEFAULT_PERMISSIONS = [
   { name: "knowledge.update", description: "Update knowledge base articles", category: "knowledge", action: "update" },
   { name: "knowledge.delete", description: "Delete knowledge base articles", category: "knowledge", action: "delete" },
   { name: "knowledge.publish", description: "Publish knowledge base articles", category: "knowledge", action: "publish" },
+  { name: "knowledge.suggestions.view", description: "View knowledge base suggestions", category: "knowledge", action: "read" },
+  { name: "knowledge.suggestions.manage", description: "Manage knowledge base suggestions", category: "knowledge", action: "manage" },
+  { name: "knowledge.suggestions.generate", description: "Generate knowledge base suggestions from tickets", category: "knowledge", action: "generate" },
   
   // Reports
   { name: "reports.view", description: "View reports", category: "reports", action: "read" },
@@ -90,7 +93,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "tickets.view", "tickets.create", "tickets.update", "tickets.delete", "tickets.assign", "tickets.resolve", "tickets.close", "tickets.escalate",
     "users.view", "users.create", "users.update", "users.delete", "users.manage_roles",
     "assets.view", "assets.create", "assets.update", "assets.delete", "assets.assign",
-    "knowledge.view", "knowledge.create", "knowledge.update", "knowledge.delete", "knowledge.publish",
+    "knowledge.view", "knowledge.create", "knowledge.update", "knowledge.delete", "knowledge.publish", "knowledge.suggestions.view", "knowledge.suggestions.manage", "knowledge.suggestions.generate",
     "reports.view", "reports.create", "reports.export",
     "settings.view", "settings.update", "settings.manage_integrations", "audit.view",
     "automation.view", "automation.create", "automation.update", "automation.delete", "automation.execute",
@@ -107,7 +110,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     // Assets - rcu (read, create, update)
     "assets.view", "assets.create", "assets.update", "assets.assign",
     // Knowledge Base - rcu (read, create, update)
-    "knowledge.view", "knowledge.create", "knowledge.update", "knowledge.publish",
+    "knowledge.view", "knowledge.create", "knowledge.update", "knowledge.publish", "knowledge.suggestions.view", "knowledge.suggestions.manage", "knowledge.suggestions.generate",
     // Reports - r (read only)
     "reports.view",
     // Settings - rcu (read, create, update)

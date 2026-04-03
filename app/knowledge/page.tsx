@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Plus, Search, Filter, Eye, ThumbsUp, BookOpen, Tag } from "lucide-react"
+import { MoreHorizontal, Plus, Search, Filter, Eye, ThumbsUp, BookOpen, Tag, Sparkles } from "lucide-react"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getServerSession } from "next-auth"
@@ -23,6 +23,7 @@ export default async function KnowledgePage() {
   
   const articles = await getArticles()
   const canCreateArticle = hasPermission(session, "knowledge.create")
+  const canViewSuggestions = hasPermission(session, "knowledge.suggestions.view")
   const userPermissions = (session?.user as any)?.permissions as string[] || []
   const canUpdateArticle = userPermissions.includes("knowledge.update")
   const canDeleteArticle = userPermissions.includes("knowledge.delete")
@@ -70,14 +71,24 @@ export default async function KnowledgePage() {
           <h1 className="text-3xl font-bold tracking-tight">Knowledge Base</h1>
           <p className="text-muted-foreground">Central repository of solutions and FAQs.</p>
         </div>
-        {canCreateArticle && (
-          <Button asChild>
-            <a href="/knowledge/new">
-              <Plus className="mr-2 h-4 w-4" />
-              New Article
-            </a>
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {canViewSuggestions && (
+            <Button asChild variant="outline">
+              <a href="/knowledge/suggestions">
+                <Sparkles className="mr-2 h-4 w-4" />
+                View Suggestions
+              </a>
+            </Button>
+          )}
+          {canCreateArticle && (
+            <Button asChild>
+              <a href="/knowledge/new">
+                <Plus className="mr-2 h-4 w-4" />
+                New Article
+              </a>
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
