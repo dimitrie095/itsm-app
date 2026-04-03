@@ -11,6 +11,9 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
 import { getSuggestions, generateSuggestions, updateSuggestion, deleteSuggestion, convertSuggestionToArticle } from "./actions"
+import { GenerateSuggestionsButton } from "./components/GenerateSuggestionsButton"
+import { SuggestionsTableWithDialog } from "./components/SuggestionsTableWithDialog"
+import type { KnowledgeBaseSuggestion } from "@/lib/generated/prisma/client"
 
 export default async function KnowledgeSuggestionsPage({
   searchParams,
@@ -42,12 +45,12 @@ export default async function KnowledgeSuggestionsPage({
 
   // Calculate metrics
   const totalSuggestions = suggestions.length
-  const pendingReview = suggestions.filter(s => s.status === "PENDING_REVIEW").length
-  const approved = suggestions.filter(s => s.status === "APPROVED").length
-  const rejected = suggestions.filter(s => s.status === "REJECTED").length
-  const published = suggestions.filter(s => s.status === "PUBLISHED").length
-  const endUserCount = suggestions.filter(s => s.targetAudience === "END_USER").length
-  const itSupportCount = suggestions.filter(s => s.targetAudience === "IT_SUPPORT").length
+  const pendingReview = suggestions.filter((s: KnowledgeBaseSuggestion) => s.status === "PENDING_REVIEW").length
+  const approved = suggestions.filter((s: KnowledgeBaseSuggestion) => s.status === "APPROVED").length
+  const rejected = suggestions.filter((s: KnowledgeBaseSuggestion) => s.status === "REJECTED").length
+  const published = suggestions.filter((s: KnowledgeBaseSuggestion) => s.status === "PUBLISHED").length
+  const endUserCount = suggestions.filter((s: KnowledgeBaseSuggestion) => s.targetAudience === "END_USER").length
+  const itSupportCount = suggestions.filter((s: KnowledgeBaseSuggestion) => s.targetAudience === "IT_SUPPORT").length
 
   // Helper to format date
   const formatDate = (dateString: string) => {
@@ -84,14 +87,8 @@ export default async function KnowledgeSuggestionsPage({
         </div>
         <div className="flex gap-2">
           {canGenerateSuggestions && (
-            <form action={async () => {
-              "use server"
-              await generateSuggestions()
-            }}>
-              <Button type="submit" variant="outline">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Generate Suggestions
-              </Button>
+            <form action={generateSuggestions}>
+              <GenerateSuggestionsButton />
             </form>
           )}
           <Button asChild>
@@ -185,133 +182,15 @@ export default async function KnowledgeSuggestionsPage({
             </DropdownMenu>
           </div>
 
-          {/* Suggestions Table */}
-          {suggestions.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">No suggestions yet</h3>
-              <p className="text-muted-foreground">
-                {canGenerateSuggestions
-                  ? "Click 'Generate Suggestions' to analyze tickets and create article drafts."
-                  : "No suggestions have been generated yet."}
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Audience</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Author</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {suggestions.map((suggestion) => (
-                  <TableRow key={suggestion.id}>
-                    <TableCell className="font-medium">
-                      <div className="max-w-xs truncate">{suggestion.title}</div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {suggestion.problemSummary.substring(0, 60)}...
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getAudienceBadgeVariant(suggestion.targetAudience)}>
-                        {suggestion.targetAudience.replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(suggestion.status)}>
-                        {suggestion.status.replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDate(suggestion.createdAt)}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {suggestion.author?.name || suggestion.author?.email || 'System'}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/knowledge/suggestions/${suggestion.id}`}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </Link>
-                          </DropdownMenuItem>
-                          {canManageSuggestions && suggestion.status === "PENDING_REVIEW" && (
-                            <>
-                              <DropdownMenuItem asChild>
-                                <form action={async () => {
-                                  "use server"
-                                  await updateSuggestion(suggestion.id, { status: "APPROVED" })
-                                }}>
-                                  <button type="submit" className="flex w-full items-center">
-                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                    Approve
-                                  </button>
-                                </form>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <form action={async () => {
-                                  "use server"
-                                  await updateSuggestion(suggestion.id, { status: "REJECTED" })
-                                }}>
-                                  <button type="submit" className="flex w-full items-center">
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Reject
-                                  </button>
-                                </form>
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          {canCreateArticles && suggestion.status === "APPROVED" && (
-                            <DropdownMenuItem asChild>
-                              <form action={async () => {
-                                "use server"
-                                await convertSuggestionToArticle(suggestion.id, false)
-                              }}>
-                                <button type="submit" className="flex w-full items-center">
-                                  <FileText className="mr-2 h-4 w-4" />
-                                  Convert to Article
-                                </button>
-                              </form>
-                            </DropdownMenuItem>
-                          )}
-                          {canManageSuggestions && suggestion.status !== "PUBLISHED" && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem asChild>
-                                <form action={async () => {
-                                  "use server"
-                                  await deleteSuggestion(suggestion.id)
-                                }}>
-                                  <button type="submit" className="flex w-full items-center text-destructive">
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </button>
-                                </form>
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <SuggestionsTableWithDialog
+            suggestions={suggestions}
+            canManageSuggestions={canManageSuggestions}
+            canCreateArticles={canCreateArticles}
+            canPublishArticles={canPublishArticles}
+            searchFilter={searchFilter}
+            statusFilter={statusFilter}
+            audienceFilter={audienceFilter}
+          />
         </CardContent>
       </Card>
     </div>

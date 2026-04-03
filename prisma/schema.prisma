@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -34,6 +33,7 @@ model User {
   tickets                          Ticket[]
   userPermissions                  UserPermission[]
   auditLogs                        AuditLog[]
+  llmConfigs                       LlmConfig[]
 
   @@map("users")
 }
@@ -420,4 +420,31 @@ model IntegrationConfig {
   updatedAt DateTime @updatedAt
 
   @@map("integration_configs")
+}
+
+model LlmConfig {
+  id             String    @id @default(uuid())
+  provider       LlmProvider
+  name           String    // Display name for this configuration
+  apiKey         String    // Encrypted API key
+  endpointUrl    String?   // Custom endpoint URL (for self-hosted or Azure)
+  deploymentName String?   // Azure OpenAI deployment name
+  version        String?   // Model version (for Azure OpenAI)
+  isDefault      Boolean   @default(false) // Whether this is the default configuration
+  enabled        Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdById    String?
+  createdBy      User?     @relation(fields: [createdById], references: [id])
+
+  @@unique([provider, name])
+  @@map("llm_configs")
+}
+
+enum LlmProvider {
+  DEEPSEEK
+  KIMI
+  OPENAI
+  AZURE_OPENAI
+  GEMINI
 }

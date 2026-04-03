@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
+import { cookies } from "next/headers"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || ""
+const API_BASE = process.env.NEXTAUTH_URL || "http://localhost:3000"
 
 async function authenticatedFetch(url: string, options: RequestInit = {}) {
   const session = await getServerSession(authOptions)
@@ -13,16 +14,20 @@ async function authenticatedFetch(url: string, options: RequestInit = {}) {
     throw new Error("Not authenticated")
   }
 
+  // Get cookies from the incoming request to forward them to the API route
+  const cookieStore = await cookies()
+  const cookieHeader = cookieStore.toString()
+
   const headers = {
     ...options.headers,
     "Content-Type": "application/json",
-    // Note: API routes rely on session cookie, so we don't need to add Authorization header
+    // Forward cookies so the API route can authenticate
+    "Cookie": cookieHeader,
   }
 
   return fetch(`${API_BASE}${url}`, {
     ...options,
     headers,
-    credentials: "include",
   })
 }
 
@@ -32,12 +37,15 @@ export async function getSuggestions(params?: {
   search?: string
 }) {
   try {
-    const url = new URL(`${API_BASE}/api/knowledge/suggestions`)
-    if (params?.status) url.searchParams.set("status", params.status)
-    if (params?.audience) url.searchParams.set("audience", params.audience)
-    if (params?.search) url.searchParams.set("search", params.search)
+    const queryParams = new URLSearchParams()
+    if (params?.status) queryParams.set("status", params.status)
+    if (params?.audience) queryParams.set("audience", params.audience)
+    if (params?.search) queryParams.set("search", params.search)
+    
+    const queryString = queryParams.toString()
+    const path = `/api/knowledge/suggestions${queryString ? `?${queryString}` : ""}`
 
-    const res = await authenticatedFetch(url.toString())
+    const res = await authenticatedFetch(path)
     if (!res.ok) {
       throw new Error(`Failed to fetch suggestions: ${res.statusText}`)
     }

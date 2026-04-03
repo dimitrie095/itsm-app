@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     // Determine category (default to 'General')
     const category = suggestion.ticketCluster?.category || 'General'
     const tags = suggestion.ticketCluster?.commonKeywords || []
+    const publish = body.publish === true
 
     // Create the article
     const article = await prisma.knowledgeBaseArticle.create({
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
         content: suggestion.draftResolution,
         category,
         tags: JSON.stringify(tags),
-        isPublished: false, // converted articles start as drafts
+        isPublished: publish, // respect publish parameter
         authorId: user!.id
       }
     })

@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Save, Database, Users, Globe } from "lucide-react"
 import AzureADConfig from "./azure-ad-config"
+import LlmConfigComponent from "./llm-config"
 import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
 
@@ -42,6 +43,9 @@ export default async function SettingsPage() {
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          {canManageIntegrations && (
+            <TabsTrigger value="llm">LLM Config</TabsTrigger>
+          )}
           {canManageIntegrations && (
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
           )}
@@ -206,6 +210,12 @@ export default async function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+{canManageIntegrations && (
+          <TabsContent value="llm" className="space-y-6">
+            <LlmConfigComponent />
+          </TabsContent>
+        )}
 
 {canManageIntegrations && (
           <TabsContent value="integrations" className="space-y-6">

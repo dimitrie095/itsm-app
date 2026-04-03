@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { Ticket, TicketStatus, KnowledgeBaseSuggestion, TargetAudience, SuggestionStatus } from '@/lib/generated/prisma/client' // enums are re-exported
+import { generateWithDefaultLLM, isLlmConfigured, LlmResponse } from './llm-service'
 
 interface TicketWithText extends Ticket {
   text: string // title + description
@@ -200,11 +201,104 @@ export function generateSuggestionDraft(cluster: TicketCluster): SuggestionDraft
 }
 
 /**
+ * Generate a suggestion draft from a cluster using LLM
+ */
+export async function generateSuggestionDraftWithLLM(cluster: TicketCluster): Promise<SuggestionDraft | null> {
+  try {
+    // Prepare the ticket data for the LLM
+    const ticketData = cluster.tickets.map(t => ({
+      title: t.title,
+      description: t.description,
+      category: t.category,
+      status: t.status
+    }));
+
+    const systemPrompt = `You are an IT support knowledge base expert. Your task is to analyze support tickets and create a comprehensive knowledge base article suggestion.
+
+Analyze the provided tickets and generate a JSON response with the following structure:
+{
+  "title": "A clear, concise title for the knowledge base article (max 100 chars)",
+  "targetAudience": "Either 'END_USER' or 'IT_SUPPORT'",
+  "problemSummary": "A brief description of the common problem (2-3 sentences)",
+  "draftResolution": "Detailed step-by-step resolution instructions appropriate for the target audience"
+}
+
+Guidelines:
+- For END_USER: Use simple language, avoid technical jargon, provide clear step-by-step instructions
+- For IT_SUPPORT: Include technical details, commands, configuration steps, troubleshooting tips
+- The title should be actionable (e.g., "How to...", "Resolving...", "Fixing...")
+- The draft resolution should be comprehensive and practical`;
+
+    const userPrompt = `Please analyze the following ${cluster.tickets.length} related support tickets and generate a knowledge base article suggestion:
+
+Tickets:
+${JSON.stringify(ticketData, null, 2)}
+
+Common keywords found: ${cluster.commonKeywords.join(', ')}
+
+Generate a JSON response with the knowledge base article suggestion.`;
+
+    const llmResponse = await generateWithDefaultLLM(userPrompt, systemPrompt, {
+      temperature: 0.7,
+      maxTokens: 2000
+    });
+
+    // Parse the LLM response
+    const content = llmResponse.content.trim();
+    
+    // Try to extract JSON from the response (it might be wrapped in markdown code blocks)
+    let jsonStr = content;
+    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1].trim();
+    }
+
+    const parsedResponse = JSON.parse(jsonStr);
+
+    // Validate the response structure
+    if (!parsedResponse.title || !parsedResponse.targetAudience || !parsedResponse.problemSummary || !parsedResponse.draftResolution) {
+      console.error('LLM response missing required fields:', parsedResponse);
+      return null;
+    }
+
+    // Validate target audience
+    const targetAudience = parsedResponse.targetAudience === 'IT_SUPPORT' 
+      ? TargetAudience.IT_SUPPORT 
+      : TargetAudience.END_USER;
+
+    return {
+      title: parsedResponse.title.substring(0, 200),
+      targetAudience,
+      problemSummary: parsedResponse.problemSummary,
+      draftResolution: parsedResponse.draftResolution,
+      ticketIds: cluster.tickets.map(t => t.id),
+      clusterMetadata: {
+        commonKeywords: cluster.commonKeywords,
+        complexityScore: targetAudience === TargetAudience.IT_SUPPORT ? 0.7 : 0.3,
+        category: cluster.category,
+        generatedBy: 'LLM'
+      }
+    };
+  } catch (error) {
+    console.error('Error generating suggestion with LLM:', error);
+    return null;
+  }
+}
+
+/**
  * Main function to analyze tickets and generate suggestions in database
  * @param userId The ID of the user triggering the generation (author)
  */
 export async function analyzeTicketsAndGenerateSuggestions(userId: string): Promise<KnowledgeBaseSuggestion[]> {
   try {
+    // Check if LLM is configured
+    const llmAvailable = await isLlmConfigured();
+    if (llmAvailable) {
+      console.log('Using LLM for suggestion generation');
+    } else {
+      console.log('LLM not configured, using fallback method for suggestion generation');
+    }
+
     const tickets = await fetchClosedTickets(200)
     if (tickets.length === 0) {
       console.log('No closed tickets found for analysis')
@@ -219,7 +313,17 @@ export async function analyzeTicketsAndGenerateSuggestions(userId: string): Prom
 
     const suggestions: KnowledgeBaseSuggestion[] = []
     for (const cluster of clusters) {
-      const draft = generateSuggestionDraft(cluster)
+      // Try to generate with LLM first if available
+      let draft: SuggestionDraft | null = null;
+      
+      if (llmAvailable) {
+        draft = await generateSuggestionDraftWithLLM(cluster);
+      }
+      
+      // Fallback to rule-based generation if LLM fails or is not available
+      if (!draft) {
+        draft = generateSuggestionDraft(cluster);
+      }
 
       // Check if a similar suggestion already exists (by title similarity)
       const existing = await prisma.knowledgeBaseSuggestion.findFirst({

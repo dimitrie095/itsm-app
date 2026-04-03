@@ -1,21 +1,6 @@
 "use server"
 
-import * as fs from 'fs/promises'
-import * as path from 'path'
 
-// Hilfsfunktion zum Lesen von JSON-Dateien
-async function readJsonFile(filePath: string) {
-  try {
-    const data = await fs.readFile(filePath, 'utf-8')
-    return JSON.parse(data)
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      return []
-    }
-    console.error(`Error reading ${filePath}:`, error)
-    return []
-  }
-}
 
 // SLA-Daten aus Datenbank lesen
 async function getSLAFromDatabase() {
@@ -192,9 +177,30 @@ export async function getDashboardData() {
     }
   })
   
-  // Artikel aus JSON lesen (temporarily keep JSON for articles)
-  const articlesPath = path.join(process.cwd(), 'articles.json')
-  const articles = await readJsonFile(articlesPath)
+  // Artikel aus Datenbank lesen
+  const { prisma } = await import('@/lib/prisma')
+  const articles = await prisma.knowledgeBaseArticle.findMany({
+    where: { isPublished: true },
+    select: {
+      id: true,
+      title: true,
+      category: true,
+      viewCount: true,
+      helpfulCount: true,
+      isPublished: true,
+      createdAt: true,
+      updatedAt: true,
+      authorId: true,
+      tags: true,
+    }
+  })
+  
+  // Map articles to expected format (views, helpful)
+  const mappedArticles = articles.map(article => ({
+    ...article,
+    views: article.viewCount,
+    helpful: article.helpfulCount,
+  }))
   
   // SLA-Daten aus Datenbank lesen
   const slas = await getSLAFromDatabase()
@@ -211,8 +217,8 @@ export async function getDashboardData() {
   // Sortiere Tickets nach Datum (neueste zuerst) - already sorted by query
   const sortedTickets = tickets
   
-  // Nur veröffentlichte Artikel
-  const publishedArticles = articles.filter((article: any) => article.isPublished)
+  // Nur veröffentlichte Artikel (already filtered)
+  const publishedArticles = mappedArticles
   
   // Berechnete Metriken
   const openTickets = dbTickets.filter(ticket => 
