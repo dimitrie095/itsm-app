@@ -307,9 +307,9 @@ export function SuggestionsTableWithDialog({
                         </>
                       )}
                       {canCreateArticles && suggestion.status === "APPROVED" && (
-                        <DropdownMenuItem onClick={() => handleConvert(suggestion.id, false)}>
+                        <DropdownMenuItem onClick={() => handleConvert(suggestion.id, canPublishArticles)}>
                           <FileText className="mr-2 h-4 w-4" />
-                          Convert to Article
+                          Convert to Article {canPublishArticles ? '(Publish)' : '(Draft)'}
                         </DropdownMenuItem>
                       )}
                       {canManageSuggestions && suggestion.status !== "PUBLISHED" && (
@@ -490,9 +490,9 @@ export function SuggestionsTableWithDialog({
                       </>
                     )}
                     {canCreateArticles && selectedSuggestion.status === "APPROVED" && (
-                      <Button variant="secondary" onClick={() => handleConvertToArticle(false)}>
+                      <Button variant="secondary" onClick={() => handleConvertToArticle(canPublishArticles)}>
                         <FileText className="mr-2 h-4 w-4" />
-                        Convert to Article
+                        Convert to Article {canPublishArticles ? '(Publish)' : '(Draft)'}
                       </Button>
                     )}
                     {canPublishArticles && selectedSuggestion.status === "APPROVED" && (

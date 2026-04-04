@@ -36,8 +36,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine category (default to 'General')
-    const category = suggestion.ticketCluster?.category || 'General'
-    const tags = suggestion.ticketCluster?.commonKeywords || []
+    let category = 'General'
+    let tags: string[] = []
+    if (suggestion.ticketCluster && typeof suggestion.ticketCluster === 'object' && !Array.isArray(suggestion.ticketCluster)) {
+      const cluster = suggestion.ticketCluster as Record<string, any>
+      if (typeof cluster.category === 'string') category = cluster.category
+      if (Array.isArray(cluster.commonKeywords)) tags = cluster.commonKeywords.filter((k): k is string => typeof k === 'string')
+    }
     const publish = body.publish === true
 
     // Create the article

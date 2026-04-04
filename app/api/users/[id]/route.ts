@@ -471,11 +471,41 @@ export async function DELETE(
       );
     }
 
-    // Delete user
+    // Delete user and all related records
     const deleteStartTime = Date.now();
-    await prisma.user.delete({
-      where: { id },
+
+    // Get all ticket IDs created by this user (needed to delete their comments first)
+    const userTickets = await prisma.ticket.findMany({
+      where: { userId: id },
+      select: { id: true },
     });
+    const userTicketIds = userTickets.map((t) => t.id);
+
+    await prisma.$transaction([
+      // Delete all comments by user
+      prisma.comment.deleteMany({ where: { userId: id } }),
+      // Delete all comments on tickets created by user (from other users)
+      ...(userTicketIds.length > 0
+        ? [prisma.comment.deleteMany({ where: { ticketId: { in: userTicketIds } } })]
+        : []),
+      // Delete user permissions
+      prisma.userPermission.deleteMany({ where: { userId: id } }),
+      // Nullify audit logs (keep logs, remove user reference)
+      prisma.auditLog.updateMany({ where: { userId: id }, data: { userId: null } }),
+      // Nullify assets owned by user
+      prisma.asset.updateMany({ where: { userId: id }, data: { userId: null } }),
+      // Nullify assigned tickets
+      prisma.ticket.updateMany({ where: { assignedToId: id }, data: { assignedToId: null } }),
+      // Nullify knowledge suggestions authored/reviewed by user
+      prisma.knowledgeBaseSuggestion.updateMany({ where: { authorId: id }, data: { authorId: null } }),
+      prisma.knowledgeBaseSuggestion.updateMany({ where: { reviewedById: id }, data: { reviewedById: null } }),
+      // Delete tickets created by user (userId is required, cannot be nulled)
+      prisma.ticket.deleteMany({ where: { userId: id } }),
+      // Delete knowledge base articles authored by user (authorId is required)
+      prisma.knowledgeBaseArticle.deleteMany({ where: { authorId: id } }),
+      // Delete the user (accounts and sessions have onDelete: Cascade)
+      prisma.user.delete({ where: { id } }),
+    ]);
     const deleteDuration = Date.now() - deleteStartTime;
 
     logger.debug("User deleted from database", {

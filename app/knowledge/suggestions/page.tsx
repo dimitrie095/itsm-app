@@ -10,9 +10,11 @@ import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
-import { getSuggestions, generateSuggestions, updateSuggestion, deleteSuggestion, convertSuggestionToArticle } from "./actions"
+import { getSuggestions, updateSuggestion, deleteSuggestion, convertSuggestionToArticle } from "./actions"
 import { GenerateSuggestionsButton } from "./components/GenerateSuggestionsButton"
 import { SuggestionsTableWithDialog } from "./components/SuggestionsTableWithDialog"
+import { SuggestionsSearchInput } from "./components/SuggestionsSearchInput"
+import { SuggestionsFilterControls } from "./components/SuggestionsFilterControls"
 import type { KnowledgeBaseSuggestion } from "@/lib/generated/prisma/client"
 
 export default async function KnowledgeSuggestionsPage({
@@ -86,11 +88,7 @@ export default async function KnowledgeSuggestionsPage({
           <p className="text-muted-foreground">AI-generated article suggestions from ticket analysis.</p>
         </div>
         <div className="flex gap-2">
-          {canGenerateSuggestions && (
-            <form action={generateSuggestions}>
-              <GenerateSuggestionsButton />
-            </form>
-          )}
+          {canGenerateSuggestions && <GenerateSuggestionsButton />}
           <Button asChild>
             <Link href="/knowledge">
               <BookOpen className="mr-2 h-4 w-4" />
@@ -150,36 +148,11 @@ export default async function KnowledgeSuggestionsPage({
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search suggestions..."
-                className="pl-10"
-                defaultValue={searchFilter}
-                // Implement search via form with query param
-              />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filter
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuLabel>Status</DropdownMenuLabel>
-                <DropdownMenuItem>All</DropdownMenuItem>
-                <DropdownMenuItem>Pending Review</DropdownMenuItem>
-                <DropdownMenuItem>Approved</DropdownMenuItem>
-                <DropdownMenuItem>Rejected</DropdownMenuItem>
-                <DropdownMenuItem>Published</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Audience</DropdownMenuLabel>
-                <DropdownMenuItem>All</DropdownMenuItem>
-                <DropdownMenuItem>End‑User</DropdownMenuItem>
-                <DropdownMenuItem>IT‑Support</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <SuggestionsSearchInput initialSearch={searchFilter} />
+            <SuggestionsFilterControls 
+              initialStatus={statusFilter}
+              initialAudience={audienceFilter}
+            />
           </div>
 
           <SuggestionsTableWithDialog

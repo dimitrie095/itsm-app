@@ -177,8 +177,7 @@ export async function getDashboardData() {
     }
   })
   
-  // Artikel aus Datenbank lesen
-  const { prisma } = await import('@/lib/prisma')
+  // Artikel aus Datenbank lesen (use existing prisma instance)
   const articles = await prisma.knowledgeBaseArticle.findMany({
     where: { isPublished: true },
     select: {

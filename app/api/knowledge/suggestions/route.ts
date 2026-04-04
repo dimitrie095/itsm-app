@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters
     const url = new URL(request.url)
-    const limit = parseInt(url.searchParams.get('limit') || '20')
+    const limitParam = url.searchParams.get('limit')
+    const parsedLimit = limitParam ? parseInt(limitParam) : NaN
+    const limit = !isNaN(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 1000) : undefined
     const status = url.searchParams.get('status') as SuggestionStatus | undefined
     const targetAudience = url.searchParams.get('audience') as TargetAudience | undefined
     const search = url.searchParams.get('search')
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     const suggestions = await prisma.knowledgeBaseSuggestion.findMany({
       where: whereClause,
-      take: Math.min(limit, 100),
+      ...(limit !== undefined ? { take: limit } : {}),
       orderBy: { createdAt: 'desc' },
       include: {
         author: {

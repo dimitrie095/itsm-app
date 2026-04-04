@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +27,16 @@ export function UserDeactivateDialog({ user, open, onOpenChange, onUserDeactivat
   const [confirmationText, setConfirmationText] = useState("");
   const [reason, setReason] = useState("");
 
+  // Check if emails match (case-insensitive, trimmed)
+  const isEmailMatch = useMemo(() => {
+    if (!user.email) return false;
+    return confirmationText.trim().toLowerCase() === user.email.toLowerCase();
+  }, [confirmationText, user.email]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (confirmationText !== user.email) {
-      toast.error("Please type the user's email to confirm");
+    if (!isEmailMatch) {
+      toast.error("Please type the user's email correctly to confirm");
       return;
     }
 
@@ -41,7 +47,7 @@ export function UserDeactivateDialog({ user, open, onOpenChange, onUserDeactivat
         method: "DELETE",
       });
 
-      if (response.status === 204) {
+      if (response.status === 204 || response.ok) {
         toast.success("User deactivated successfully");
         onUserDeactivated?.();
         onOpenChange(false);
@@ -51,9 +57,7 @@ export function UserDeactivateDialog({ user, open, onOpenChange, onUserDeactivat
       }
 
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || data.message || "Failed to deactivate user");
-      }
+      throw new Error(data.error || data.message || "Failed to deactivate user");
     } catch (error: any) {
       console.error("Error deactivating user:", error);
       toast.error(error.message || "An error occurred while deactivating user");
@@ -99,6 +103,7 @@ export function UserDeactivateDialog({ user, open, onOpenChange, onUserDeactivat
                 placeholder="Enter user email"
                 value={confirmationText}
                 onChange={(e) => setConfirmationText(e.target.value)}
+                onBlur={(e) => setConfirmationText(e.target.value.trim())}
               />
             </div>
           </div>
@@ -106,7 +111,7 @@ export function UserDeactivateDialog({ user, open, onOpenChange, onUserDeactivat
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="destructive" disabled={loading || confirmationText !== user.email}>
+            <Button type="submit" variant="destructive" disabled={loading || !isEmailMatch}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Deactivate User
             </Button>
