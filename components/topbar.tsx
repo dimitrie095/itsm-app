@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Bell, HelpCircle, Moon, Search, Sun, LogOut, User, Settings, Shield } from "lucide-react"
+import { NotificationBell } from "./notifications/notification-bell"
 import { useTheme } from "next-themes"
 import { useSession, signOut } from "next-auth/react"
 
@@ -67,9 +68,7 @@ export function TopBar() {
           <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         </Button>
 
-        <Button variant="ghost" size="icon" aria-label="Notifications">
-          <Bell className="h-4 w-4" />
-        </Button>
+        <NotificationBell />
 
         <Button variant="ghost" size="icon" aria-label="Help">
           <HelpCircle className="h-4 w-4" />

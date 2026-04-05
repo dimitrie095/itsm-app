@@ -33,6 +33,7 @@ model User {
   userPermissions                  UserPermission[]
   auditLogs                        AuditLog[]
   llmConfigs                       LlmConfig[]
+  notifications                    Notification[]
 
   @@map("users")
 }
@@ -438,6 +439,25 @@ model LlmConfig {
 
   @@unique([provider, name])
   @@map("llm_configs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   // Recipient user ID
+  type      String   // e.g., 'ticket_created', 'ticket_updated', 'report_generated'
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  metadata  Json?    // Additional data like ticketId, reportId, etc.
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
 }
 
 enum LlmProvider {

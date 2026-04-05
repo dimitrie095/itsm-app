@@ -6,6 +6,8 @@ import { ArrowLeft, Download, Mail, Eye, Calendar, FileText, BarChart, User, Clo
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getReportById } from "../actions"
+import { ReportSummary } from "./report-summary"
+import { DownloadReportButton } from "@/components/reports/download-button"
 
 // Komponente für Metrik-Karten
 function MetricCard({ title, value, description, icon: Icon }: any) {
@@ -72,12 +74,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link href={`/api/reports/${report.id}/download`}>
-              <Download className="mr-2 h-4 w-4" />
-              Download
-            </Link>
-          </Button>
+          <DownloadReportButton reportId={report.id} variant="outline" />
           <Button asChild>
             <Link href={`/reports/${report.id}/send`}>
               <Mail className="mr-2 h-4 w-4" />
@@ -181,6 +178,8 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
               </div>
             </div>
 
+            <ReportSummary reportId={report.id} initialSummary={report.summary} />
+
             <Separator />
 
             {/* Category Distribution */}
@@ -240,12 +239,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
               <CardDescription>Manage this report</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button className="w-full" asChild>
-                <Link href={`/api/reports/${report.id}/download`}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download {report.format.toUpperCase()}
-                </Link>
-              </Button>
+              <DownloadReportButton reportId={report.id} className="w-full" label={`Download ${report.format.toUpperCase()}`} />
               <Button variant="outline" className="w-full" asChild>
                 <Link href={`/reports/${report.id}/send`}>
                   <Mail className="mr-2 h-4 w-4" />

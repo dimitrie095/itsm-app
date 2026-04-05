@@ -9,6 +9,7 @@ import { getReports } from "./actions"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
+import { DownloadDropdownItem } from "@/components/reports/download-dropdown-item"
 
 export default async function ReportsPage() {
   const session = await getServerSession(authOptions)
@@ -172,12 +173,7 @@ export default async function ReportsPage() {
                               </Link>
                             </DropdownMenuItem>
                             {canExportReport && (
-                              <DropdownMenuItem asChild>
-                                <Link href={`/api/reports/${report.id}/download`}>
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Download
-                                </Link>
-                              </DropdownMenuItem>
+                              <DownloadDropdownItem reportId={report.id} />
                             )}
                             {canExportReport && (
                               <DropdownMenuItem asChild>

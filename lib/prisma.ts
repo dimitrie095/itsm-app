@@ -1,11 +1,10 @@
 import 'dotenv/config'
-import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from './generated/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
-// DATABASE_URL should be set in .env file
-// For PostgreSQL: postgresql://user:password@localhost:5432/database?schema=public
 const databaseUrl = process.env.DATABASE_URL
 
 if (!databaseUrl) {
@@ -16,10 +15,22 @@ if (process.env.NODE_ENV !== 'production') {
   console.log('DATABASE_URL:', databaseUrl)
 }
 
-// Create PostgreSQL adapter
-const adapter = new PrismaPg({ connectionString: databaseUrl })
+// Prisma Client for PostgreSQL with adapter
+let prismaClient: PrismaClient
+if (!globalForPrisma.prisma) {
+  // Validate DATABASE_URL format for PostgreSQL
+  const urlMatch = databaseUrl.match(/^postgresql:\/\//)
+  if (!urlMatch) {
+    throw new Error(`Invalid DATABASE_URL format: ${databaseUrl}. Expected PostgreSQL URL (postgresql://...)`)
+  }
+  
+  const pool = new Pool({ connectionString: databaseUrl })
+  const adapter = new PrismaPg(pool)
+  prismaClient = new PrismaClient({ adapter })
+} else {
+  prismaClient = globalForPrisma.prisma
+}
 
-// Prisma Client with PostgreSQL adapter
-export const prisma = globalForPrisma.prisma || new PrismaClient({ adapter })
+export const prisma = prismaClient
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma

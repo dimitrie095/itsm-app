@@ -1,5 +1,5 @@
-import React from 'react'
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer'
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { markdownToPdfFragments } from '@/lib/formatting'
 
 // Register fonts if needed
 // Font.register({ family: 'Roboto', src: '/fonts/Roboto-Regular.ttf' })
@@ -64,6 +64,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666666',
   },
+  aiSummaryText: {
+    fontSize: 10,
+    color: '#333333',
+    lineHeight: 1.5,
+    marginTop: 10,
+  },
+  boldText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  italicText: {
+    fontSize: 10,
+    fontStyle: 'italic',
+  },
   table: {
     display: 'flex',
     width: 'auto',
@@ -84,6 +98,41 @@ const styles = StyleSheet.create({
     padding: 8,
     fontSize: 10,
     flex: 1,
+  },
+  tableCellId: {
+    padding: 8,
+    fontSize: 10,
+    flex: 0.15,
+  },
+  tableCellTitle: {
+    padding: 8,
+    fontSize: 10,
+    flex: 0.35,
+  },
+  tableCellPriority: {
+    padding: 8,
+    fontSize: 10,
+    flex: 0.15,
+  },
+  tableCellStatus: {
+    padding: 8,
+    fontSize: 10,
+    flex: 0.15,
+  },
+  tableCellCategory: {
+    padding: 8,
+    fontSize: 10,
+    flex: 0.2,
+  },
+  tableCellCategoryCol: {
+    padding: 8,
+    fontSize: 10,
+    flex: 0.7,
+  },
+  tableCellCount: {
+    padding: 8,
+    fontSize: 10,
+    flex: 0.3,
   },
   footer: {
     marginTop: 40,
@@ -139,6 +188,27 @@ export function PDFReport({ report }: PDFReportProps) {
           </View>
         </View>
 
+        {/* AI Summary */}
+        {report.summary && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>AI Summary</Text>
+            <View style={{ marginTop: 10 }}>
+              {markdownToPdfFragments(report.summary).map((fragment, idx) => (
+                <Text
+                  key={idx}
+                  style={[
+                    styles.aiSummaryText,
+                    fragment.bold && styles.boldText,
+                    fragment.italic && styles.italicText,
+                  ]}
+                >
+                  {fragment.text}
+                </Text>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Top Categories */}
         {report.data?.topCategories && report.data.topCategories.length > 0 && (
           <View style={styles.section}>
@@ -146,14 +216,14 @@ export function PDFReport({ report }: PDFReportProps) {
             <View style={styles.table}>
               {/* Table Header */}
               <View style={[styles.tableRow, styles.tableHeader]}>
-                <Text style={styles.tableCell}>Category</Text>
-                <Text style={styles.tableCell}>Ticket Count</Text>
+                <Text style={styles.tableCellCategoryCol}>Category</Text>
+                <Text style={styles.tableCellCount}>Ticket Count</Text>
               </View>
               {/* Table Rows */}
               {report.data.topCategories.map((cat: any, index: number) => (
                 <View key={index} style={styles.tableRow}>
-                  <Text style={styles.tableCell}>{cat.category || 'Unknown'}</Text>
-                  <Text style={styles.tableCell}>{cat.count || 0}</Text>
+                  <Text style={styles.tableCellCategoryCol}>{cat.category || 'Unknown'}</Text>
+                  <Text style={styles.tableCellCount}>{cat.count || 0}</Text>
                 </View>
               ))}
             </View>
@@ -167,20 +237,20 @@ export function PDFReport({ report }: PDFReportProps) {
             <View style={styles.table}>
               {/* Table Header */}
               <View style={[styles.tableRow, styles.tableHeader]}>
-                <Text style={styles.tableCell}>ID</Text>
-                <Text style={styles.tableCell}>Title</Text>
-                <Text style={styles.tableCell}>Priority</Text>
-                <Text style={styles.tableCell}>Status</Text>
-                <Text style={styles.tableCell}>Category</Text>
+                <Text style={styles.tableCellId}>ID</Text>
+                <Text style={styles.tableCellTitle}>Title</Text>
+                <Text style={styles.tableCellPriority}>Priority</Text>
+                <Text style={styles.tableCellStatus}>Status</Text>
+                <Text style={styles.tableCellCategory}>Category</Text>
               </View>
               {/* Table Rows */}
               {report.data.recentTickets.slice(0, 10).map((ticket: any, index: number) => (
                 <View key={index} style={styles.tableRow}>
-                  <Text style={styles.tableCell}>{ticket.id || 'N/A'}</Text>
-                  <Text style={styles.tableCell}>{ticket.title || 'No title'}</Text>
-                  <Text style={styles.tableCell}>{ticket.priority || 'N/A'}</Text>
-                  <Text style={styles.tableCell}>{ticket.status || 'N/A'}</Text>
-                  <Text style={styles.tableCell}>{ticket.category || 'N/A'}</Text>
+                  <Text style={styles.tableCellId}>{ticket.id.slice(-3) || 'N/A'}</Text>
+                  <Text style={styles.tableCellTitle}>{ticket.title || 'No title'}</Text>
+                  <Text style={styles.tableCellPriority}>{ticket.priority || 'N/A'}</Text>
+                  <Text style={styles.tableCellStatus}>{ticket.status || 'N/A'}</Text>
+                  <Text style={styles.tableCellCategory}>{ticket.category || 'N/A'}</Text>
                 </View>
               ))}
             </View>

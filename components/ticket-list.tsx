@@ -18,6 +18,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Role } from "@/lib/generated/prisma/enums"
 import { usePermission } from "@/hooks/use-permission"
+import { NOTIFICATION_EVENTS } from "@/lib/notification-events"
 
 interface Ticket {
   id: string
@@ -239,6 +240,22 @@ export function TicketList({
       router.replace(`/tickets?${newParams.toString()}`, { scroll: false })
     }
   }, [searchParams, router, fetchTickets])
+
+  // Listen for notification events to refresh ticket list
+  useEffect(() => {
+    const handleNotificationReceived = (event: CustomEvent) => {
+      const { type } = event.detail
+      if (type === 'ticket_status_changed') {
+        // Refresh ticket list when a ticket status change notification is received
+        fetchTickets()
+      }
+    }
+
+    window.addEventListener(NOTIFICATION_EVENTS.NOTIFICATION_RECEIVED, handleNotificationReceived as EventListener)
+    return () => {
+      window.removeEventListener(NOTIFICATION_EVENTS.NOTIFICATION_RECEIVED, handleNotificationReceived as EventListener)
+    }
+  }, [fetchTickets])
   
   const handlePreviousPage = () => {
     if (skip >= limit) {

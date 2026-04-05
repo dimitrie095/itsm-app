@@ -6,6 +6,7 @@ import { Role, TicketStatus, Priority, TicketSource, ImpactLevel, UrgencyLevel }
 import { searchSchema } from "@/lib/validation/schemas"
 import { getRequestLogger } from "@/lib/logging/middleware"
 import { z, ZodError } from 'zod'
+import { notifyTicketCreated } from "@/lib/notifications"
 
 export const runtime = 'nodejs'
 
@@ -408,6 +409,11 @@ export async function POST(request: Request) {
           }
         }
       }
+    })
+    
+    // Notify admins and support agents about the new ticket (in background)
+    notifyTicketCreated(ticket.id, ticket.title, ticket.user.id).catch(error => {
+      console.error('Failed to send ticket creation notifications:', error)
     })
     
     return NextResponse.json(ticket, { status: 201 })

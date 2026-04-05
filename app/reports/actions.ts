@@ -3,6 +3,8 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { revalidatePath } from 'next/cache'
+import { generateWithDefaultLLM } from '@/lib/services/llm-service'
+import { markdownToHtml } from '@/lib/formatting'
 
 const reportsFilePath = path.join(process.cwd(), 'reports.json')
 
@@ -211,6 +213,58 @@ export async function getReportById(id: string) {
   return reports.find((report: any) => report.id === id)
 }
 
+export async function generateReportSummary(reportId: string): Promise<{ success: boolean; summary?: string; error?: string }> {
+  try {
+    const reports = await readReports();
+    const report = reports.find((r: any) => r.id === reportId);
+    if (!report) {
+      return { success: false, error: 'Report not found' };
+    }
+
+    // Check if LLM is configured
+    const { isLlmConfigured } = await import('@/lib/services/llm-service');
+    const isConfigured = await isLlmConfigured();
+    if (!isConfigured) {
+      return { success: false, error: 'No LLM configuration found. Please configure an LLM in Settings.' };
+    }
+
+    // Prepare prompt based on report data
+    const reportData = report.data;
+    const prompt = `Please provide a concise summary (in German) of the following report data:
+
+Report Type: ${report.type}
+Report Name: ${report.name}
+Generated: ${report.metadata?.generatedAt}
+
+Key Metrics:
+- Total Tickets: ${reportData?.totalTickets || 'N/A'}
+- Open Tickets: ${reportData?.openTickets || 'N/A'}
+- Resolved Tickets: ${reportData?.resolvedTickets || 'N/A'}
+- Resolution Rate: ${reportData?.resolutionRate || 'N/A'}%
+- Average Resolution Time: ${reportData?.averageResolutionTime || 'N/A'} days
+- SLA Compliance: ${reportData?.slaCompliance || 'N/A'}%
+
+Top Categories: ${reportData?.topCategories?.map((c: any) => c.category + ' (' + c.count + ')').join(', ') || 'N/A'}
+
+Please provide a brief summary highlighting key insights, trends, and recommendations.`;
+
+    const systemPrompt = 'You are a helpful ITSM analyst. Summarize report data in clear, concise German. Focus on key insights and actionable recommendations.';
+
+    const response = await generateWithDefaultLLM(prompt, systemPrompt, { temperature: 0.7, maxTokens: 500 });
+
+    // Update report with summary
+    report.summary = response.content;
+    report.updatedAt = new Date().toISOString();
+    await writeReports(reports);
+    revalidatePath(`/reports/${reportId}`);
+
+    return { success: true, summary: response.content };
+  } catch (error: any) {
+    console.error('Error generating report summary:', error);
+    return { success: false, error: error.message || 'Failed to generate summary' };
+  }
+}
+
 export async function generateReport(data: {
   type: keyof typeof reportTypes
   name?: string
@@ -265,6 +319,20 @@ export async function generateReport(data: {
   
   // Cache revalidieren
   revalidatePath('/reports')
+
+  // Try to generate AI summary (non-blocking)
+  try {
+    // Use setTimeout to avoid blocking the response
+    setTimeout(async () => {
+      try {
+        await generateReportSummary(id);
+      } catch (error) {
+        console.error('Failed to generate AI summary:', error);
+      }
+    }, 0);
+  } catch (error) {
+    console.error('Could not start AI summary generation:', error);
+  }
   
   return report
 }
@@ -382,6 +450,7 @@ function generateHTMLReport(report: any) {
   const css = getReportCSS()
   const header = generateReportHeader(report)
   const summary = generateExecutiveSummary(report)
+  const aiSummary = generateAISummarySection(report)
   const topCategories = generateTopCategoriesSection(report)
   const recentTickets = generateRecentTicketsSection(report)
   const footer = generateReportFooter(report)
@@ -397,6 +466,7 @@ function generateHTMLReport(report: any) {
 <body>
     ${header}
     ${summary}
+    ${aiSummary}
     ${topCategories}
     ${recentTickets}
     ${footer}
@@ -462,6 +532,19 @@ function generateExecutiveSummary(report: any) {
   `
 }
 
+function generateAISummarySection(report: any) {
+  if (!report.summary) return ''
+  const formattedSummary = markdownToHtml(report.summary)
+  return `
+    <div class="section">
+        <h2>AI Summary</h2>
+        <div class="ai-summary" style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+            <div style="margin: 0;">${formattedSummary}</div>
+        </div>
+    </div>
+  `
+}
+
 function generateTopCategoriesSection(report: any) {
   if (report.data.topCategories.length === 0) return ''
   
@@ -495,25 +578,25 @@ function generateRecentTicketsSection(report: any) {
   
   const rows = report.data.recentTickets.map((ticket: any) => `
     <tr>
-        <td>${ticket.id}</td>
-        <td>${ticket.title}</td>
-        <td>${ticket.priority}</td>
-        <td>${ticket.status}</td>
-        <td>${ticket.category || 'N/A'}</td>
+        <td style="width: 15%; word-wrap: break-word;">${ticket.id}</td>
+        <td style="width: 35%; word-wrap: break-word;">${ticket.title}</td>
+        <td style="width: 15%;">${ticket.priority}</td>
+        <td style="width: 15%;">${ticket.status}</td>
+        <td style="width: 20%;">${ticket.category || 'N/A'}</td>
     </tr>
   `).join('')
   
   return `
     <div class="section">
         <h2>Recent Tickets</h2>
-        <table>
+        <table style="table-layout: fixed; width: 100%;">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Category</th>
+                    <th style="width: 15%;">ID</th>
+                    <th style="width: 35%;">Title</th>
+                    <th style="width: 15%;">Priority</th>
+                    <th style="width: 15%;">Status</th>
+                    <th style="width: 20%;">Category</th>
                 </tr>
             </thead>
             <tbody>
@@ -532,3 +615,4 @@ function generateReportFooter(report: any) {
     </div>
   `
 }
+

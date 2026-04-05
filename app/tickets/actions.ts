@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { TicketStatus, Priority } from "@prisma/client"
+import { notifyTicketStatusChanged } from "@/lib/notifications"
 
 export async function getTicketsFromDatabase(userId?: string, userRole?: string) {
   try {
@@ -124,11 +125,24 @@ export async function updateTicket(
     // Note: In a real app, you should add proper authentication and authorization checks
     
     const updateData: any = {}
+    let oldStatus: string | undefined
+    let userId: string | undefined
+    let ticketTitle: string | undefined
     
     if (updates.status) {
       // Validate status is a valid TicketStatus
       if (!Object.values(TicketStatus).includes(updates.status as TicketStatus)) {
         throw new Error(`Invalid status: ${updates.status}`)
+      }
+      // Get current ticket to compare status and get user info
+      const currentTicket = await prisma.ticket.findUnique({
+        where: { id: ticketId },
+        select: { status: true, userId: true, title: true }
+      })
+      if (currentTicket) {
+        oldStatus = currentTicket.status
+        userId = currentTicket.userId
+        ticketTitle = currentTicket.title
       }
       updateData.status = updates.status
       
@@ -172,6 +186,12 @@ export async function updateTicket(
         }
       }
     })
+    
+    // Notify end user if status changed
+    if (updates.status && oldStatus && userId && ticketTitle && oldStatus !== updates.status) {
+      notifyTicketStatusChanged(ticketId, ticketTitle, userId, oldStatus, updates.status)
+        .catch(error => console.error('Failed to send status change notification:', error))
+    }
     
     return {
       success: true,
