@@ -14,7 +14,7 @@ import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
 import { getArticles, deleteArticle } from "./actions"
 
-export default async function KnowledgePage() {
+export default async function KnowledgePage({ searchParams }: { searchParams?: { search?: string } }) {
   const session = await getServerSession(authOptions)
   
   // Check if user has permission to view knowledge base
@@ -31,8 +31,10 @@ export default async function KnowledgePage() {
   const canDeleteArticle = userPermissions.includes("knowledge.delete")
   const canPublishArticle = userPermissions.includes("knowledge.publish")
 
+  const searchTerm = (searchParams?.search || "").trim().toLowerCase()
+
   // If no articles, fallback to static data for demo
-  const displayArticles = articles.length > 0 ? articles : [
+  const baseArticles = articles.length > 0 ? articles : [
     { id: "KB-001", title: "How to reset your password", category: "Security", views: 245, helpful: 89, status: "Published", lastUpdated: "2025-03-10" },
     { id: "KB-002", title: "VPN setup guide for remote work", category: "Networking", views: 189, helpful: 67, status: "Published", lastUpdated: "2025-03-09" },
     { id: "KB-003", title: "Troubleshooting printer issues", category: "Hardware", views: 156, helpful: 42, status: "Published", lastUpdated: "2025-03-08" },
@@ -40,6 +42,15 @@ export default async function KnowledgePage() {
     { id: "KB-005", title: "Email signature configuration", category: "Email", views: 98, helpful: 25, status: "Published", lastUpdated: "2025-03-06" },
     { id: "KB-006", title: "Software license renewal process", category: "Process", views: 76, helpful: 18, status: "Published", lastUpdated: "2025-03-05" },
   ]
+
+  const displayArticles = searchTerm
+    ? baseArticles.filter((article: any) => {
+        const title = String(article.title || "").toLowerCase()
+        const category = String(article.category || "").toLowerCase()
+        const id = String(article.id || "").toLowerCase()
+        return title.includes(searchTerm) || category.includes(searchTerm) || id.includes(searchTerm)
+      })
+    : baseArticles
 
   // Calculate metrics
   const totalArticles = displayArticles.length
@@ -141,13 +152,20 @@ export default async function KnowledgePage() {
                 <CardDescription>All knowledge base articles.</CardDescription>
               </div>
               <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input placeholder="Search articles..." className="w-[300px] pl-9" />
-                </div>
-                <Button variant="outline" size="icon">
-                  <Filter className="h-4 w-4" />
-                </Button>
+                <form className="flex items-center gap-2" method="get">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search articles..."
+                      className="w-[300px] pl-9"
+                      name="search"
+                      defaultValue={searchParams?.search || ""}
+                    />
+                  </div>
+                  <Button variant="outline" size="icon" type="submit">
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                </form>
               </div>
             </div>
           </CardHeader>

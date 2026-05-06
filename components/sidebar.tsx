@@ -43,7 +43,6 @@ const navItems = [
   { label: "Automation", href: "/automation", icon: Wrench },
   { label: "Roles & Permissions", href: "/roles", icon: Shield },
   { label: "Audit Logs", href: "/audit", icon: Archive },
-  { label: "Settings", href: "/settings", icon: Settings },
 ]
 
 // Route to permission mapping (database permission names)
@@ -185,7 +184,7 @@ export function Sidebar() {
               <Ticket className="h-5 w-5" />
             </div>
             <span className="text-lg font-semibold text-sidebar-foreground whitespace-nowrap group-data-[collapsible=icon]:hidden">
-              ITSM Portal
+              Ponturo ITSM Tool
             </span>
           </div>
         </div>

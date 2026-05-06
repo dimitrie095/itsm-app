@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [providers, setProviders] = useState<Record<string, any> | null>(null);
+  const isDevelopment = process.env.NODE_ENV === "development";
   
   useEffect(() => {
     const fetchProviders = async () => {
@@ -111,7 +112,7 @@ export default function LoginPage() {
                 <Shield className="h-10 w-10 text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">ITSM Portal</h1>
+                <h1 className="text-3xl font-bold text-white">Ponturo ITSM Tool</h1>
                 <p className="text-slate-400">Modern IT Service Management Platform</p>
               </div>
             </div>
@@ -149,19 +150,21 @@ export default function LoginPage() {
             </div>
           </div>
           
-          <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Key className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-slate-300">
-                  <span className="font-medium text-white">Demo Access:</span> All accounts use{' '}
-                  <code className="px-2 py-0.5 rounded bg-slate-800 text-primary font-mono">demo123</code>
-                </p>
+          {isDevelopment && (
+            <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Key className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-300">
+                    <span className="font-medium text-white">Demo Access:</span> All accounts use{' '}
+                    <code className="px-2 py-0.5 rounded bg-slate-800 text-primary font-mono">demo123</code>
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right side - Login form */}
@@ -174,7 +177,7 @@ export default function LoginPage() {
                   <Shield className="h-10 w-10 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-white">ITSM Portal</h1>
+                  <h1 className="text-3xl font-bold text-white">Ponturo ITSM Tool</h1>
                   <p className="text-slate-400">Modern IT Service Management</p>
                 </div>
               </div>
@@ -187,7 +190,7 @@ export default function LoginPage() {
                   Sign In to Dashboard
                 </CardTitle>
                 <CardDescription className="text-slate-400">
-                  Enter your credentials or try a demo account
+                  {isDevelopment ? "Enter your credentials or try a demo account" : "Enter your credentials"}
                 </CardDescription>
               </CardHeader>
               
@@ -233,9 +236,11 @@ export default function LoginPage() {
                         className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                       />
                     </div>
-                    <p className="text-xs text-slate-500">
-                      Demo accounts use password: <code className="px-1.5 py-0.5 rounded bg-slate-800 text-primary font-mono">demo123</code>
-                    </p>
+                    {isDevelopment && (
+                      <p className="text-xs text-slate-500">
+                        Demo accounts use password: <code className="px-1.5 py-0.5 rounded bg-slate-800 text-primary font-mono">demo123</code>
+                      </p>
+                    )}
                   </div>
 
                   {error && (
@@ -295,54 +300,55 @@ export default function LoginPage() {
                   </>
                 )}
 
-                {/* Quick demo login */}
-                <div className="space-y-4">
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-slate-800" />
+                {isDevelopment && (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-slate-800" />
+                      </div>
+                      <div className="relative flex justify-center">
+                        <span className="bg-slate-900 px-4 py-1 rounded-full border border-slate-800 text-sm text-slate-400">
+                          Quick Demo Access
+                        </span>
+                      </div>
                     </div>
-                    <div className="relative flex justify-center">
-                      <span className="bg-slate-900 px-4 py-1 rounded-full border border-slate-800 text-sm text-slate-400">
-                        Quick Demo Access
-                      </span>
-                    </div>
-                  </div>
 
-                  <p className="text-sm text-center text-slate-400 mb-2">
-                    Try these demo accounts with different roles:
-                  </p>
+                    <p className="text-sm text-center text-slate-400 mb-2">
+                      Try these demo accounts with different roles:
+                    </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {demoUsers.map((user) => {
-                      const Icon = user.icon;
-                      return (
-                        <button
-                          key={user.email}
-                          type="button"
-                          onClick={() => handleDemoLogin(user.email, user.password)}
-                          disabled={isLoading}
-                          className="group p-4 rounded-lg bg-slate-800 border border-slate-700 hover:border-slate-600 hover:bg-slate-800/80 transition-colors duration-200 text-left"
-                        >
-                          <div className="flex flex-col items-center text-center space-y-3">
-                            <div className={`p-3 rounded-full ${user.color} shadow-lg`}>
-                              <Icon className="h-6 w-6 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium text-white group-hover:text-primary transition-colors">
-                                {user.name}
-                              </h4>
-                              <p className="text-xs text-slate-400 mt-1">{user.role.replace('_', ' ')}</p>
-                              <div className="mt-2 flex items-center justify-center gap-2">
-                                <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-primary transition-colors" />
-                                <span className="text-xs text-slate-500">Click to login</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {demoUsers.map((user) => {
+                        const Icon = user.icon;
+                        return (
+                          <button
+                            key={user.email}
+                            type="button"
+                            onClick={() => handleDemoLogin(user.email, user.password)}
+                            disabled={isLoading}
+                            className="group p-4 rounded-lg bg-slate-800 border border-slate-700 hover:border-slate-600 hover:bg-slate-800/80 transition-colors duration-200 text-left"
+                          >
+                            <div className="flex flex-col items-center text-center space-y-3">
+                              <div className={`p-3 rounded-full ${user.color} shadow-lg`}>
+                                <Icon className="h-6 w-6 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium text-white group-hover:text-primary transition-colors">
+                                  {user.name}
+                                </h4>
+                                <p className="text-xs text-slate-400 mt-1">{user.role.replace('_', ' ')}</p>
+                                <div className="mt-2 flex items-center justify-center gap-2">
+                                  <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-primary transition-colors" />
+                                  <span className="text-xs text-slate-500">Click to login</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
               
               <CardFooter className="flex flex-col space-y-4 pt-6 border-t border-slate-800">
@@ -357,11 +363,13 @@ export default function LoginPage() {
                   </Link>
                 </div>
                 
-                <div className="lg:hidden p-3 rounded-lg bg-slate-800 border border-slate-700">
-                  <p className="text-xs text-slate-300 text-center">
-                    <span className="font-medium">Demo tip:</span> Use <code className="px-1.5 py-0.5 rounded bg-slate-800 text-primary font-mono">demo123</code> as password
-                  </p>
-                </div>
+                {isDevelopment && (
+                  <div className="lg:hidden p-3 rounded-lg bg-slate-800 border border-slate-700">
+                    <p className="text-xs text-slate-300 text-center">
+                      <span className="font-medium">Demo tip:</span> Use <code className="px-1.5 py-0.5 rounded bg-slate-800 text-primary font-mono">demo123</code> as password
+                    </p>
+                  </div>
+                )}
               </CardFooter>
             </Card>
           </div>

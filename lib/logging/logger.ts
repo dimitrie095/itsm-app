@@ -36,14 +36,9 @@ class ApplicationLogger {
         req: pino.stdSerializers.req,
         res: pino.stdSerializers.res,
       },
-      transport: process.env.NODE_ENV === 'development' ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
-        }
-      } : undefined,
+      // Avoid worker-based transports in Next.js dev runtime.
+      // thread-stream/pino-pretty can crash with missing vendor chunk workers.
+      transport: undefined,
     })
   }
 

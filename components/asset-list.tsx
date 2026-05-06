@@ -12,6 +12,7 @@ import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { usePermission } from "@/hooks/use-permission"
+import { useSearchParams } from "next/navigation"
 
 interface Asset {
   id: string
@@ -41,6 +42,7 @@ interface AssetsResponse {
 
 export function AssetList() {
   const { data: session, status } = useSession()
+  const searchParams = useSearchParams()
   const permission = usePermission()
   const canCreateAsset = permission.hasPermission("assets.create")
   const canUpdateAsset = permission.hasPermission("assets.update")
@@ -53,7 +55,7 @@ export function AssetList() {
   const [total, setTotal] = useState(0)
   const [skip, setSkip] = useState(0)
   const [hasMore, setHasMore] = useState(false)
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState(searchParams.get("search") || "")
 
   const typeIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -143,6 +145,10 @@ export function AssetList() {
   const handleSearch = (value: string) => {
     setSearch(value)
   }
+
+  useEffect(() => {
+    setSearch(searchParams.get("search") || "")
+  }, [searchParams])
 
   // Debounce search
   useEffect(() => {

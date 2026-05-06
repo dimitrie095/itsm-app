@@ -5,7 +5,7 @@ import { TicketStatus, Priority, TicketSource } from "@prisma/client"
 
 export async function getAnalyticsData() {
   // Skip database queries during build
-  console.log('IS_BUILD:', process.env.IS_BUILD, 'SKIP_DB_INIT:', process.env.SKIP_DB_INIT, 'DATABASE_URL:', process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/:[^:]*@/, ':***@') : 'not set');
+  console.log('IS_BUILD:', process.env.IS_BUILD, 'SKIP_DB_INIT:', process.env.SKIP_DB_INIT);
   if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
     console.log('Skipping database queries during build');
     return {

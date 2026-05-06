@@ -107,9 +107,11 @@ export function TicketList({
   const [skip, setSkip] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [highlightedTicketId, setHighlightedTicketId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<"table" | "kanban">("table")
+  const [draggingTicketId, setDraggingTicketId] = useState<string | null>(null)
   
   // Filter states
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState(searchParams.get("search") || "")
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
   const [assignedFilter, setAssignedFilter] = useState("all")
@@ -241,6 +243,10 @@ export function TicketList({
     }
   }, [searchParams, router, fetchTickets])
 
+  useEffect(() => {
+    setSearch(searchParams.get("search") || "")
+  }, [searchParams])
+
   // Listen for notification events to refresh ticket list
   useEffect(() => {
     const handleNotificationReceived = (event: CustomEvent) => {
@@ -281,6 +287,15 @@ export function TicketList({
     setSheetOpen(true)
   }
 
+  const kanbanColumns: Array<{ key: Ticket["status"]; label: string }> = [
+    { key: "NEW", label: "New" },
+    { key: "ASSIGNED", label: "Assigned" },
+    { key: "IN_PROGRESS", label: "In Progress" },
+    { key: "RESOLVED", label: "Resolved" },
+    { key: "CLOSED", label: "Closed" },
+    { key: "CANCELLED", label: "Cancelled" },
+  ]
+
   const handleSave = async (ticketId: string, updates: { status?: string; assignedToId?: string | null }) => {
     try {
       await updateTicket(ticketId, updates)
@@ -290,6 +305,33 @@ export function TicketList({
     } catch (error) {
       console.error("Failed to update ticket:", error)
       toast.error("Failed to update ticket")
+    }
+  }
+
+  const handleKanbanDrop = async (ticketId: string, targetStatus: string) => {
+    const ticket = tickets.find((t) => t.id === ticketId)
+    if (!ticket || ticket.status === targetStatus) return
+
+    const previousTickets = tickets
+    setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, status: targetStatus } : t)))
+
+    try {
+      const result = await updateTicket(ticketId, { status: targetStatus })
+      // Keep local state authoritative for Kanban UX and sync with returned server value.
+      if (result?.ticket?.status) {
+        setTickets((prev) =>
+          prev.map((t) =>
+            t.id === ticketId ? { ...t, status: result.ticket.status } : t
+          )
+        )
+      }
+      toast.success("Ticket status updated")
+    } catch (error) {
+      console.error("Failed to update ticket status:", error)
+      setTickets(previousTickets)
+      toast.error("Failed to update ticket status")
+    } finally {
+      setDraggingTicketId(null)
     }
   }
 
@@ -373,6 +415,24 @@ export function TicketList({
           </div>
           
           <div className="flex items-center gap-2">
+            <div className="flex items-center rounded-md border p-1">
+              <Button
+                type="button"
+                variant={viewMode === "table" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("table")}
+              >
+                Table
+              </Button>
+              <Button
+                type="button"
+                variant={viewMode === "kanban" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("kanban")}
+              >
+                Kanban
+              </Button>
+            </div>
             {canCreateTicket && (
               <Button asChild size="sm">
                 <Link href="/tickets/new">
@@ -472,7 +532,7 @@ export function TicketList({
               </p>
             )}
           </div>
-        ) : (
+        ) : viewMode === "table" ? (
           <>
             <div className="rounded-md border">
               <Table>
@@ -578,6 +638,105 @@ export function TicketList({
               </div>
             )}
           </>
+        ) : (
+          <div className="overflow-x-auto">
+            <div className="grid min-w-[1200px] grid-cols-6 gap-4">
+              {kanbanColumns.map((column) => {
+                const columnTickets = tickets.filter((ticket) => ticket.status === column.key)
+                return (
+                  <div
+                    key={column.key}
+                    className="rounded-lg border bg-muted/20"
+                    onDragOver={(event) => {
+                      if (!canChangeStatus) return
+                      event.preventDefault()
+                      event.dataTransfer.dropEffect = "move"
+                    }}
+                    onDrop={(event) => {
+                      if (!canChangeStatus) return
+                      event.preventDefault()
+                      const ticketId =
+                        event.dataTransfer.getData("ticketId") ||
+                        event.dataTransfer.getData("text/plain")
+                      if (ticketId) {
+                        handleKanbanDrop(ticketId, column.key)
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between border-b px-3 py-2">
+                      <Badge className={statusColor(column.key)}>{column.label}</Badge>
+                      <span className="text-xs text-muted-foreground">{columnTickets.length}</span>
+                    </div>
+                    <div
+                      className={`space-y-2 p-2 min-h-[180px] rounded-md transition ${
+                        canChangeStatus ? "hover:bg-muted/40" : ""
+                      }`}
+                    >
+                      {columnTickets.length > 0 ? (
+                        columnTickets.map((ticket) => (
+                          <div
+                            key={ticket.id}
+                            onClick={() => {
+                              if (draggingTicketId) return
+                              handleTicketClick(ticket)
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault()
+                                if (!draggingTicketId) {
+                                  handleTicketClick(ticket)
+                                }
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            draggable={canChangeStatus}
+                            onDragStart={(event) => {
+                              event.dataTransfer.setData("ticketId", ticket.id)
+                              event.dataTransfer.setData("text/plain", ticket.id)
+                              event.dataTransfer.effectAllowed = "move"
+                              setDraggingTicketId(ticket.id)
+                            }}
+                            onDragEnd={() => setDraggingTicketId(null)}
+                            onDragOver={(event) => {
+                              if (!canChangeStatus) return
+                              event.preventDefault()
+                            }}
+                            onDrop={(event) => {
+                              if (!canChangeStatus) return
+                              event.preventDefault()
+                              const ticketId = event.dataTransfer.getData("ticketId") || event.dataTransfer.getData("text/plain")
+                              if (ticketId) {
+                                handleKanbanDrop(ticketId, column.key)
+                              }
+                            }}
+                            className={`w-full rounded-md border bg-background p-3 text-left shadow-sm transition hover:bg-muted/40 ${
+                              draggingTicketId === ticket.id ? "opacity-50" : ""
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="line-clamp-2 text-sm font-medium">{ticket.title}</p>
+                              <Badge className={priorityColor(ticket.priority)}>{ticket.priority}</Badge>
+                            </div>
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              {(ticket.user.name || ticket.user.email) ?? "Unknown user"}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {new Date(ticket.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="rounded-md border border-dashed p-3 text-center text-xs text-muted-foreground">
+                          No tickets
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -1,6 +1,6 @@
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -10,9 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Bell, HelpCircle, Moon, Search, Sun, LogOut, User, Settings, Shield } from "lucide-react"
+import { Moon, Sun, LogOut, User, Settings, Shield } from "lucide-react"
 import { NotificationBell } from "./notifications/notification-bell"
 import { useTheme } from "next-themes"
 import { useSession, signOut } from "next-auth/react"
@@ -47,15 +46,7 @@ export function TopBar() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 gap-4 topbar-container shadow-md" data-topbar="true">
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder="Search tickets, assets, knowledge..."
-            className="w-[240px] md:w-[360px] pl-9"
-          />
-        </div>
-      </div>
+      <div />
 
       <div className="flex items-center gap-2">
         <Button
@@ -69,10 +60,6 @@ export function TopBar() {
         </Button>
 
         <NotificationBell />
-
-        <Button variant="ghost" size="icon" aria-label="Help">
-          <HelpCircle className="h-4 w-4" />
-        </Button>
 
         <Separator orientation="vertical" className="h-6" />
 

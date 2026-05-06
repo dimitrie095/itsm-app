@@ -8,8 +8,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "ITSM Portal - Modern IT Service Management",
-  description: "A modern ITSM system with ticket management, assets, knowledge base, and automation.",
+  title: "Ponturo ITSM Tool",
+  description: "Ponturo ITSM Tool with ticket management, assets, knowledge base, and automation.",
 };
 
 export default function RootLayout({

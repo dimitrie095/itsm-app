@@ -11,17 +11,13 @@ if (!databaseUrl) {
   throw new Error('DATABASE_URL environment variable is not set')
 }
 
-if (process.env.NODE_ENV !== 'production') {
-  console.log('DATABASE_URL:', databaseUrl)
-}
-
 // Prisma Client for PostgreSQL with adapter
 let prismaClient: PrismaClient
 if (!globalForPrisma.prisma) {
   // Validate DATABASE_URL format for PostgreSQL
   const urlMatch = databaseUrl.match(/^postgresql:\/\//)
   if (!urlMatch) {
-    throw new Error(`Invalid DATABASE_URL format: ${databaseUrl}. Expected PostgreSQL URL (postgresql://...)`)
+    throw new Error('Invalid DATABASE_URL format. Expected PostgreSQL URL (postgresql://...)')
   }
   
   const pool = new Pool({ connectionString: databaseUrl })

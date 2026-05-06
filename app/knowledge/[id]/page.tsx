@@ -10,6 +10,7 @@ import ViewIncrementor from "./components/ViewIncrementor"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
+import { markdownToHtml } from "@/lib/formatting"
 
 export default async function ArticleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -40,6 +41,8 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
     // ignore
   }
   
+  const formattedContent = markdownToHtml(article.content || "")
+
   return (
     <div className="space-y-6">
       <ViewIncrementor articleId={id} />
@@ -97,11 +100,10 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
             <CardDescription>The full article content.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="prose max-w-none dark:prose-invert">
-              {article.content.split('\n').map((paragraph: string, idx: number) => (
-                <p key={idx}>{paragraph}</p>
-              ))}
-            </div>
+            <div
+              className="prose max-w-none dark:prose-invert"
+              dangerouslySetInnerHTML={{ __html: formattedContent }}
+            />
           </CardContent>
         </Card>
         

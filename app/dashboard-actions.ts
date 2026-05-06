@@ -128,31 +128,20 @@ export async function getDashboardData() {
   // Skip database queries during build
   if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
     return {
-      recentTickets: [],
-      ticketStats: {
-        total: 0,
-        open: 0,
-        assigned: 0,
-        inProgress: 0,
-        resolved: 0,
-        closed: 0
-      },
-      slaData: [],
-      knowledgeStats: {
-        totalArticles: 0,
-        publishedArticles: 0,
-        mostViewed: []
-      },
-      userStats: {
-        totalUsers: 0,
-        agents: 0,
-        endUsers: 0
-      },
-      assetStats: {
-        totalAssets: 0,
-        active: 0,
-        inactive: 0
-      }
+      tickets: [],
+      articles: [],
+      userCount: 0,
+      openTickets: 0,
+      managedAssets: 0,
+      totalArticles: 0,
+      slaCompliance: [
+        { level: "Critical", target: 99, actual: null },
+        { level: "High", target: 95, actual: null },
+        { level: "Medium", target: 90, actual: null },
+        { level: "Low", target: 85, actual: null },
+      ],
+      averageResponseTime: 0,
+      isWithinSLA: true,
     }
   }
   

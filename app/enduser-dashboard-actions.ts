@@ -40,11 +40,23 @@ export async function getEndUserDashboardData(userEmail: string) {
   // Skip database queries during build
   if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
     return {
+      userEmail,
+      userName: "User",
       userTickets: [],
-      knowledgeStats: {
-        totalArticles: 0,
-        publishedArticles: 0,
-        mostViewed: []
+      recentTickets: [],
+      openTickets: 0,
+      resolvedThisMonth: 0,
+      topArticles: [],
+      totalArticles: 0,
+      averageResponseTime: {
+        formatted: "N/A",
+        withinSLA: true,
+      },
+      stats: {
+        openTickets: 0,
+        resolvedThisMonth: 0,
+        averageResponseTime: "N/A",
+        withinSLA: true,
       }
     }
   }

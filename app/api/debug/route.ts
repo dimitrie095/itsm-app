@@ -15,7 +15,6 @@ export async function GET(request: Request) {
     
     const userCount = await prisma.user.count()
     return NextResponse.json({
-      DATABASE_URL: process.env.DATABASE_URL?.replace(/file:.*/, 'file:***'),
       userCount,
       prisma: prisma ? 'constructed' : 'failed',
       timestamp: new Date().toISOString(),
@@ -24,7 +23,6 @@ export async function GET(request: Request) {
     return NextResponse.json({
       error: String(error),
       stack: error instanceof Error ? error.stack : undefined,
-      env: process.env.DATABASE_URL,
     }, { status: 500 })
   }
 }
