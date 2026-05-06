@@ -37,6 +37,18 @@ function formatResolutionTime(minutes: number): string {
 
 // End User Dashboard-Daten sammeln (aus Datenbank)
 export async function getEndUserDashboardData(userEmail: string) {
+  // Skip database queries during build
+  if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
+    return {
+      userTickets: [],
+      knowledgeStats: {
+        totalArticles: 0,
+        publishedArticles: 0,
+        mostViewed: []
+      }
+    }
+  }
+  
   // Find user by email
   const user = await prisma.user.findUnique({
     where: { email: userEmail }

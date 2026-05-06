@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -39,7 +41,23 @@ function getSourceColor(source: TicketSource) {
 }
 
 export default async function AnalyticsPage() {
-  const analytics = await getAnalyticsData()
+  // Skip database queries during build
+  const isBuild = process.env.IS_BUILD === 'true' || process.env.SKIP_DB_INIT === 'true';
+  
+  const analytics = isBuild ? {
+    totalTickets: 0,
+    openTickets: 0,
+    avgResolutionTime: { formatted: '0h 0m', hours: 0, minutes: 0 },
+    totalResolvedTickets: 0,
+    customerSatisfaction: 0,
+    firstContactResolution: 0,
+    ticketsByStatus: {},
+    ticketsByPriority: {},
+    ticketsBySource: {},
+    monthlyTrends: [],
+    agentPerformance: [],
+    slaPerformance: [],
+  } : await getAnalyticsData()
 
   return (
     <div className="space-y-6">

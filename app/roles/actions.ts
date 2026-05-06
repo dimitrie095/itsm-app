@@ -14,6 +14,11 @@ import {
 } from "@/lib/default-permissions"
 
 export async function initializePermissions() {
+  // Skip database initialization during build
+  if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
+    return { success: true, message: "Skipped during build" }
+  }
+  
   try {
     // Create permission categories first
     const categoryMap = new Map<string, string>()
@@ -79,6 +84,17 @@ export async function initializePermissions() {
 }
 
 export async function getRolesAndPermissions() {
+  // Skip database queries during build
+  if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
+    return {
+      permissions: {},
+      customRoles: [],
+      standardRolePermissions: { ADMIN: [], AGENT: [], END_USER: [], CUSTOM: [] },
+      users: [],
+      allPermissions: []
+    }
+  }
+  
   try {
     // Initialize permissions if not already done
     await initializePermissions()

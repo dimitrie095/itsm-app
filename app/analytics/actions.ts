@@ -4,6 +4,26 @@ import { prisma } from "@/lib/prisma"
 import { TicketStatus, Priority, TicketSource } from "@prisma/client"
 
 export async function getAnalyticsData() {
+  // Skip database queries during build
+  console.log('IS_BUILD:', process.env.IS_BUILD, 'SKIP_DB_INIT:', process.env.SKIP_DB_INIT, 'DATABASE_URL:', process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/:[^:]*@/, ':***@') : 'not set');
+  if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
+    console.log('Skipping database queries during build');
+    return {
+      totalTickets: 0,
+      openTickets: 0,
+      avgResolutionTime: { formatted: '0h 0m', hours: 0, minutes: 0 },
+      totalResolvedTickets: 0,
+      customerSatisfaction: 0,
+      firstContactResolution: 0,
+      ticketsByStatus: {},
+      ticketsByPriority: {},
+      ticketsBySource: {},
+      monthlyTrends: [],
+      agentPerformance: [],
+      slaPerformance: [],
+    }
+  }
+  
   try {
     // Get all tickets
     const tickets = await prisma.ticket.findMany({

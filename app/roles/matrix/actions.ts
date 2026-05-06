@@ -31,6 +31,16 @@ export interface PermissionMatrixData {
 }
 
 export async function getPermissionMatrix(): Promise<PermissionMatrixData> {
+  // Skip database queries during build
+  if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
+    return {
+      categories: [],
+      permissions: [],
+      roles: [],
+      matrix: {}
+    }
+  }
+  
   try {
     // Initialize permissions if needed
     await initializePermissions()

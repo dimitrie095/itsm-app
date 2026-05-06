@@ -125,6 +125,37 @@ function calculateAverageResponseTime(tickets: any[]) {
 
 // Dashboard-Daten sammeln
 export async function getDashboardData() {
+  // Skip database queries during build
+  if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
+    return {
+      recentTickets: [],
+      ticketStats: {
+        total: 0,
+        open: 0,
+        assigned: 0,
+        inProgress: 0,
+        resolved: 0,
+        closed: 0
+      },
+      slaData: [],
+      knowledgeStats: {
+        totalArticles: 0,
+        publishedArticles: 0,
+        mostViewed: []
+      },
+      userStats: {
+        totalUsers: 0,
+        agents: 0,
+        endUsers: 0
+      },
+      assetStats: {
+        totalAssets: 0,
+        active: 0,
+        inactive: 0
+      }
+    }
+  }
+  
   // Tickets aus Datenbank lesen
   const { prisma } = await import('@/lib/prisma')
   const dbTickets = await prisma.ticket.findMany({

@@ -9,6 +9,8 @@ export const metadata = {
   description: "View system audit logs for critical activities",
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function AuditLogsPage() {
   const logs = await getAuditLogs()
 

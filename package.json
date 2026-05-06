@@ -6,7 +6,7 @@
     "dev": "next dev",
     "dev:turbo": "next dev",
     "dev:fix-turbo": "set TURBO_CACHE_DIR=.turbo-cache&& next dev",
-    "build": "next build",
+    "build": "IS_BUILD=true SKIP_DB_INIT=true next build",
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",

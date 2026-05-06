@@ -34,6 +34,8 @@ import { RuleActionsDropdown } from "./rule-actions"
 import { FilterControls } from "./filter-controls"
 import { SearchInput } from "./search-input"
 
+export const dynamic = 'force-dynamic'
+
 interface AutomationRule {
   id: string
   name: string

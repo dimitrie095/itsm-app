@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Shield, Grid, Users, Settings } from "lucide-react"
@@ -7,7 +9,24 @@ import { getRolesAndPermissions } from "./actions"
 import { getPermissionMatrix } from "./matrix/actions"
 
 export default async function RolesPermissionsPage() {
-  const [standardData, matrixData] = await Promise.all([
+  // Skip database queries during build
+  const isBuild = process.env.IS_BUILD === 'true' || process.env.SKIP_DB_INIT === 'true';
+  
+  const [standardData, matrixData] = isBuild ? [
+    {
+      permissions: {},
+      customRoles: [],
+      standardRolePermissions: { ADMIN: [], AGENT: [], END_USER: [], CUSTOM: [] },
+      users: [],
+      allPermissions: []
+    },
+    {
+      categories: [],
+      permissions: [],
+      roles: [],
+      matrix: {}
+    }
+  ] : await Promise.all([
     getRolesAndPermissions(),
     getPermissionMatrix()
   ])
