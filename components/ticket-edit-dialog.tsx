@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TicketStatus } from "@/lib/generated/prisma/enums"
 import { Loader2, CheckCircle, XCircle } from "lucide-react"
 import { toast } from "sonner"
+import Link from "next/link"
 import "./ticket-edit-dialog.css"
 
 /**
@@ -347,7 +348,14 @@ export function TicketEditDialog({
           </DialogFooter>
         </form>
         <div className="text-xs text-muted-foreground mt-4 pt-4 border-t">
-          <p>Tip: Use <kbd className="px-1 py-0.5 bg-muted rounded border">Tab</kbd> to navigate between fields.</p>
+          <div className="flex items-center justify-between gap-2">
+            <p>Tip: Use <kbd className="px-1 py-0.5 bg-muted rounded border">Tab</kbd> to navigate between fields.</p>
+            {ticket && (
+              <Button variant="link" size="sm" asChild className="h-auto p-0 text-xs">
+                <Link href={`/tickets/${ticket.id}/edit`}>Open full edit page</Link>
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

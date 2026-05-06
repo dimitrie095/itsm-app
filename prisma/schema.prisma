@@ -29,6 +29,7 @@ model User {
   knowledgeBaseSuggestionsReviewed KnowledgeBaseSuggestion[] @relation("suggestionReviewer")
   sessions                         Session[]
   assignedTickets                  Ticket[]                  @relation("AssignedTickets")
+  additionalAssignedTickets        TicketAdditionalAssignee[] @relation("AdditionalAssignedTickets")
   tickets                          Ticket[]
   userPermissions                  UserPermission[]
   auditLogs                        AuditLog[]
@@ -63,6 +64,7 @@ model Ticket {
   sla                SLA?         @relation(fields: [slaId], references: [id])
   asset              Asset?       @relation(fields: [assetId], references: [id])
   assignedTo         User?        @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  additionalAssignees TicketAdditionalAssignee[]
   user               User         @relation(fields: [userId], references: [id])
 
   @@index([userId])
@@ -70,6 +72,21 @@ model Ticket {
   @@index([assetId])
   @@index([slaId])
   @@map("tickets")
+}
+
+model TicketAdditionalAssignee {
+  id        String   @id @default(uuid())
+  ticketId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User   @relation("AdditionalAssignedTickets", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([ticketId, userId])
+  @@index([ticketId])
+  @@index([userId])
+  @@map("ticket_additional_assignees")
 }
 
 model Comment {

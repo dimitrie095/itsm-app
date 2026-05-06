@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma"
 import { TicketStatus, Priority } from "@prisma/client"
 import { notifyTicketStatusChanged } from "@/lib/notifications"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
 export async function getTicketsFromDatabase(userId?: string, userRole?: string) {
   try {
@@ -118,7 +120,14 @@ export async function getTicketStats(userId?: string, userRole?: string) {
 
 export async function updateTicket(
   ticketId: string,
-  updates: { status?: string; assignedToId?: string | null }
+  updates: {
+    status?: string
+    assignedToId?: string | null
+    priority?: string
+    category?: string | null
+    description?: string
+    additionalAssigneeIds?: string[]
+  }
 ) {
   try {
     // Validate ticket exists and user has permission
@@ -165,26 +174,81 @@ export async function updateTicket(
         }
       }
     }
-    
-    const updatedTicket = await prisma.ticket.update({
-      where: { id: ticketId },
-      data: updateData,
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+
+    if (updates.priority) {
+      if (!Object.values(Priority).includes(updates.priority as Priority)) {
+        throw new Error(`Invalid priority: ${updates.priority}`)
+      }
+      updateData.priority = updates.priority
+    }
+
+    if (updates.category !== undefined) {
+      updateData.category = updates.category?.trim() || null
+    }
+
+    if (updates.description !== undefined) {
+      const trimmedDescription = updates.description.trim()
+      if (!trimmedDescription) {
+        throw new Error("Description cannot be empty")
+      }
+      updateData.description = trimmedDescription
+    }
+
+    const normalizedAdditionalAssignees = updates.additionalAssigneeIds
+      ? [...new Set(updates.additionalAssigneeIds.filter(Boolean))]
+      : undefined
+
+    const updatedTicket = await prisma.$transaction(async (tx) => {
+      const updated = await tx.ticket.update({
+        where: { id: ticketId },
+        data: updateData,
+        include: {
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
           }
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+        }
+      })
+
+      if (normalizedAdditionalAssignees !== undefined) {
+        const additionalAssigneeModel = (tx as typeof tx & {
+          ticketAdditionalAssignee?: {
+            deleteMany: (args: { where: { ticketId: string; userId: { notIn: string[] } } }) => Promise<unknown>
+            createMany: (args: { data: Array<{ ticketId: string; userId: string }>; skipDuplicates: boolean }) => Promise<unknown>
+          }
+        }).ticketAdditionalAssignee
+
+        if (additionalAssigneeModel) {
+          await additionalAssigneeModel.deleteMany({
+            where: {
+              ticketId,
+              userId: { notIn: normalizedAdditionalAssignees }
+            }
+          })
+
+          if (normalizedAdditionalAssignees.length > 0) {
+            await additionalAssigneeModel.createMany({
+              data: normalizedAdditionalAssignees.map((userId) => ({
+                ticketId,
+                userId,
+              })),
+              skipDuplicates: true,
+            })
           }
         }
       }
+
+      return updated
     })
     
     // Notify end user if status changed
@@ -201,4 +265,51 @@ export async function updateTicket(
     console.error("Error updating ticket:", error)
     throw new Error(`Failed to update ticket: ${error instanceof Error ? error.message : String(error)}`)
   }
+}
+
+export async function addTicketComment(ticketId: string, content: string, isInternal = true) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
+  }
+
+  const role = session.user.role
+  if (role !== "ADMIN" && role !== "AGENT") {
+    throw new Error("Only agents and admins can add comments here")
+  }
+
+  const trimmedContent = content.trim()
+  if (!trimmedContent) {
+    throw new Error("Comment cannot be empty")
+  }
+
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    select: { id: true },
+  })
+
+  if (!ticket) {
+    throw new Error("Ticket not found")
+  }
+
+  const comment = await prisma.comment.create({
+    data: {
+      ticketId,
+      userId: session.user.id,
+      content: trimmedContent,
+      isInternal,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      },
+    },
+  })
+
+  return comment
 }
