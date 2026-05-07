@@ -13,7 +13,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { getDashboardData } from "./dashboard-actions"
 import { getEndUserDashboardData } from "./enduser-dashboard-actions"
-import ForcePasswordResetDialog from "./force-password-reset-dialog"
+import { prisma } from "@/lib/prisma"
 
 // Hilfsfunktion zum Berechnen der relativen Zeit
 function timeAgo(dateString: string): string {
@@ -114,8 +114,20 @@ export default async function DashboardPage() {
     redirect('/unauthorized')
   }
 
-  if ((session.user as { mustChangePassword?: boolean }).mustChangePassword) {
-    return <ForcePasswordResetDialog userEmail={session.user.email || ""} />
+  let mustChangePassword = Boolean((session.user as { mustChangePassword?: boolean }).mustChangePassword)
+  if (session.user?.id) {
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+      })
+      mustChangePassword = Boolean((dbUser as any)?.mustChangePassword)
+    } catch (_error) {
+      // Keep session fallback if schema/client is temporarily behind.
+    }
+  }
+
+  if (mustChangePassword) {
+    redirect("/reset-initial-password")
   }
   
   // Check if user is an end user

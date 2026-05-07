@@ -56,9 +56,12 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
   const totalArticles = displayArticles.length
   const totalViews = displayArticles.reduce((sum: number, article: any) => sum + (article.views || 0), 0)
   const totalHelpful = displayArticles.reduce((sum: number, article: any) => sum + (article.helpful || 0), 0)
-  const totalNotHelpful = 0 // not stored
+  const totalNotHelpful = displayArticles.reduce((sum: number, article: any) => sum + (article.notHelpful || 0), 0)
   const helpfulRate = totalHelpful + totalNotHelpful > 0 
     ? Math.round((totalHelpful / (totalHelpful + totalNotHelpful)) * 100) 
+    : 0
+  const issueReportRate = totalHelpful + totalNotHelpful > 0
+    ? Math.round((totalNotHelpful / (totalHelpful + totalNotHelpful)) * 100)
     : 0
   const draftArticles = displayArticles.filter((article: any) => article.status === "Draft" || article.isPublished === false).length
 
@@ -104,7 +107,7 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
         </div>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Articles</CardTitle>
@@ -141,6 +144,15 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
             <p className="text-xs text-muted-foreground">Need review</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Issue Report Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{issueReportRate}%</div>
+            <p className="text-xs text-muted-foreground">Reported issues vs. all feedback</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-7 lg:grid-cols-3">
@@ -173,7 +185,6 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Views</TableHead>
@@ -186,7 +197,6 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
               <TableBody>
                 {displayArticles.map((article: any) => (
                   <TableRow key={article.id}>
-                    <TableCell className="font-medium">{article.id}</TableCell>
                     <TableCell><Link href={`/knowledge/${article.id}`} className="hover:underline">{article.title}</Link></TableCell>
                     <TableCell>
                       <Badge variant="outline">{article.category}</Badge>

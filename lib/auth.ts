@@ -64,31 +64,42 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
+        // Self-heal for environments where migration was not applied yet.
+        // Prevents runtime failures like "column does not exist".
+        try {
+          await prisma.$executeRawUnsafe(
+            `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT false`
+          );
+        } catch (_error) {
+          // Ignore here; auth should continue and fail naturally only if truly required.
+        }
+
+        const isDevelopment = process.env.NODE_ENV === "development";
+        const demoUsers = [
+          { email: "admin@example.com", name: "Admin User", role: "ADMIN", department: "IT" },
+          { email: "agent@example.com", name: "Support Agent", role: "AGENT", department: "Support" },
+          { email: "user@example.com", name: "End User", role: "END_USER", department: "Sales" },
+        ];
+        const matchedDemoUser = demoUsers.find((u) => u.email === credentials.email);
+
         let user = await prisma.user.findUnique({
           where: {
             email: credentials.email,
           },
         });
 
-        // If user doesn't exist and we're using demo password, create a demo user
-        if (!user && credentials.password === "demo123") {
-          // Check if this is a known demo email
-          const demoUsers = [
-            { email: "admin@example.com", name: "Admin User", role: "ADMIN", department: "IT" },
-            { email: "agent@example.com", name: "Support Agent", role: "AGENT", department: "Support" },
-            { email: "user@example.com", name: "End User", role: "END_USER", department: "Sales" },
-          ];
-          
-          const demoUser = demoUsers.find(u => u.email === credentials.email);
-          if (demoUser) {
-            const demoData = {
-              email: demoUser.email,
-              name: demoUser.name,
-              role: demoUser.role as Role,
-              department: demoUser.department,
-              passwordHash: await bcryptjs.hash("demo123", 10),
-              emailVerified: new Date(),
-            };
+        // In development, keep demo credentials always usable.
+        if (isDevelopment && matchedDemoUser && credentials.password === "demo123") {
+          const demoData = {
+            email: matchedDemoUser.email,
+            name: matchedDemoUser.name,
+            role: matchedDemoUser.role as Role,
+            department: matchedDemoUser.department,
+            passwordHash: await bcryptjs.hash("demo123", 10),
+            emailVerified: new Date(),
+          };
+
+          if (!user) {
             try {
               user = await prisma.user.create({
                 data: { ...demoData, mustChangePassword: false } as any,
@@ -98,6 +109,32 @@ export const authOptions: NextAuthOptions = {
                 throw createError;
               }
               user = await prisma.user.create({ data: demoData });
+            }
+          } else {
+            try {
+              user = await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                  passwordHash: demoData.passwordHash,
+                  name: demoData.name,
+                  department: demoData.department,
+                  role: demoData.role,
+                  mustChangePassword: false,
+                } as any,
+              });
+            } catch (updateError) {
+              if (!String(updateError).includes("Unknown argument `mustChangePassword`")) {
+                throw updateError;
+              }
+              user = await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                  passwordHash: demoData.passwordHash,
+                  name: demoData.name,
+                  department: demoData.department,
+                  role: demoData.role,
+                },
+              });
             }
           }
         }

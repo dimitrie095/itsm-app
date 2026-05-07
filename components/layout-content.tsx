@@ -15,7 +15,7 @@ export function LayoutContent({ children }: LayoutContentProps) {
   const pathname = usePathname();
   
   useLayoutEffect(() => {
-    const authPages = ["/login", "/forgot-password"];
+    const authPages = ["/login", "/forgot-password", "/reset-initial-password"];
     const isAuthPage = authPages.includes(pathname || "");
     document.body.setAttribute("data-auth", isAuthPage ? "true" : "false");
   }, [pathname]);

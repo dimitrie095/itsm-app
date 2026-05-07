@@ -30,7 +30,7 @@
     --destructive-foreground: 210 40% 98%;
 
     --border: 0 0% 0% / 0;
-    --input: 0 0% 0% / 0;
+    --input: 214 32% 86%;
     --ring: 207 100% 41%;
 
     --radius: 0.95rem;
@@ -91,7 +91,7 @@
     --destructive-foreground: 210 40% 98%;
 
     --border: 0 0% 0% / 0;
-    --input: 0 0% 0% / 0;
+    --input: 214 32% 86%;
     --ring: 207 100% 41%;
 
     --sidebar: hsl(207, 100%, 25%);
@@ -322,6 +322,14 @@
   input:focus, textarea:focus, select:focus {
     box-shadow: 0 0 0 3px hsl(var(--ring) / 0.15);
     border-color: hsl(var(--ring));
+  }
+
+  /* ── Light mode form field visibility ── */
+  .light input,
+  .light textarea,
+  .light [role="combobox"] {
+    background-color: hsl(210 40% 99%);
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.9);
   }
 
   /* ── Ticket List & Popup Styles ── */

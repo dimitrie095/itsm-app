@@ -43,7 +43,17 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Invalid email or password. Try 'demo123' as password for any user.");
       } else {
-        router.push("/");
+        try {
+          const response = await fetch("/api/auth/must-change-password");
+          const data = await response.json();
+          if (data?.mustChangePassword) {
+            router.push("/reset-initial-password");
+          } else {
+            router.push("/");
+          }
+        } catch {
+          router.push("/");
+        }
         router.refresh();
       }
     } catch (_error) {
@@ -94,8 +104,20 @@ export default function LoginPage() {
         if (result?.error) {
           setError("Demo login failed: " + result.error);
         } else {
-          router.push("/");
-          router.refresh();
+          fetch("/api/auth/must-change-password")
+            .then((response) => response.json())
+            .then((data) => {
+              if (data?.mustChangePassword) {
+                router.push("/reset-initial-password");
+              } else {
+                router.push("/");
+              }
+              router.refresh();
+            })
+            .catch(() => {
+              router.push("/");
+              router.refresh();
+            });
         }
       });
     }, 100);

@@ -139,6 +139,19 @@ export async function POST(request: Request) {
       });
     }
 
+    // Hard guarantee: set reset-required flag even when create fallback path was used.
+    // This helps when Prisma Client and DB schema are temporarily out of sync.
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "users" SET "mustChangePassword" = true WHERE "id" = $1`,
+        newUser.id
+      );
+    } catch (flagError) {
+      if (!String(flagError).toLowerCase().includes("mustchangepassword")) {
+        console.warn("Unable to force mustChangePassword flag:", flagError);
+      }
+    }
+
     const loginUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/login`;
     const welcomeHtml = `
       <div style="font-family: Arial, sans-serif; line-height: 1.5;">

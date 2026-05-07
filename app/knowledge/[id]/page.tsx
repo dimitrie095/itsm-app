@@ -1,20 +1,23 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Edit, Eye, ThumbsUp, Calendar, User, Tag, BookOpen } from "lucide-react"
+import { authOptions } from "@/lib/auth"
+import { markdownToHtml } from "@/lib/formatting"
+import { hasPermission } from "@/lib/permission-utils"
+import { ArrowLeft, BookOpen, Calendar, Edit, Eye, Tag, ThumbsUp, User } from "lucide-react"
+import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getArticleById } from "../actions"
+import { getArticleById, getArticleFeedback } from "../actions"
+import ArticleFeedbackActions from "./components/article-feedback-actions"
+import ArticleFeedbackList from "./components/article-feedback-list"
 import ViewIncrementor from "./components/ViewIncrementor"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { hasPermission } from "@/lib/permission-utils"
-import { markdownToHtml } from "@/lib/formatting"
 
 export default async function ArticleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const article = await getArticleById(id)
+  const feedbackItems = await getArticleFeedback(id)
   
   if (!article) {
     notFound()
@@ -93,22 +96,26 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
       </div>
       
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main content */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Content</CardTitle>
-            <CardDescription>The full article content.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              className="prose max-w-none dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: formattedContent }}
-            />
-          </CardContent>
-        </Card>
+        <div className="space-y-6 lg:col-span-2">
+          {/* Main content */}
+          <Card className="h-[360px]">
+            <CardHeader>
+              <CardTitle>Content</CardTitle>
+              <CardDescription>The full article content.</CardDescription>
+            </CardHeader>
+            <CardContent className="overflow-auto">
+              <div
+                className="prose max-w-none dark:prose-invert"
+                dangerouslySetInnerHTML={{ __html: formattedContent }}
+              />
+            </CardContent>
+          </Card>
+
+          <ArticleFeedbackList items={feedbackItems} />
+        </div>
         
         {/* Sidebar with metadata */}
-        <div className="space-y-6">
+        <div className="space-y-6 lg:col-span-1">
           <Card>
             <CardHeader>
               <CardTitle>Article Details</CardTitle>
@@ -135,7 +142,7 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Author</span>
                 </div>
-                <span className="text-sm">{article.authorId || "Demo Admin"}</span>
+                <span className="text-sm">{article.author?.name || article.author?.email || "Demo Admin"}</span>
               </div>
               <Separator />
               <div>
@@ -178,17 +185,11 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
                   </Link>
                 </Button>
               )}
-              <Button variant="outline" className="w-full justify-start">
-                <ThumbsUp className="mr-2 h-4 w-4" />
-                Mark as Helpful
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Eye className="mr-2 h-4 w-4" />
-                Report Issue
-              </Button>
+              <ArticleFeedbackActions articleId={article.id} />
             </CardContent>
           </Card>
         </div>
+
       </div>
     </div>
   )
