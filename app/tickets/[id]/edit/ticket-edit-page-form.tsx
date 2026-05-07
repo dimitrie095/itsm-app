@@ -7,6 +7,7 @@ import { ArrowLeft, Save, User, Calendar, AlertCircle } from "lucide-react"
 import { TicketStatus, Priority } from "@/lib/generated/prisma/enums"
 import { updateTicket } from "@/app/tickets/actions"
 import { addTicketComment } from "@/app/tickets/actions"
+import { sendTicketClarificationEmail } from "@/app/tickets/actions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +15,12 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 
 interface TicketEditPageFormProps {
@@ -41,9 +48,10 @@ interface TicketEditPageFormProps {
     additionalAssignees: Array<{ id: string; name: string | null; email: string; role: string }>
   }
   users: Array<{ id: string; name: string | null; email: string; role: string }>
+  returnTo?: string
 }
 
-export function TicketEditPageForm({ ticket, users }: TicketEditPageFormProps) {
+export function TicketEditPageForm({ ticket, users, returnTo }: TicketEditPageFormProps) {
   const router = useRouter()
   const [isSaving, setIsSaving] = useState(false)
 
@@ -55,9 +63,14 @@ export function TicketEditPageForm({ ticket, users }: TicketEditPageFormProps) {
   const [agentComment, setAgentComment] = useState("")
   const [isCommentSaving, setIsCommentSaving] = useState(false)
   const [comments, setComments] = useState(ticket.comments)
+  const [clarificationSubject, setClarificationSubject] = useState("")
+  const [clarificationMessage, setClarificationMessage] = useState("")
+  const [isClarificationSending, setIsClarificationSending] = useState(false)
   const [additionalAssigneeIds, setAdditionalAssigneeIds] = useState<string[]>(
     ticket.additionalAssignees.map((item) => item.id)
   )
+  const [assignedUserSearch, setAssignedUserSearch] = useState("")
+  const [additionalAssigneeSearch, setAdditionalAssigneeSearch] = useState("")
 
   const formatEnumLabel = (value: string) => value.toLowerCase().replaceAll("_", " ")
   const statusBadgeClass = (value: string) => {
@@ -126,7 +139,7 @@ export function TicketEditPageForm({ ticket, users }: TicketEditPageFormProps) {
       })
 
       toast.success("Ticket updated successfully")
-      router.push("/tickets")
+      router.push(returnTo || "/tickets")
       router.refresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update ticket")
@@ -170,12 +183,57 @@ export function TicketEditPageForm({ ticket, users }: TicketEditPageFormProps) {
     }
   }
 
+  const handleSendClarificationEmail = async () => {
+    const trimmedMessage = clarificationMessage.trim()
+    if (!trimmedMessage) {
+      toast.info("Please enter your question for the requester")
+      return
+    }
+
+    setIsClarificationSending(true)
+    try {
+      await sendTicketClarificationEmail(ticket.id, trimmedMessage, clarificationSubject)
+      setClarificationMessage("")
+      setClarificationSubject("")
+      toast.success(`Email sent to ${ticket.user.email}`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send email")
+    } finally {
+      setIsClarificationSending(false)
+    }
+  }
+
+  const filteredAssignableUsers = useMemo(() => {
+    const query = assignedUserSearch.trim().toLowerCase()
+    if (!query) return users
+    return users.filter((user) => {
+      const label = `${user.name || ""} ${user.email}`.toLowerCase()
+      return label.includes(query)
+    })
+  }, [users, assignedUserSearch])
+
+  const filteredAdditionalAssignees = useMemo(() => {
+    const query = additionalAssigneeSearch.trim().toLowerCase()
+    if (!query) return users
+    return users.filter((user) => {
+      const label = `${user.name || ""} ${user.email}`.toLowerCase()
+      return label.includes(query)
+    })
+  }, [users, additionalAssigneeSearch])
+
+  const selectedAssigneeLabel =
+    assignedToId === "unassigned"
+      ? "Unassigned"
+      : users.find((user) => user.id === assignedToId)?.name ||
+        users.find((user) => user.id === assignedToId)?.email ||
+        "Select assignee"
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg shadow-none" asChild>
-            <Link href="/tickets">
+          <Button variant="outline" size="icon" className="h-10 w-10 rounded-lg shadow-none" asChild>
+            <Link href={returnTo || "/tickets"}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -186,10 +244,10 @@ export function TicketEditPageForm({ ticket, users }: TicketEditPageFormProps) {
         </div>
         <div className="flex items-center gap-2">
           {hasChanges && <Badge variant="secondary">Unsaved changes</Badge>}
-          <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg shadow-none" asChild>
-            <Link href="/tickets">Cancel</Link>
+          <Button variant="outline" size="sm" className="h-10 px-4 rounded-lg shadow-none" asChild>
+            <Link href={returnTo || "/tickets"}>Cancel</Link>
           </Button>
-          <Button size="sm" className="h-8 px-3 rounded-lg shadow-none" onClick={handleSave} disabled={isSaving || !hasChanges}>
+          <Button size="sm" className="h-10 px-4 rounded-lg shadow-none" onClick={handleSave} disabled={isSaving || !hasChanges}>
             <Save className="mr-2 h-4 w-4" />
             {isSaving ? "Saving..." : "Save"}
           </Button>
@@ -278,7 +336,7 @@ export function TicketEditPageForm({ ticket, users }: TicketEditPageFormProps) {
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className={`h-8 w-[165px] ${statusBadgeClass(status)}`}>
+                  <SelectTrigger className={`h-10 w-[190px] ${statusBadgeClass(status)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -293,7 +351,7 @@ export function TicketEditPageForm({ ticket, users }: TicketEditPageFormProps) {
               <div className="space-y-2">
                 <Label>Priority</Label>
                 <Select value={priority} onValueChange={setPriority}>
-                  <SelectTrigger className={`h-8 w-[165px] ${priorityBadgeClass(priority)}`}>
+                  <SelectTrigger className={`h-10 w-[190px] ${priorityBadgeClass(priority)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -307,45 +365,75 @@ export function TicketEditPageForm({ ticket, users }: TicketEditPageFormProps) {
               </div>
               <div className="space-y-2">
                 <Label>Assigned To</Label>
-                <Select value={assignedToId} onValueChange={setAssignedToId}>
-                  <SelectTrigger className="h-8 w-[165px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="h-10 w-[190px] justify-between">
+                      <span className="truncate">{selectedAssigneeLabel}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[320px] max-h-72 overflow-auto" align="start">
+                    <div className="p-2">
+                      <Input
+                        placeholder="Search user..."
+                        value={assignedUserSearch}
+                        onChange={(e) => setAssignedUserSearch(e.target.value)}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="w-full px-2 py-2 text-left text-sm hover:bg-accent"
+                      onClick={() => setAssignedToId("unassigned")}
+                    >
+                      Unassigned
+                    </button>
+                    {filteredAssignableUsers.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        className="w-full px-2 py-2 text-left text-sm hover:bg-accent"
+                        onClick={() => setAssignedToId(user.id)}
+                      >
                         {user.name || user.email}
-                      </SelectItem>
+                      </button>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Additional Assignees</Label>
-              <div className="grid gap-2 md:grid-cols-2">
-                {users.map((user) => {
-                  const checked = additionalAssigneeIds.includes(user.id)
-                  return (
-                    <label
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="h-10 w-full justify-between">
+                    <span>
+                      {additionalAssigneeIds.length > 0
+                        ? `${additionalAssigneeIds.length} selected`
+                        : "Select additional assignees"}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[320px] max-h-72 overflow-auto" align="start">
+                  <div className="p-2">
+                    <Input
+                      placeholder="Search user..."
+                      value={additionalAssigneeSearch}
+                      onChange={(e) => setAdditionalAssigneeSearch(e.target.value)}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  {filteredAdditionalAssignees.map((user) => (
+                    <DropdownMenuCheckboxItem
                       key={user.id}
-                      className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 text-sm ${
-                        checked ? "border-primary bg-primary/10" : "border-border/70"
-                      }`}
+                      checked={additionalAssigneeIds.includes(user.id)}
+                      onCheckedChange={() => toggleAdditionalAssignee(user.id)}
                     >
-                      <span className="truncate">{user.name || user.email}</span>
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4"
-                        checked={checked}
-                        onChange={() => toggleAdditionalAssignee(user.id)}
-                      />
-                    </label>
-                  )
-                })}
-              </div>
+                      {user.name || user.email}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div className="space-y-2">
@@ -373,6 +461,35 @@ export function TicketEditPageForm({ ticket, users }: TicketEditPageFormProps) {
             <CardDescription>Internal notes and handover context for support team.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-3 rounded-lg border border-border/70 p-3">
+              <Label className="text-sm font-medium">Email requester for clarification</Label>
+              <p className="text-xs text-muted-foreground">
+                Send a direct email to {ticket.user.name || ticket.user.email} ({ticket.user.email}) for additional details.
+              </p>
+              <Input
+                placeholder={`Question regarding your ticket: ${ticket.title}`}
+                value={clarificationSubject}
+                onChange={(e) => setClarificationSubject(e.target.value)}
+              />
+              <Textarea
+                value={clarificationMessage}
+                onChange={(e) => setClarificationMessage(e.target.value)}
+                placeholder="Write your question for the requester..."
+                className="min-h-[100px]"
+              />
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-10 px-4 rounded-lg shadow-none"
+                  onClick={handleSendClarificationEmail}
+                  disabled={isClarificationSending || !clarificationMessage.trim()}
+                >
+                  {isClarificationSending ? "Sending email..." : "Send Email"}
+                </Button>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="agent-comment">Add internal comment</Label>
               <Textarea
@@ -384,7 +501,7 @@ export function TicketEditPageForm({ ticket, users }: TicketEditPageFormProps) {
               />
             </div>
             <div className="flex justify-end">
-              <Button size="sm" className="h-8 px-3 rounded-lg shadow-none" onClick={handleAddComment} disabled={isCommentSaving || !agentComment.trim()}>
+              <Button size="sm" className="h-10 px-4 rounded-lg shadow-none" onClick={handleAddComment} disabled={isCommentSaving || !agentComment.trim()}>
                 {isCommentSaving ? "Adding..." : "Add Comment"}
               </Button>
             </div>

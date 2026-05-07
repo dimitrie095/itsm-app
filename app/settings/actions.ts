@@ -1,6 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import nodemailer from "nodemailer"
 
 export interface AzureADConfig {
   enabled: boolean
@@ -11,6 +12,24 @@ export interface AzureADConfig {
   syncGroups: boolean
   defaultRole: "END_USER" | "AGENT" | "ADMIN"
   syncInterval: string
+}
+
+export interface OutlookConfig {
+  enabled: boolean
+  organizationName: string
+  employeeDomains: string
+  smtpHost: string
+  smtpPort: string
+  smtpUser: string
+  smtpPass: string
+  fromEmail: string
+}
+
+export interface TeamsConfig {
+  enabled: boolean
+  organizationName: string
+  channelName: string
+  webhookUrl: string
 }
 
 export async function saveAzureADConfig(config: AzureADConfig) {
@@ -156,5 +175,212 @@ export async function triggerUserSync() {
   } catch (error) {
     console.error("Error triggering user sync:", error)
     return { success: false, error: "Failed to start user synchronization" }
+  }
+}
+
+export async function saveOutlookConfig(config: OutlookConfig) {
+  try {
+    const integration = await prisma.integrationConfig.upsert({
+      where: {
+        provider: "outlook_smtp",
+      },
+      update: {
+        config: JSON.stringify(config),
+        enabled: config.enabled,
+        updatedAt: new Date(),
+      },
+      create: {
+        provider: "outlook_smtp",
+        name: "Outlook SMTP",
+        config: JSON.stringify(config),
+        enabled: config.enabled,
+      },
+    })
+
+    return { success: true, message: "Outlook configuration saved successfully", integrationId: integration.id }
+  } catch (error) {
+    console.error("Error saving Outlook config:", error)
+    return { success: false, error: "Failed to save Outlook configuration" }
+  }
+}
+
+export async function getOutlookConfig() {
+  try {
+    const integration = await prisma.integrationConfig.findUnique({
+      where: { provider: "outlook_smtp" },
+    })
+
+    if (integration) {
+      const config = JSON.parse(integration.config)
+      return {
+        enabled: integration.enabled,
+        organizationName: config.organizationName || "",
+        employeeDomains: config.employeeDomains || "",
+        smtpHost: config.smtpHost || "smtp.office365.com",
+        smtpPort: config.smtpPort || "587",
+        smtpUser: config.smtpUser || "",
+        smtpPass: config.smtpPass || "",
+        fromEmail: config.fromEmail || "",
+      } as OutlookConfig
+    }
+
+    return {
+      enabled: false,
+      organizationName: "",
+      employeeDomains: "",
+      smtpHost: process.env.OUTLOOK_SMTP_HOST || "smtp.office365.com",
+      smtpPort: process.env.OUTLOOK_SMTP_PORT || "587",
+      smtpUser: process.env.OUTLOOK_SMTP_USER || "",
+      smtpPass: process.env.OUTLOOK_SMTP_PASS || "",
+      fromEmail: process.env.OUTLOOK_FROM_EMAIL || process.env.OUTLOOK_SMTP_USER || "",
+    } as OutlookConfig
+  } catch (error) {
+    console.error("Error getting Outlook config:", error)
+    return {
+      enabled: false,
+      organizationName: "",
+      employeeDomains: "",
+      smtpHost: "smtp.office365.com",
+      smtpPort: "587",
+      smtpUser: "",
+      smtpPass: "",
+      fromEmail: "",
+    } as OutlookConfig
+  }
+}
+
+export async function testOutlookConnection(config: OutlookConfig) {
+  try {
+    if (!config.enabled) {
+      return { success: false, message: "Please enable Outlook integration first." }
+    }
+    if (!config.smtpHost || !config.smtpPort || !config.smtpUser || !config.smtpPass || !config.fromEmail) {
+      return { success: false, message: "Please fill in all required SMTP fields." }
+    }
+    if (!config.organizationName.trim()) {
+      return { success: false, message: "Please provide your organization name." }
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: config.smtpHost,
+      port: Number(config.smtpPort),
+      secure: false,
+      auth: {
+        user: config.smtpUser,
+        pass: config.smtpPass,
+      },
+    })
+
+    await transporter.verify()
+    return {
+      success: true,
+      message: `Connection successful for ${config.organizationName}. SMTP is reachable.`,
+    }
+  } catch (error) {
+    console.error("Outlook connection test failed:", error)
+    return {
+      success: false,
+      message: "Failed to connect to Outlook SMTP. Please verify host, port, user, and password.",
+    }
+  }
+}
+
+export async function saveTeamsConfig(config: TeamsConfig) {
+  try {
+    const integration = await prisma.integrationConfig.upsert({
+      where: { provider: "microsoft_teams" },
+      update: {
+        config: JSON.stringify(config),
+        enabled: config.enabled,
+        updatedAt: new Date(),
+      },
+      create: {
+        provider: "microsoft_teams",
+        name: "Microsoft Teams",
+        config: JSON.stringify(config),
+        enabled: config.enabled,
+      },
+    })
+
+    return { success: true, message: "Microsoft Teams configuration saved.", integrationId: integration.id }
+  } catch (error) {
+    console.error("Error saving Teams config:", error)
+    return { success: false, error: "Failed to save Microsoft Teams configuration" }
+  }
+}
+
+export async function getTeamsConfig() {
+  try {
+    const integration = await prisma.integrationConfig.findUnique({
+      where: { provider: "microsoft_teams" },
+    })
+
+    if (integration) {
+      const config = JSON.parse(integration.config || "{}")
+      return {
+        enabled: integration.enabled,
+        organizationName: config.organizationName || "",
+        channelName: config.channelName || "",
+        webhookUrl: config.webhookUrl || "",
+      } as TeamsConfig
+    }
+
+    return {
+      enabled: false,
+      organizationName: process.env.TEAMS_ORGANIZATION_NAME || "",
+      channelName: process.env.TEAMS_CHANNEL_NAME || "",
+      webhookUrl: process.env.TEAMS_WEBHOOK_URL || "",
+    } as TeamsConfig
+  } catch (error) {
+    console.error("Error loading Teams config:", error)
+    return {
+      enabled: false,
+      organizationName: "",
+      channelName: "",
+      webhookUrl: "",
+    } as TeamsConfig
+  }
+}
+
+export async function testTeamsConnection(config: TeamsConfig) {
+  try {
+    if (!config.enabled) {
+      return { success: false, message: "Please enable Microsoft Teams integration first." }
+    }
+    if (!config.organizationName.trim()) {
+      return { success: false, message: "Please provide organization name." }
+    }
+    if (!config.channelName.trim()) {
+      return { success: false, message: "Please provide channel name." }
+    }
+    if (!config.webhookUrl.trim()) {
+      return { success: false, message: "Please provide webhook URL." }
+    }
+
+    const response = await fetch(config.webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        "@type": "MessageCard",
+        "@context": "http://schema.org/extensions",
+        summary: "ITSM Teams test",
+        themeColor: "0073d2",
+        title: "ITSM Teams integration test",
+        text: `Connection successful for ${config.organizationName} (${config.channelName}).`,
+      }),
+    })
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "")
+      return {
+        success: false,
+        message: `Teams webhook rejected the test (${response.status}). ${body || ""}`.trim(),
+      }
+    }
+
+    return { success: true, message: "Microsoft Teams connection successful. Test message sent." }
+  } catch (error) {
+    console.error("Error testing Teams connection:", error)
+    return { success: false, message: "Failed to connect to Microsoft Teams webhook." }
   }
 }

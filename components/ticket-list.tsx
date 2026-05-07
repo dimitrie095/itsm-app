@@ -313,15 +313,37 @@ export function TicketList({
     if (!ticket || ticket.status === targetStatus) return
 
     const previousTickets = tickets
-    setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, status: targetStatus } : t)))
+    const shouldUnassign = targetStatus === "NEW"
+    setTickets((prev) =>
+      prev.map((t) =>
+        t.id === ticketId
+          ? {
+              ...t,
+              status: targetStatus,
+              assignedToId: shouldUnassign ? null : t.assignedToId,
+              assignedTo: shouldUnassign ? null : t.assignedTo,
+            }
+          : t
+      )
+    )
 
     try {
-      const result = await updateTicket(ticketId, { status: targetStatus })
+      const result = await updateTicket(ticketId, {
+        status: targetStatus,
+        ...(shouldUnassign ? { assignedToId: null } : {}),
+      })
       // Keep local state authoritative for Kanban UX and sync with returned server value.
       if (result?.ticket?.status) {
         setTickets((prev) =>
           prev.map((t) =>
-            t.id === ticketId ? { ...t, status: result.ticket.status } : t
+            t.id === ticketId
+              ? {
+                  ...t,
+                  status: result.ticket.status,
+                  assignedToId: shouldUnassign ? null : t.assignedToId,
+                  assignedTo: shouldUnassign ? null : t.assignedTo,
+                }
+              : t
           )
         )
       }
@@ -405,7 +427,7 @@ export function TicketList({
     <>
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <CardTitle>All Tickets</CardTitle>
               <CardDescription>
@@ -414,8 +436,8 @@ export function TicketList({
             </CardDescription>
           </div>
           
-          <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-md border p-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center rounded-xl p-0.5">
               <Button
                 type="button"
                 variant={viewMode === "table" ? "default" : "ghost"}
@@ -446,12 +468,12 @@ export function TicketList({
         
         {showFilters && (
           <div className="grid gap-4 pt-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
+            <div className="flex flex-col gap-4 md:flex-row">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search tickets..."
-                  className="pl-9"
+                  className="pl-10"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -459,7 +481,7 @@ export function TicketList({
               
               <div className="flex flex-wrap gap-2">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-[170px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -473,7 +495,7 @@ export function TicketList({
                 </Select>
                 
                 <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-[170px]">
                     <SelectValue placeholder="Priority" />
                   </SelectTrigger>
                   <SelectContent>
@@ -487,7 +509,7 @@ export function TicketList({
                 
                 {session?.user?.role !== Role.END_USER && (
                   <Select value={assignedFilter} onValueChange={setAssignedFilter}>
-                    <SelectTrigger className="w-[150px]">
+                    <SelectTrigger className="w-[170px]">
                       <SelectValue placeholder="Assigned" />
                     </SelectTrigger>
                     <SelectContent>
@@ -534,7 +556,7 @@ export function TicketList({
           </div>
         ) : viewMode === "table" ? (
           <>
-            <div className="rounded-md border">
+            <div className="rounded-xl border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -646,7 +668,7 @@ export function TicketList({
                 return (
                   <div
                     key={column.key}
-                    className="rounded-lg border bg-muted/20"
+                    className="rounded-xl border bg-muted/20"
                     onDragOver={(event) => {
                       if (!canChangeStatus) return
                       event.preventDefault()
@@ -668,7 +690,7 @@ export function TicketList({
                       <span className="text-xs text-muted-foreground">{columnTickets.length}</span>
                     </div>
                     <div
-                      className={`space-y-2 p-2 min-h-[180px] rounded-md transition ${
+                      className={`min-h-[180px] space-y-2 rounded-lg p-3 transition ${
                         canChangeStatus ? "hover:bg-muted/40" : ""
                       }`}
                     >
@@ -710,7 +732,7 @@ export function TicketList({
                                 handleKanbanDrop(ticketId, column.key)
                               }
                             }}
-                            className={`w-full rounded-md border bg-background p-3 text-left shadow-sm transition hover:bg-muted/40 ${
+                            className={`w-full rounded-lg border bg-background p-3.5 text-left shadow-sm transition hover:bg-muted/40 ${
                               draggingTicketId === ticket.id ? "opacity-50" : ""
                             }`}
                           >
@@ -727,7 +749,7 @@ export function TicketList({
                           </div>
                         ))
                       ) : (
-                        <div className="rounded-md border border-dashed p-3 text-center text-xs text-muted-foreground">
+                        <div className="rounded-lg border border-dashed p-3.5 text-center text-xs text-muted-foreground">
                           No tickets
                         </div>
                       )}

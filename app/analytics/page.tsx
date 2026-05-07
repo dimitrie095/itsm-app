@@ -60,10 +60,10 @@ export default async function AnalyticsPage() {
   } : await getAnalyticsData()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Analytics</h1>
           <p className="text-muted-foreground">Data-driven insights into your IT service performance.</p>
         </div>
         <Button variant="outline" asChild>
@@ -74,16 +74,16 @@ export default async function AnalyticsPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="overview">
-        <TabsList>
+      <Tabs defaultValue="overview" className="space-y-5">
+        <TabsList className="h-11 rounded-lg p-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="tickets">Tickets</TabsTrigger>
           <TabsTrigger value="sla">SLA</TabsTrigger>
           <TabsTrigger value="agents">Agents</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <TabsContent value="overview" className="space-y-5">
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
@@ -137,7 +137,7 @@ export default async function AnalyticsPage() {
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Ticket Trends</CardTitle>
@@ -197,8 +197,8 @@ export default async function AnalyticsPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="tickets" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
+        <TabsContent value="tickets" className="space-y-5">
+          <div className="grid gap-5 md:grid-cols-3">
             <Card>
               <CardHeader>
                 <CardTitle>By Priority</CardTitle>
@@ -276,7 +276,7 @@ export default async function AnalyticsPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="sla" className="space-y-4">
+        <TabsContent value="sla" className="space-y-5">
           <Card>
             <CardHeader>
               <CardTitle>SLA Performance</CardTitle>
@@ -286,7 +286,7 @@ export default async function AnalyticsPage() {
               {analytics.slaPerformance.length > 0 ? (
                 <div className="space-y-4">
                   {analytics.slaPerformance.map((sla) => (
-                    <div key={sla.priority} className="border rounded-lg p-4">
+                    <div key={sla.priority} className="rounded-xl border p-5">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <Badge className={getPriorityColor(sla.priority as Priority)}>
@@ -320,7 +320,7 @@ export default async function AnalyticsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="agents" className="space-y-4">
+        <TabsContent value="agents" className="space-y-5">
           <Card>
             <CardHeader>
               <CardTitle>Agent Performance</CardTitle>
@@ -330,7 +330,7 @@ export default async function AnalyticsPage() {
               {analytics.agentPerformance.length > 0 ? (
                 <div className="space-y-4">
                   {analytics.agentPerformance.map((agent) => (
-                    <div key={agent.id} className="border rounded-lg p-4">
+                    <div key={agent.id} className="rounded-xl border p-5">
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <div className="font-medium">{agent.name}</div>

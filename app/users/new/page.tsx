@@ -8,20 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Shuffle } from "lucide-react";
 import Link from "next/link";
 
-const departments = [
+const competenceCenters = [
   "IT",
-  "Support",
-  "Sales",
-  "Marketing",
-  "HR",
-  "Finance",
-  "Operations",
-  "Engineering",
-  "Product",
-  "Other",
+  "Core Solutions",
+  "Analytical Solutions",
+  "Business Technologies",
+  "Data & AI Solutions",
+  "Innovation Lab",
 ];
 
 const roles = [
@@ -109,6 +105,20 @@ export default function NewUserPage() {
     }
   };
 
+  const generateRandomPassword = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*";
+    let generated = "";
+    for (let i = 0; i < 14; i++) {
+      generated += chars[Math.floor(Math.random() * chars.length)];
+    }
+    setFormData((prev) => ({
+      ...prev,
+      password: generated,
+      confirmPassword: generated,
+    }));
+    toast.success("Random password generated");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -184,30 +194,36 @@ export default function NewUserPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
+                <Label htmlFor="department">Competence Center</Label>
                 <Select
                   value={formData.department}
                   onValueChange={(value) => handleSelectChange("department", value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder="Select competence center" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No department</SelectItem>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept} value={dept}>
-                        {dept}
+                    <SelectItem value="none">No competence center</SelectItem>
+                    {competenceCenters.map((center) => (
+                      <SelectItem key={center} value={center}>
+                        {center}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
-                  Optional department assignment.
+                  Optional competence center assignment.
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password *</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={generateRandomPassword}>
+                    <Shuffle className="mr-2 h-4 w-4" />
+                    Generate
+                  </Button>
+                </div>
                 <Input
                   id="password"
                   name="password"

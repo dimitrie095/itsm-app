@@ -474,6 +474,7 @@ export default function EditRulePage() {
   const [useConditionPreset, setUseConditionPreset] = useState(true)
   const [agents, setAgents] = useState<Agent[]>([])
   const [loadingAgents, setLoadingAgents] = useState(false)
+  const [agentSearch, setAgentSearch] = useState("")
   const [triggerOpen, setTriggerOpen] = useState(true)
   const [conditionOpen, setConditionOpen] = useState(true)
   const [actionOpen, setActionOpen] = useState(true)
@@ -649,6 +650,12 @@ export default function EditRulePage() {
   const filteredConditions = formData.category
     ? CONDITION_OPTIONS_WITH_CATEGORY.filter(c => c.category === formData.category)
     : CONDITION_OPTIONS_WITH_CATEGORY;
+  const filteredAgents = agents.filter((agent) => {
+    const query = agentSearch.trim().toLowerCase()
+    if (!query) return true
+    const label = `${agent.name || ""} ${agent.email} ${agent.department || ""}`.toLowerCase()
+    return label.includes(query)
+  })
 
   if (isLoading) {
     return (
@@ -913,7 +920,15 @@ export default function EditRulePage() {
                                     <SelectValue placeholder="Select an agent" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {agents.map((agent) => (
+                                    <div className="p-2">
+                                      <Input
+                                        placeholder="Search agent..."
+                                        value={agentSearch}
+                                        onChange={(e) => setAgentSearch(e.target.value)}
+                                        onKeyDown={(e) => e.stopPropagation()}
+                                      />
+                                    </div>
+                                    {filteredAgents.map((agent) => (
                                       <SelectItem key={agent.id} value={agent.email}>
                                         {agent.name} ({agent.email}) {agent.department ? `- ${agent.department}` : ''}
                                       </SelectItem>

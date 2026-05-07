@@ -37,9 +37,9 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+      <div className="w-full max-w-lg">
+        <div className="mb-10 text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Shield className="h-10 w-10 text-primary" />
             <h1 className="text-3xl font-bold">Ponturo ITSM Tool</h1>
@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
           <p className="text-muted-foreground">Reset your password</p>
         </div>
 
-        <Card>
+        <Card className="rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
@@ -58,8 +58,8 @@ export default function ForgotPasswordPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-3">
                 <Label htmlFor="email">Email Address</Label>
                 <Input
                   id="email"
@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
 
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="h-12 w-full rounded-xl" 
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -109,7 +109,7 @@ export default function ForgotPasswordPage() {
           <CardFooter className="flex flex-col space-y-4">
             <Button 
               variant="outline" 
-              className="w-full"
+                className="h-12 w-full rounded-xl"
               asChild
             >
               <Link href="/login">

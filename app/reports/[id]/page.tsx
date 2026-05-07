@@ -7,6 +7,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getReportById } from "../actions"
 import { ReportSummary } from "./report-summary"
+import { ReportRecentTickets } from "./recent-tickets"
 import { DownloadReportButton } from "@/components/reports/download-button"
 
 // Komponente für Metrik-Karten
@@ -203,28 +204,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
             {report.data.recentTickets && report.data.recentTickets.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-3">Recent Ticket Activity</h3>
-                <div className="space-y-3">
-                  {report.data.recentTickets.slice(0, 5).map((ticket: any) => (
-                    <div key={ticket.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-mono text-muted-foreground">{ticket.id}</span>
-                          <span className="font-medium">{ticket.title}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Badge variant="outline">{ticket.priority}</Badge>
-                          <span>•</span>
-                          <span>{ticket.status}</span>
-                          <span>•</span>
-                          <span>{ticket.category || 'Uncategorized'}</span>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                <ReportRecentTickets tickets={report.data.recentTickets} reportId={report.id} />
               </div>
             )}
           </CardContent>

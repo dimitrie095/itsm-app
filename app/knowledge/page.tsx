@@ -78,13 +78,13 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
   const defaultCategories = ["Security", "Networking", "Hardware", "Software", "Email", "Process", "Other"]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Knowledge Base</h1>
+          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Knowledge Base</h1>
           <p className="text-muted-foreground">Central repository of solutions and FAQs.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {canViewSuggestions && (
             <Button asChild variant="outline">
               <a href="/knowledge/suggestions">
@@ -104,7 +104,7 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Articles</CardTitle>
@@ -143,7 +143,7 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-7 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -157,7 +157,7 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       placeholder="Search articles..."
-                      className="w-[300px] pl-9"
+                      className="w-[320px] pl-10"
                       name="search"
                       defaultValue={searchParams?.search || ""}
                     />

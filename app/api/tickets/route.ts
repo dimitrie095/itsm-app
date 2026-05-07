@@ -6,7 +6,9 @@ import { Role, TicketStatus, Priority, TicketSource, ImpactLevel, UrgencyLevel }
 import { searchSchema } from "@/lib/validation/schemas"
 import { getRequestLogger } from "@/lib/logging/middleware"
 import { z, ZodError } from 'zod'
-import { notifyTicketCreated } from "@/lib/notifications"
+import { notifyTicketAssigned, notifyTicketCreated } from "@/lib/notifications"
+import { buildTicketCreatedEmailHtml, sendTicketEmail } from "@/lib/outlook-mailer"
+import { buildTeamsTicketCreatedMessage, sendTeamsMessage } from "@/lib/teams-webhook"
 
 export const runtime = 'nodejs'
 
@@ -415,6 +417,35 @@ export async function POST(request: Request) {
     notifyTicketCreated(ticket.id, ticket.title, ticket.user.id).catch(error => {
       console.error('Failed to send ticket creation notifications:', error)
     })
+
+    // Notify ticket requester by email (in background)
+    if (ticket.user?.email) {
+      sendTicketEmail({
+        to: ticket.user.email,
+        subject: `Ticket created: ${ticket.title}`,
+        html: buildTicketCreatedEmailHtml(ticket.id, ticket.title),
+      }).catch(error => {
+        console.error('Failed to send ticket creation email:', error)
+      })
+    }
+
+    // Notify Teams channel (in background)
+    sendTeamsMessage(
+      buildTeamsTicketCreatedMessage(
+        ticket.id,
+        ticket.title,
+        ticket.user?.name || ticket.user?.email || "Unknown requester"
+      )
+    ).catch(error => {
+      console.error('Failed to send Teams ticket creation notification:', error)
+    })
+
+    // Notify assigned agent when ticket is created with assignee
+    if (ticket.assignedToId) {
+      notifyTicketAssigned(ticket.id, ticket.title, ticket.assignedToId, user!.id).catch(error => {
+        console.error('Failed to send assignment notification:', error)
+      })
+    }
     
     return NextResponse.json(ticket, { status: 201 })
   } catch (error) {

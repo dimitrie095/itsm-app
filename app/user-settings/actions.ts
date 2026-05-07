@@ -65,10 +65,20 @@ export async function changePassword(data: {
     // Hash new password
     const hashedPassword = await bcryptjs.hash(data.newPassword, 10);
     
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { passwordHash: hashedPassword },
-    });
+    try {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { passwordHash: hashedPassword, mustChangePassword: false } as any,
+      });
+    } catch (updateError) {
+      if (!String(updateError).includes("Unknown argument `mustChangePassword`")) {
+        throw updateError;
+      }
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { passwordHash: hashedPassword },
+      });
+    }
     
     // Create audit log for password change (self)
     await createAuditLog({

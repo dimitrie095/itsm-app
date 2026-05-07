@@ -8,10 +8,17 @@ import { TicketEditPageForm } from "./ticket-edit-page-form"
 
 interface PageProps {
   params: Promise<{ id: string }>
+  searchParams?: Promise<{ returnTo?: string }> | { returnTo?: string }
 }
 
-export default async function TicketEditPage({ params }: PageProps) {
+export default async function TicketEditPage({ params, searchParams }: PageProps) {
   const { id } = await params
+  const resolvedSearchParams =
+    searchParams && typeof (searchParams as Promise<{ returnTo?: string }>).then === "function"
+      ? await (searchParams as Promise<{ returnTo?: string }>)
+      : (searchParams as { returnTo?: string } | undefined)
+  const returnToRaw = resolvedSearchParams?.returnTo
+  const returnTo = returnToRaw && returnToRaw.startsWith("/") ? returnToRaw : undefined
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -137,6 +144,7 @@ export default async function TicketEditPage({ params }: PageProps) {
         })) ?? [],
       }}
       users={users}
+      returnTo={returnTo}
     />
   )
 }

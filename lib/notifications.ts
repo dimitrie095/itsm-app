@@ -1,5 +1,15 @@
 import { prisma } from "./prisma"
 import { Notification } from "./generated/prisma/client"
+import {
+  buildTicketAssignedEmailHtml,
+  buildTicketStatusChangedEmailHtml,
+  sendTicketEmail,
+} from "./outlook-mailer"
+import {
+  buildTeamsTicketAssignedMessage,
+  buildTeamsTicketStatusChangedMessage,
+  sendTeamsMessage,
+} from "./teams-webhook"
 
 export type NotificationType = 
   | 'ticket_created'
@@ -136,13 +146,32 @@ export async function notifyTicketStatusChanged(
   oldStatus: string, 
   newStatus: string
 ) {
-  return createNotification({
+  const notification = await createNotification({
     userId,
     type: 'ticket_status_changed',
     title: 'Ticket Status Updated',
     message: `Your ticket "${ticketTitle}" status has changed from ${oldStatus} to ${newStatus}.`,
     metadata: { ticketId, oldStatus, newStatus },
   })
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  })
+
+  if (user?.email) {
+    await sendTicketEmail({
+      to: user.email,
+      subject: `Ticket update: ${ticketTitle}`,
+      html: buildTicketStatusChangedEmailHtml(ticketId, ticketTitle, oldStatus, newStatus),
+    })
+  }
+
+  await sendTeamsMessage(
+    buildTeamsTicketStatusChangedMessage(ticketId, ticketTitle, oldStatus, newStatus)
+  ).catch((error) => console.error("Failed to send Teams status notification:", error))
+
+  return notification
 }
 
 /**
@@ -154,11 +183,38 @@ export async function notifyTicketAssigned(
   assignedToUserId: string,
   assignedByUserId?: string
 ) {
-  return createNotification({
+  const notification = await createNotification({
     userId: assignedToUserId,
     type: 'ticket_assigned',
     title: 'Ticket Assigned to You',
     message: `Ticket "${ticketTitle}" has been assigned to you.`,
     metadata: { ticketId, assignedByUserId },
   })
+
+  const assignee = await prisma.user.findUnique({
+    where: { id: assignedToUserId },
+    select: { email: true, name: true },
+  })
+
+  if (assignee?.email) {
+    await sendTicketEmail({
+      to: assignee.email,
+      subject: `Ticket assigned: ${ticketTitle}`,
+      html: buildTicketAssignedEmailHtml(
+        ticketId,
+        ticketTitle,
+        assignee.name || assignee.email
+      ),
+    })
+  }
+
+  await sendTeamsMessage(
+    buildTeamsTicketAssignedMessage(
+      ticketId,
+      ticketTitle,
+      assignee?.name || assignee?.email || "Unknown assignee"
+    )
+  ).catch((error) => console.error("Failed to send Teams assignment notification:", error))
+
+  return notification
 }

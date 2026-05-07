@@ -10,9 +10,9 @@ export default function UnauthorizedPage() {
   const { data: session } = useSession();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+      <div className="w-full max-w-lg">
+        <div className="mb-10 text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Shield className="h-10 w-10 text-primary" />
             <h1 className="text-3xl font-bold">Ponturo ITSM Tool</h1>
@@ -20,7 +20,7 @@ export default function UnauthorizedPage() {
           <p className="text-muted-foreground">Access Control System</p>
         </div>
 
-        <Card>
+        <Card className="rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertCircle className="h-5 w-5" />
@@ -30,8 +30,8 @@ export default function UnauthorizedPage() {
               You don&apos;t have permission to access this page
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="rounded-lg bg-red-50 p-4 border border-red-200">
+          <CardContent className="space-y-7">
+            <div className="rounded-xl border border-red-200 bg-red-50 p-5">
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
                 <div>
@@ -46,7 +46,7 @@ export default function UnauthorizedPage() {
             {session?.user && (
               <div className="space-y-3">
                 <h3 className="font-semibold">Your Account Information</h3>
-                <div className="bg-muted p-4 rounded-lg">
+                <div className="rounded-xl bg-muted p-5">
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="font-medium">{session.user.name || "User"}</p>
@@ -66,7 +66,7 @@ export default function UnauthorizedPage() {
             <div className="space-y-3">
               <h3 className="font-semibold">Permission Levels</h3>
               <div className="grid gap-2">
-                <div className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="flex items-center justify-between rounded-xl border p-4">
                   <div>
                     <p className="font-medium">End User</p>
                     <p className="text-sm text-muted-foreground">Can create tickets and view knowledge base</p>
@@ -75,7 +75,7 @@ export default function UnauthorizedPage() {
                     Basic Access
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="flex items-center justify-between rounded-xl border p-4">
                   <div>
                     <p className="font-medium">Support Agent</p>
                     <p className="text-sm text-muted-foreground">Can manage tickets, assets, and generate reports</p>
@@ -84,7 +84,7 @@ export default function UnauthorizedPage() {
                     Standard Access
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="flex items-center justify-between rounded-xl border p-4">
                   <div>
                     <p className="font-medium">Administrator</p>
                     <p className="text-sm text-muted-foreground">Full system access and configuration</p>

@@ -5,6 +5,7 @@ import * as path from 'path'
 import { revalidatePath } from 'next/cache'
 import { generateWithDefaultLLM } from '@/lib/services/llm-service'
 import { markdownToHtml } from '@/lib/formatting'
+import { sendOutlookEmail } from '@/lib/outlook-mailer'
 
 const reportsFilePath = path.join(process.cwd(), 'reports.json')
 
@@ -213,6 +214,40 @@ export async function getReportById(id: string) {
   return reports.find((report: any) => report.id === id)
 }
 
+export async function getReportRecipientOptions() {
+  try {
+    const { prisma } = await import('@/lib/prisma')
+    const users = await prisma.user.findMany({
+      where: {
+        email: {
+          not: null,
+        },
+      },
+      select: {
+        email: true,
+        name: true,
+      },
+      orderBy: [
+        { name: 'asc' },
+        { email: 'asc' },
+      ],
+      take: 300,
+    })
+
+    const options = users
+      .filter((u) => !!u.email)
+      .map((u) => ({
+        email: u.email,
+        label: u.name || u.email,
+      }))
+
+    return { success: true, options }
+  } catch (error) {
+    console.error('Error loading report recipient options:', error)
+    return { success: false, options: [] as Array<{ email: string; label: string }> }
+  }
+}
+
 export async function generateReportSummary(reportId: string): Promise<{ success: boolean; summary?: string; error?: string }> {
   try {
     const reports = await readReports();
@@ -262,6 +297,26 @@ Please provide a brief summary highlighting key insights, trends, and recommenda
   } catch (error: any) {
     console.error('Error generating report summary:', error);
     return { success: false, error: error.message || 'Failed to generate summary' };
+  }
+}
+
+export async function updateReportSummary(reportId: string, summary: string) {
+  try {
+    const reports = await readReports()
+    const report = reports.find((r: any) => r.id === reportId)
+    if (!report) {
+      return { success: false, error: 'Report not found' }
+    }
+
+    report.summary = String(summary || '').trim()
+    report.updatedAt = new Date().toISOString()
+    await writeReports(reports)
+    revalidatePath(`/reports/${reportId}`)
+
+    return { success: true, summary: report.summary }
+  } catch (error: any) {
+    console.error('Error updating report summary:', error)
+    return { success: false, error: error.message || 'Failed to update summary' }
   }
 }
 
@@ -352,25 +407,140 @@ export async function deleteReport(id: string) {
 }
 
 export async function sendReport(id: string, recipients: string[]) {
+  return sendReportEmail({
+    id,
+    recipients,
+    includeAttachment: true,
+  })
+}
+
+export async function generateReportEmailContent(
+  id: string,
+  customInstructions?: string
+): Promise<{ success: boolean; subject?: string; message?: string; error?: string }> {
   const reports = await readReports()
   const report = reports.find((r: any) => r.id === id)
   
   if (!report) {
+    return { success: false, error: 'Report not found' }
+  }
+
+  try {
+    const prompt = `Generate a concise email subject and body for sending the following ITSM report.
+
+Report Name: ${report.name}
+Report Type: ${report.type}
+Generated: ${report.createdAt}
+Key Metrics:
+- Total Tickets: ${report.data?.totalTickets ?? 0}
+- Open Tickets: ${report.data?.openTickets ?? 0}
+- Resolved Tickets: ${report.data?.resolvedTickets ?? 0}
+- Resolution Rate: ${report.data?.resolutionRate ?? 0}%
+
+${customInstructions ? `Additional instructions: ${customInstructions}` : ''}
+
+Return strict JSON with keys "subject" and "message". Message should be professional and ready to send.`
+
+    const response = await generateWithDefaultLLM(
+      prompt,
+      'You are an ITSM reporting assistant. Return only valid JSON with subject and message.'
+    )
+
+    const raw = response.content.trim()
+    const jsonBlockMatch = raw.match(/\{[\s\S]*\}/)
+    const parsed = JSON.parse(jsonBlockMatch ? jsonBlockMatch[0] : raw)
+    const subject = String(parsed.subject || '').trim()
+    const message = String(parsed.message || '').trim()
+
+    if (!subject || !message) {
+      throw new Error('AI response missing subject or message')
+    }
+
+    return { success: true, subject, message }
+  } catch (error: any) {
+    console.error('Error generating report email content:', error)
+    return { success: false, error: error.message || 'Failed to generate email content' }
+  }
+}
+
+export async function sendReportEmail(data: {
+  id: string
+  recipients: string[]
+  subject?: string
+  message?: string
+  includeAttachment?: boolean
+}) {
+  const reports = await readReports()
+  const report = reports.find((r: any) => r.id === data.id)
+  
+  if (!report) {
     throw new Error('Report not found')
   }
-  
-  // Hier würde die E-Mail-Sendelogik implementiert werden
-  // Für Demo: nur Status aktualisieren
+
+  const recipients = data.recipients.map((email) => email.trim()).filter(Boolean)
+  if (recipients.length === 0) {
+    throw new Error('Please provide at least one valid recipient')
+  }
+
+  const subject = data.subject?.trim() || `ITSM Report: ${report.name}`
+  const manualMessage = data.message?.trim()
+  const messageBody = manualMessage || `Please find attached the report "${report.name}".`
+
+  let attachment: { filename: string; content: Buffer; contentType: string } | null = null
+  if (data.includeAttachment !== false) {
+    const downloadable = await downloadReport(data.id)
+    const contentBuffer =
+      typeof downloadable.content === 'string'
+        ? Buffer.from(downloadable.content, 'utf-8')
+        : downloadable.content
+
+    attachment = {
+      filename: downloadable.filename,
+      content: contentBuffer,
+      contentType: downloadable.contentType,
+    }
+  }
+
+  for (const recipient of recipients) {
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2>${subject}</h2>
+        <p>${messageBody.replace(/\n/g, '<br/>')}</p>
+      </div>
+    `
+
+    const sendResult = await sendOutlookEmail({
+      to: recipient,
+      subject,
+      html,
+      attachments: attachment
+        ? [
+            {
+              filename: attachment.filename,
+              content: attachment.content,
+              contentType: attachment.contentType,
+            },
+          ]
+        : undefined,
+    })
+
+    if (!sendResult.sent) {
+      throw new Error('Outlook SMTP is not configured. Please configure it in Settings.')
+    }
+  }
+
   report.metadata.sentAt = new Date().toISOString()
   report.metadata.emailRecipients = recipients
-  
+  report.metadata.lastEmailSubject = subject
+  report.updatedAt = new Date().toISOString()
   await writeReports(reports)
   revalidatePath('/reports')
+  revalidatePath(`/reports/${data.id}`)
   
   return {
     success: true,
     message: `Report sent to ${recipients.join(', ')}`,
-    recipients
+    recipients,
   }
 }
 
@@ -537,7 +707,7 @@ function generateAISummarySection(report: any) {
   const formattedSummary = markdownToHtml(report.summary)
   return `
     <div class="section">
-        <h2>AI Summary</h2>
+        <h2>Report Summary</h2>
         <div class="ai-summary" style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
             <div style="margin: 0;">${formattedSummary}</div>
         </div>

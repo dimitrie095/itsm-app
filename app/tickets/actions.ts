@@ -2,9 +2,10 @@
 
 import { prisma } from "@/lib/prisma"
 import { TicketStatus, Priority } from "@prisma/client"
-import { notifyTicketStatusChanged } from "@/lib/notifications"
+import { notifyTicketAssigned, notifyTicketStatusChanged } from "@/lib/notifications"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { buildTicketClarificationEmailHtml, sendTicketEmail } from "@/lib/outlook-mailer"
 
 export async function getTicketsFromDatabase(userId?: string, userRole?: string) {
   try {
@@ -137,6 +138,7 @@ export async function updateTicket(
     let oldStatus: string | undefined
     let userId: string | undefined
     let ticketTitle: string | undefined
+    let oldAssignedToId: string | null | undefined
     
     if (updates.status) {
       // Validate status is a valid TicketStatus
@@ -162,14 +164,19 @@ export async function updateTicket(
     }
     
     if (updates.assignedToId !== undefined) {
+      const currentTicketForAssignment = await prisma.ticket.findUnique({
+        where: { id: ticketId },
+        select: { assignedToId: true, status: true, title: true },
+      })
+      oldAssignedToId = currentTicketForAssignment?.assignedToId
+      if (!ticketTitle && currentTicketForAssignment?.title) {
+        ticketTitle = currentTicketForAssignment.title
+      }
+
       updateData.assignedToId = updates.assignedToId
       // If assigning to someone, status should become ASSIGNED if it's NEW
       if (updates.assignedToId && !updates.status) {
-        const currentTicket = await prisma.ticket.findUnique({
-          where: { id: ticketId },
-          select: { status: true }
-        })
-        if (currentTicket?.status === TicketStatus.NEW) {
+        if (currentTicketForAssignment?.status === TicketStatus.NEW) {
           updateData.status = TicketStatus.ASSIGNED
         }
       }
@@ -256,6 +263,16 @@ export async function updateTicket(
       notifyTicketStatusChanged(ticketId, ticketTitle, userId, oldStatus, updates.status)
         .catch(error => console.error('Failed to send status change notification:', error))
     }
+
+    // Notify assigned agent by email/in-app if assignment changed
+    if (
+      updates.assignedToId &&
+      updates.assignedToId !== oldAssignedToId &&
+      ticketTitle
+    ) {
+      notifyTicketAssigned(ticketId, ticketTitle, updates.assignedToId)
+        .catch(error => console.error('Failed to send assignment notification:', error))
+    }
     
     return {
       success: true,
@@ -312,4 +329,71 @@ export async function addTicketComment(ticketId: string, content: string, isInte
   })
 
   return comment
+}
+
+export async function sendTicketClarificationEmail(ticketId: string, message: string, subject?: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
+  }
+
+  const role = session.user.role
+  if (role !== "ADMIN" && role !== "AGENT") {
+    throw new Error("Only agents and admins can send clarification emails")
+  }
+
+  const trimmedMessage = message.trim()
+  if (!trimmedMessage) {
+    throw new Error("Email message cannot be empty")
+  }
+
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    select: {
+      id: true,
+      title: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  })
+
+  if (!ticket) {
+    throw new Error("Ticket not found")
+  }
+
+  if (!ticket.user?.email) {
+    throw new Error("Ticket requester email not found")
+  }
+
+  const mailSubject = subject?.trim() || `Question regarding your ticket: ${ticket.title}`
+  const mailResult = await sendTicketEmail({
+    to: ticket.user.email,
+    subject: mailSubject,
+    html: buildTicketClarificationEmailHtml(
+      ticket.id,
+      ticket.title,
+      ticket.user.name || ticket.user.email,
+      trimmedMessage
+    ),
+  })
+
+  if (!mailResult.sent) {
+    throw new Error("Email sending is not configured. Please configure Outlook integration in Settings.")
+  }
+
+  await prisma.comment.create({
+    data: {
+      ticketId,
+      userId: session.user.id,
+      content: `Clarification email sent to ${ticket.user.email}: ${trimmedMessage}`,
+      isInternal: true,
+    },
+  })
+
+  return { success: true }
 }

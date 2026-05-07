@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Save, Database, Users, Globe } from "lucide-react"
 import AzureADConfig from "./azure-ad-config"
 import LlmConfigComponent from "./llm-config"
+import OutlookConfigComponent from "./outlook-config"
+import TeamsConfigComponent from "./teams-config"
 import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
 
@@ -222,6 +224,8 @@ export default async function SettingsPage() {
 {canManageIntegrations && (
           <TabsContent value="integrations" className="space-y-6">
             <AzureADConfig />
+            <OutlookConfigComponent />
+            <TeamsConfigComponent />
             
             <Card>
               <CardHeader>

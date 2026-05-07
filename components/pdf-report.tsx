@@ -188,10 +188,10 @@ export function PDFReport({ report }: PDFReportProps) {
           </View>
         </View>
 
-        {/* AI Summary */}
+        {/* Report Summary */}
         {report.summary && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>AI Summary</Text>
+            <Text style={styles.sectionTitle}>Report Summary</Text>
             <View style={{ marginTop: 10 }}>
               {markdownToPdfFragments(report.summary).map((fragment, idx) => (
                 <Text

@@ -21,6 +21,7 @@ model User {
   avatarUrl                        String?
   emailVerified                    DateTime?
   passwordHash                     String?
+  mustChangePassword               Boolean                   @default(false)
   accounts                         Account[]
   assets                           Asset[]
   comments                         Comment[]

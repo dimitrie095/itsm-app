@@ -11,15 +11,15 @@ export default async function TicketsPage() {
   const stats = await getTicketStats(session?.user?.id, session?.user?.role)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Tickets</h1>
+          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Tickets</h1>
           <p className="text-muted-foreground">Manage and track all support tickets.</p>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>

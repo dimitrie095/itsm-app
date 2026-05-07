@@ -429,5 +429,1322 @@
     "createdAt": "2026-04-04T09:15:21.027Z",
     "updatedAt": "2026-04-04T09:15:37.573Z",
     "summary": "**Zusammenfassung Ticket-Analyse (04.04.2026)**\n\n**Kernaussagen:**\n- Insgesamt 24 Tickets, davon noch **13 offen** (54%).\n- Geringe Lösungsrate von nur **46%**.\n- Hauptkategorien: \"Sonstiges\" (8), Software (7) und Zugang (5).\n\n**Bewertung:**\nDie hohe Anzahl offener Tickets und die niedrige Lösungsrate deuten auf Engpässe oder Verzögerungen im Bearbeitungsprozess hin. Die Kategorie \"Sonstiges\" ist überproportional vertreten, was auf unklare oder fehlende Klassifizierung hindeuten könnte.\n\n**Empfehlungen:**\n1.  **Priorisierung:** Fokussierung auf die Bearbeitung der 13 offenen Tickets, um den Rückstau abzubauen.\n2.  **Kategorisierung prüfen:** Die Kategorie \"Sonstiges\" sollte überprüft und ggf. durch spezifischere Kategorien ersetzt werden, um Probleme besser zu identifizieren.\n3.  **Prozessanalyse:** Ursachen für die niedrige Lösungsrate untersuchen (z.B. Ressourcen, Eskalationswege).\n4.  **Datenpflege:** Sicherstellen, dass Kennzahlen wie durchschnittliche Lösungszeit und SLA-Compliance zukünftig erfasst werden, um eine aussagekräftigere Analyse zu ermöglichen."
+  },
+  {
+    "id": "e443fb43-82a9-488e-a7d3-094fc48508e9",
+    "name": "Ticket Analysis - 7.5.2026",
+    "type": "ticket",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Ticket trends and category breakdown report",
+    "data": {
+      "totalTickets": 25,
+      "openTickets": 14,
+      "resolvedTickets": 11,
+      "resolutionRate": 44,
+      "totalArticles": 5,
+      "categoryDistribution": {
+        "network": 4,
+        "other": 8,
+        "access": 5,
+        "software": 7,
+        "hardware": 1
+      },
+      "priorityDistribution": {
+        "critical": 6,
+        "medium": 7,
+        "low": 7,
+        "high": 5
+      },
+      "topCategories": [
+        {
+          "category": "other",
+          "count": 8
+        },
+        {
+          "category": "software",
+          "count": 7
+        },
+        {
+          "category": "access",
+          "count": 5
+        },
+        {
+          "category": "network",
+          "count": 4
+        },
+        {
+          "category": "hardware",
+          "count": 1
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "2d7bd2d2-90d5-4618-8a43-ca29d48f1865",
+          "title": "Port 808 are blocked",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "network",
+          "createdAt": "2026-04-04T18:54:41.655Z"
+        },
+        {
+          "id": "02ce72cb-bf5f-46f5-9555-903cc4660bfb",
+          "title": "The USB sensor is down, quantify the bluetooth port so we can navigate the DNS protocol!",
+          "priority": "medium",
+          "status": "In_progress",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.090Z"
+        },
+        {
+          "id": "6e53c422-f576-4280-a4fb-cb39b3f14ff3",
+          "title": "Use the optical AGP firewall, then you can compress the back-end protocol!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.085Z"
+        },
+        {
+          "id": "9b8550cb-7186-4109-a8b2-b1a9ca057572",
+          "title": "You can't transmit the port without indexing the haptic EXE array!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.080Z"
+        },
+        {
+          "id": "f3b112dd-84b7-4ebe-82fb-b60144c8c987",
+          "title": "We need to hack the bluetooth SCSI pixel!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.076Z"
+        },
+        {
+          "id": "7b0b015d-0a43-4d74-9d18-57e27e971a21",
+          "title": "You can't navigate the port without navigating the optical RSS sensor!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.071Z"
+        },
+        {
+          "id": "fe87151c-367d-4d83-9d3d-ab6b4eafc6b9",
+          "title": "I'll hack the back-end IB capacitor, that should matrix the ADP firewall!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.067Z"
+        },
+        {
+          "id": "d14cade2-363f-405d-9f7c-5eee83061709",
+          "title": "If we back up the feed, we can get to the AGP microchip through the optical SAS circuit!",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.057Z"
+        },
+        {
+          "id": "ab49c101-d726-48d0-96a9-2cfadabce4ba",
+          "title": "If we calculate the interface, we can get to the CSS alarm through the online SSD array!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-04-03T09:59:19.052Z"
+        },
+        {
+          "id": "93a29883-b3c6-49d0-931d-d88555d83600",
+          "title": "We need to calculate the digital UDP card!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.041Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-05-07T05:19:08.263Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-04-07T05:19:07.846Z",
+        "end": "2026-05-07T05:19:07.846Z"
+      },
+      "emailRecipients": [
+        "tayondimitrie@gmail.com"
+      ]
+    },
+    "createdAt": "2026-05-07T05:19:08.263Z",
+    "updatedAt": "2026-05-07T05:19:14.019Z",
+    "summary": "**Zusammenfassung des Ticket-Reports (7.5.2026):**\n\n- **Aktuelle Lage:** Von insgesamt 25 Tickets sind 14 noch offen (56 %), nur 11 wurden gelöst (44 %). Die durchschnittliche Lösungszeit und SLA-Einhaltung sind nicht erfasst.\n- **Häufigste Kategorien:** \"Sonstiges\" (8), Software (7), Zugriff (5), Netzwerk (4), Hardware (1).\n- **Wichtigste Erkenntnis:** Die hohe Anzahl offener Tickets und die Dominanz der Kategorie \"Sonstiges\" deuten auf unklare Ursachen und mögliche Engpässe hin.\n- **Empfehlungen:** 1) Ursachen für \"Sonstiges\" genauer analysieren und Kategorien präzisieren. 2) Prozesse zur schnelleren Lösung offener Tickets prüfen. 3) SLA-Messung und durchschnittliche Lösungszeit erfassen, um Engpässe zu identifizieren."
+  },
+  {
+    "id": "d13ec425-332c-4ffe-94d1-27c2208cad18",
+    "name": "Agent Performance - 7.5.2026",
+    "type": "agent",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Agent productivity and metrics report",
+    "data": {
+      "totalTickets": 25,
+      "openTickets": 14,
+      "resolvedTickets": 11,
+      "resolutionRate": 44,
+      "totalArticles": 5,
+      "categoryDistribution": {
+        "network": 4,
+        "other": 8,
+        "access": 5,
+        "software": 7,
+        "hardware": 1
+      },
+      "priorityDistribution": {
+        "critical": 6,
+        "medium": 7,
+        "low": 7,
+        "high": 5
+      },
+      "topCategories": [
+        {
+          "category": "other",
+          "count": 8
+        },
+        {
+          "category": "software",
+          "count": 7
+        },
+        {
+          "category": "access",
+          "count": 5
+        },
+        {
+          "category": "network",
+          "count": 4
+        },
+        {
+          "category": "hardware",
+          "count": 1
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "2d7bd2d2-90d5-4618-8a43-ca29d48f1865",
+          "title": "Port 808 are blocked",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "network",
+          "createdAt": "2026-04-04T18:54:41.655Z"
+        },
+        {
+          "id": "02ce72cb-bf5f-46f5-9555-903cc4660bfb",
+          "title": "The USB sensor is down, quantify the bluetooth port so we can navigate the DNS protocol!",
+          "priority": "medium",
+          "status": "In_progress",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.090Z"
+        },
+        {
+          "id": "6e53c422-f576-4280-a4fb-cb39b3f14ff3",
+          "title": "Use the optical AGP firewall, then you can compress the back-end protocol!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.085Z"
+        },
+        {
+          "id": "9b8550cb-7186-4109-a8b2-b1a9ca057572",
+          "title": "You can't transmit the port without indexing the haptic EXE array!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.080Z"
+        },
+        {
+          "id": "f3b112dd-84b7-4ebe-82fb-b60144c8c987",
+          "title": "We need to hack the bluetooth SCSI pixel!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.076Z"
+        },
+        {
+          "id": "7b0b015d-0a43-4d74-9d18-57e27e971a21",
+          "title": "You can't navigate the port without navigating the optical RSS sensor!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.071Z"
+        },
+        {
+          "id": "fe87151c-367d-4d83-9d3d-ab6b4eafc6b9",
+          "title": "I'll hack the back-end IB capacitor, that should matrix the ADP firewall!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.067Z"
+        },
+        {
+          "id": "d14cade2-363f-405d-9f7c-5eee83061709",
+          "title": "If we back up the feed, we can get to the AGP microchip through the optical SAS circuit!",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.057Z"
+        },
+        {
+          "id": "ab49c101-d726-48d0-96a9-2cfadabce4ba",
+          "title": "If we calculate the interface, we can get to the CSS alarm through the online SSD array!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-04-03T09:59:19.052Z"
+        },
+        {
+          "id": "93a29883-b3c6-49d0-931d-d88555d83600",
+          "title": "We need to calculate the digital UDP card!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.041Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-05-07T05:19:46.767Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-04-07T05:19:46.605Z",
+        "end": "2026-05-07T05:19:46.605Z"
+      },
+      "emailRecipients": [
+        "tayondimitrie@gmail.com"
+      ],
+      "sentAt": "2026-05-07T05:27:27.473Z",
+      "lastEmailSubject": "Agent Performance Report - 7.5.2026"
+    },
+    "createdAt": "2026-05-07T05:19:46.767Z",
+    "updatedAt": "2026-05-07T05:27:27.473Z",
+    "summary": "**Zusammenfassung des Agenten-Leistungsberichts vom 7.5.2026**\n\n**Wichtigste Erkenntnisse:**\n- Von 25 Tickets sind 14 noch offen (56%), nur 11 wurden gelöst (44%).\n- Die durchschnittliche Lösungszeit und SLA-Einhaltung sind nicht verfügbar (N/A).\n- Hauptkategorien: \"Sonstiges\" (8), Software (7) und Zugang (5) dominieren.\n\n**Trends:**\n- Hoher Anteil offener Tickets deutet auf Bearbeitungsrückstand hin.\n- Fehlende Zeit- und SLA-Daten erschweren die Leistungsbewertung.\n\n**Empfehlungen:**\n1. Ursachen für die vielen offenen Tickets analysieren (z. B. fehlende Informationen, Wartezeiten).\n2. Erfassung von Lösungszeiten und SLA-Werten sicherstellen.\n3. Kategorien \"Sonstiges\" und \"Software\" priorisieren oder präzisieren."
+  },
+  {
+    "id": "ecfb0e37-496b-4949-87c5-720615a60a85",
+    "name": "Weekly Summary - 7.5.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 25,
+      "openTickets": 14,
+      "resolvedTickets": 11,
+      "resolutionRate": 44,
+      "totalArticles": 5,
+      "categoryDistribution": {
+        "network": 4,
+        "other": 8,
+        "access": 5,
+        "software": 7,
+        "hardware": 1
+      },
+      "priorityDistribution": {
+        "critical": 6,
+        "medium": 7,
+        "low": 7,
+        "high": 5
+      },
+      "topCategories": [
+        {
+          "category": "other",
+          "count": 8
+        },
+        {
+          "category": "software",
+          "count": 7
+        },
+        {
+          "category": "access",
+          "count": 5
+        },
+        {
+          "category": "network",
+          "count": 4
+        },
+        {
+          "category": "hardware",
+          "count": 1
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "2d7bd2d2-90d5-4618-8a43-ca29d48f1865",
+          "title": "Port 808 are blocked",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "network",
+          "createdAt": "2026-04-04T18:54:41.655Z"
+        },
+        {
+          "id": "02ce72cb-bf5f-46f5-9555-903cc4660bfb",
+          "title": "The USB sensor is down, quantify the bluetooth port so we can navigate the DNS protocol!",
+          "priority": "medium",
+          "status": "In_progress",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.090Z"
+        },
+        {
+          "id": "6e53c422-f576-4280-a4fb-cb39b3f14ff3",
+          "title": "Use the optical AGP firewall, then you can compress the back-end protocol!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.085Z"
+        },
+        {
+          "id": "9b8550cb-7186-4109-a8b2-b1a9ca057572",
+          "title": "You can't transmit the port without indexing the haptic EXE array!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.080Z"
+        },
+        {
+          "id": "f3b112dd-84b7-4ebe-82fb-b60144c8c987",
+          "title": "We need to hack the bluetooth SCSI pixel!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.076Z"
+        },
+        {
+          "id": "7b0b015d-0a43-4d74-9d18-57e27e971a21",
+          "title": "You can't navigate the port without navigating the optical RSS sensor!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.071Z"
+        },
+        {
+          "id": "fe87151c-367d-4d83-9d3d-ab6b4eafc6b9",
+          "title": "I'll hack the back-end IB capacitor, that should matrix the ADP firewall!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.067Z"
+        },
+        {
+          "id": "d14cade2-363f-405d-9f7c-5eee83061709",
+          "title": "If we back up the feed, we can get to the AGP microchip through the optical SAS circuit!",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.057Z"
+        },
+        {
+          "id": "ab49c101-d726-48d0-96a9-2cfadabce4ba",
+          "title": "If we calculate the interface, we can get to the CSS alarm through the online SSD array!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-04-03T09:59:19.052Z"
+        },
+        {
+          "id": "93a29883-b3c6-49d0-931d-d88555d83600",
+          "title": "We need to calculate the digital UDP card!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.041Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-05-07T05:29:12.681Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-04-07T05:29:12.582Z",
+        "end": "2026-05-07T05:29:12.582Z"
+      },
+      "emailRecipients": [
+        "tayondimitrie@gmail.com"
+      ]
+    },
+    "createdAt": "2026-05-07T05:29:12.681Z",
+    "updatedAt": "2026-05-07T05:29:17.885Z",
+    "summary": "**Wöchentliche Zusammenfassung – 7.5.2026**\n\n**Wichtigste Erkenntnisse:**\n- Die Auflösungsrate liegt bei 44% (11 von 25 Tickets gelöst). Dies ist ein Hinweis auf einen Rückstau.\n- Die meisten Tickets fallen in die Kategorien \"Sonstiges\" (8) und \"Software\" (7), was auf unklare oder wiederkehrende Probleme hindeutet.\n- Die durchschnittliche Lösungszeit und SLA-Einhaltung sind nicht verfügbar, was die Analyse erschwert.\n\n**Trends:**\n- Ein hoher Anteil offener Tickets (14) deutet auf Engpässe in der Bearbeitung hin.\n- Die Kategorie \"Zugriff\" (5 Tickets) könnte auf häufige Berechtigungsprobleme hindeuten.\n\n**Empfehlungen:**\n1. **Kategorie \"Sonstiges\" analysieren:** Tickets präziser erfassen, um wiederkehrende Probleme zu identifizieren.\n2. **Offene Tickets priorisieren:** Ressourcen auf die 14 offenen Tickets konzentrieren, um den Rückstand abzubauen.\n3. **Lösungszeit und SLA erfassen:** Systeme zur Nachverfolgung implementieren, um künftige Berichte zu verbessern."
+  },
+  {
+    "id": "674cd820-6f78-4d05-ad2e-412251169bc9",
+    "name": "Weekly Summary - 7.5.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 25,
+      "openTickets": 14,
+      "resolvedTickets": 11,
+      "resolutionRate": 44,
+      "totalArticles": 5,
+      "categoryDistribution": {
+        "network": 4,
+        "other": 8,
+        "access": 5,
+        "software": 7,
+        "hardware": 1
+      },
+      "priorityDistribution": {
+        "critical": 6,
+        "medium": 7,
+        "low": 7,
+        "high": 5
+      },
+      "topCategories": [
+        {
+          "category": "other",
+          "count": 8
+        },
+        {
+          "category": "software",
+          "count": 7
+        },
+        {
+          "category": "access",
+          "count": 5
+        },
+        {
+          "category": "network",
+          "count": 4
+        },
+        {
+          "category": "hardware",
+          "count": 1
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "2d7bd2d2-90d5-4618-8a43-ca29d48f1865",
+          "title": "Port 808 are blocked",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "network",
+          "createdAt": "2026-04-04T18:54:41.655Z"
+        },
+        {
+          "id": "02ce72cb-bf5f-46f5-9555-903cc4660bfb",
+          "title": "The USB sensor is down, quantify the bluetooth port so we can navigate the DNS protocol!",
+          "priority": "medium",
+          "status": "In_progress",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.090Z"
+        },
+        {
+          "id": "6e53c422-f576-4280-a4fb-cb39b3f14ff3",
+          "title": "Use the optical AGP firewall, then you can compress the back-end protocol!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.085Z"
+        },
+        {
+          "id": "9b8550cb-7186-4109-a8b2-b1a9ca057572",
+          "title": "You can't transmit the port without indexing the haptic EXE array!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.080Z"
+        },
+        {
+          "id": "f3b112dd-84b7-4ebe-82fb-b60144c8c987",
+          "title": "We need to hack the bluetooth SCSI pixel!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.076Z"
+        },
+        {
+          "id": "7b0b015d-0a43-4d74-9d18-57e27e971a21",
+          "title": "You can't navigate the port without navigating the optical RSS sensor!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.071Z"
+        },
+        {
+          "id": "fe87151c-367d-4d83-9d3d-ab6b4eafc6b9",
+          "title": "I'll hack the back-end IB capacitor, that should matrix the ADP firewall!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.067Z"
+        },
+        {
+          "id": "d14cade2-363f-405d-9f7c-5eee83061709",
+          "title": "If we back up the feed, we can get to the AGP microchip through the optical SAS circuit!",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.057Z"
+        },
+        {
+          "id": "ab49c101-d726-48d0-96a9-2cfadabce4ba",
+          "title": "If we calculate the interface, we can get to the CSS alarm through the online SSD array!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-04-03T09:59:19.052Z"
+        },
+        {
+          "id": "93a29883-b3c6-49d0-931d-d88555d83600",
+          "title": "We need to calculate the digital UDP card!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.041Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-05-07T06:00:23.181Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-04-07T06:00:23.025Z",
+        "end": "2026-05-07T06:00:23.025Z"
+      },
+      "emailRecipients": [
+        "terry95@hotmail.com",
+        "tayondimitrie@gmail.com"
+      ]
+    },
+    "createdAt": "2026-05-07T06:00:23.181Z",
+    "updatedAt": "2026-05-07T06:00:31.877Z",
+    "summary": "**Wöchentliche Zusammenfassung – 07.05.2026**\n\n**Wichtigste Erkenntnisse:**\n- Von 25 gemeldeten Tickets wurden 11 gelöst. Die Lösungsrate liegt bei 44 %.\n- Die meisten Tickets fallen in die Kategorien „Sonstiges“ (8) und „Software“ (7).\n- Angaben zur durchschnittlichen Lösungszeit und SLA-Einhaltung liegen nicht vor (N/A).\n\n**Trend:**\nDie hohe Anzahl offener Tickets (14) und die fehlende Messbarkeit der Lösungszeit und SLA-Einhaltung weisen auf ein potenzielles Reporting-Defizit hin.\n\n**Empfehlungen:**\n1. **Kategorien präzisieren:** Die Kategorie „Sonstiges“ sollte analysiert und ggf. in spezifischere Kategorien aufgeteilt werden.\n2. **Metriken erfassen:** Lösungszeit und SLA-Einhaltung sollten ab sofort erfasst werden, um Engpässe zu identifizieren und die Servicequalität zu verbessern.\n3. **Fokus auf offene Tickets:** Ursachen für die 14 offenen Tickets sollten untersucht und priorisiert bearbeitet werden."
+  },
+  {
+    "id": "a88f9cf6-f010-4b9f-9952-e2383e6d1215",
+    "name": "Weekly Summary - 7.5.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 25,
+      "openTickets": 14,
+      "resolvedTickets": 11,
+      "resolutionRate": 44,
+      "totalArticles": 5,
+      "categoryDistribution": {
+        "network": 4,
+        "other": 8,
+        "access": 5,
+        "software": 7,
+        "hardware": 1
+      },
+      "priorityDistribution": {
+        "critical": 6,
+        "medium": 7,
+        "low": 7,
+        "high": 5
+      },
+      "topCategories": [
+        {
+          "category": "other",
+          "count": 8
+        },
+        {
+          "category": "software",
+          "count": 7
+        },
+        {
+          "category": "access",
+          "count": 5
+        },
+        {
+          "category": "network",
+          "count": 4
+        },
+        {
+          "category": "hardware",
+          "count": 1
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "2d7bd2d2-90d5-4618-8a43-ca29d48f1865",
+          "title": "Port 808 are blocked",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "network",
+          "createdAt": "2026-04-04T18:54:41.655Z"
+        },
+        {
+          "id": "02ce72cb-bf5f-46f5-9555-903cc4660bfb",
+          "title": "The USB sensor is down, quantify the bluetooth port so we can navigate the DNS protocol!",
+          "priority": "medium",
+          "status": "In_progress",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.090Z"
+        },
+        {
+          "id": "6e53c422-f576-4280-a4fb-cb39b3f14ff3",
+          "title": "Use the optical AGP firewall, then you can compress the back-end protocol!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.085Z"
+        },
+        {
+          "id": "9b8550cb-7186-4109-a8b2-b1a9ca057572",
+          "title": "You can't transmit the port without indexing the haptic EXE array!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.080Z"
+        },
+        {
+          "id": "f3b112dd-84b7-4ebe-82fb-b60144c8c987",
+          "title": "We need to hack the bluetooth SCSI pixel!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.076Z"
+        },
+        {
+          "id": "7b0b015d-0a43-4d74-9d18-57e27e971a21",
+          "title": "You can't navigate the port without navigating the optical RSS sensor!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.071Z"
+        },
+        {
+          "id": "fe87151c-367d-4d83-9d3d-ab6b4eafc6b9",
+          "title": "I'll hack the back-end IB capacitor, that should matrix the ADP firewall!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.067Z"
+        },
+        {
+          "id": "d14cade2-363f-405d-9f7c-5eee83061709",
+          "title": "If we back up the feed, we can get to the AGP microchip through the optical SAS circuit!",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.057Z"
+        },
+        {
+          "id": "ab49c101-d726-48d0-96a9-2cfadabce4ba",
+          "title": "If we calculate the interface, we can get to the CSS alarm through the online SSD array!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-04-03T09:59:19.052Z"
+        },
+        {
+          "id": "93a29883-b3c6-49d0-931d-d88555d83600",
+          "title": "We need to calculate the digital UDP card!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.041Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-05-07T06:01:31.138Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-04-07T06:01:16.131Z",
+        "end": "2026-05-07T06:01:16.131Z"
+      },
+      "emailRecipients": [
+        "terry95@hotmail.com",
+        "tayondimitrie@gmail.com"
+      ],
+      "sentAt": "2026-05-07T06:14:52.640Z",
+      "lastEmailSubject": "Weekly ITSM Summary - 7.5.2026"
+    },
+    "createdAt": "2026-05-07T06:01:31.138Z",
+    "updatedAt": "2026-05-07T06:14:52.640Z",
+    "summary": "**Wöchentliche Zusammenfassung – 7.5.2026**\n\n**Wichtigste Erkenntnisse:**\n- Diese Woche gingen 25 Tickets ein. Davon sind 14 noch offen, 11 wurden gelöst (Lösungsrate 44%).\n- Die häufigsten Kategorien sind „Sonstiges“ (8), Software (7) und Zugriffsprobleme (5). Netzwerk- (4) und Hardwarefälle (1) sind seltener. jkjujo\n- Die durchschnittliche Lösungszeit und SLA-Einhaltung wurden nicht erfasst.\n\n**Trend:**\nDie offenen Tickets überwiegen die gelösten; die Lösungsrate ist mit 44% niedrig. Besonders viele Fälle betreffen Software und Zugriffsrechte.\n\n**Empfehlungen:**\n1. **Offene Tickets priorisieren:** Ursachen für die hohe Anzahl offener Tickets analysieren und gezielt abarbeiten.\n2. **Kategorie „Sonstiges“ konkretisieren:** Tickets dieser Kategorie genauer erfassen, um wiederkehrende Probleme besser zu erkennen.\n3. **Lösungszeit & SLA einführen:** Durchschnittliche Lösungszeit und SLA-Einhaltung messen, um Servicequalität zu überwachen und zu verbessern."
+  },
+  {
+    "id": "7d88a8fc-5cd7-4f66-98eb-0b32849bd815",
+    "name": "Ticket Analysis - 7.5.2026",
+    "type": "ticket",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Ticket trends and category breakdown report",
+    "data": {
+      "totalTickets": 25,
+      "openTickets": 14,
+      "resolvedTickets": 11,
+      "resolutionRate": 44,
+      "totalArticles": 5,
+      "categoryDistribution": {
+        "network": 4,
+        "other": 8,
+        "access": 5,
+        "software": 7,
+        "hardware": 1
+      },
+      "priorityDistribution": {
+        "critical": 6,
+        "medium": 7,
+        "low": 7,
+        "high": 5
+      },
+      "topCategories": [
+        {
+          "category": "other",
+          "count": 8
+        },
+        {
+          "category": "software",
+          "count": 7
+        },
+        {
+          "category": "access",
+          "count": 5
+        },
+        {
+          "category": "network",
+          "count": 4
+        },
+        {
+          "category": "hardware",
+          "count": 1
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "2d7bd2d2-90d5-4618-8a43-ca29d48f1865",
+          "title": "Port 808 are blocked",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "network",
+          "createdAt": "2026-04-04T18:54:41.655Z"
+        },
+        {
+          "id": "02ce72cb-bf5f-46f5-9555-903cc4660bfb",
+          "title": "The USB sensor is down, quantify the bluetooth port so we can navigate the DNS protocol!",
+          "priority": "medium",
+          "status": "In_progress",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.090Z"
+        },
+        {
+          "id": "6e53c422-f576-4280-a4fb-cb39b3f14ff3",
+          "title": "Use the optical AGP firewall, then you can compress the back-end protocol!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.085Z"
+        },
+        {
+          "id": "9b8550cb-7186-4109-a8b2-b1a9ca057572",
+          "title": "You can't transmit the port without indexing the haptic EXE array!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.080Z"
+        },
+        {
+          "id": "f3b112dd-84b7-4ebe-82fb-b60144c8c987",
+          "title": "We need to hack the bluetooth SCSI pixel!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.076Z"
+        },
+        {
+          "id": "7b0b015d-0a43-4d74-9d18-57e27e971a21",
+          "title": "You can't navigate the port without navigating the optical RSS sensor!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.071Z"
+        },
+        {
+          "id": "fe87151c-367d-4d83-9d3d-ab6b4eafc6b9",
+          "title": "I'll hack the back-end IB capacitor, that should matrix the ADP firewall!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.067Z"
+        },
+        {
+          "id": "d14cade2-363f-405d-9f7c-5eee83061709",
+          "title": "If we back up the feed, we can get to the AGP microchip through the optical SAS circuit!",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.057Z"
+        },
+        {
+          "id": "ab49c101-d726-48d0-96a9-2cfadabce4ba",
+          "title": "If we calculate the interface, we can get to the CSS alarm through the online SSD array!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-04-03T09:59:19.052Z"
+        },
+        {
+          "id": "93a29883-b3c6-49d0-931d-d88555d83600",
+          "title": "We need to calculate the digital UDP card!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.041Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-05-07T06:18:31.288Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-04-30T06:18:31.004Z",
+        "end": "2026-05-07T06:18:31.004Z"
+      },
+      "emailRecipients": [
+        "tayondimitrie@gmail.com"
+      ]
+    },
+    "createdAt": "2026-05-07T06:18:31.288Z",
+    "updatedAt": "2026-05-07T06:18:36.410Z",
+    "summary": "**Zusammenfassung der Ticket-Analyse (7.5.2026):**\n\nVon insgesamt 25 Tickets sind aktuell 14 offen und 11 gelöst (Auflösungsrate: 44%). Die durchschnittliche Lösungszeit und SLA-Einhaltung sind nicht verfügbar.\n\n**Wichtigste Erkenntnisse:**\n- Die Kategorien \"Sonstiges\" (8) und \"Software\" (7) machen 60 % aller Tickets aus.\n- Der hohe Anteil offener Tickets (56 %) deutet auf Bearbeitungsstau hin.\n\n**Empfehlungen:**\n1. Kategorie \"Sonstiges\" analysieren, um häufige Problemtypen zu identifizieren.\n2. Ursachen für offene Tickets prüfen (z. B. fehlende Ressourcen oder Eskalation).\n3. Lösungszeiten und SLA-Einhaltung erfassen, um Servicequalität messbar zu machen."
+  },
+  {
+    "id": "fa0b64ae-763a-41db-8450-a6e02756a9da",
+    "name": "Weekly Summary - 7.5.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 25,
+      "openTickets": 14,
+      "resolvedTickets": 11,
+      "resolutionRate": 44,
+      "totalArticles": 5,
+      "categoryDistribution": {
+        "network": 4,
+        "other": 8,
+        "access": 5,
+        "software": 7,
+        "hardware": 1
+      },
+      "priorityDistribution": {
+        "critical": 6,
+        "medium": 7,
+        "low": 7,
+        "high": 5
+      },
+      "topCategories": [
+        {
+          "category": "other",
+          "count": 8
+        },
+        {
+          "category": "software",
+          "count": 7
+        },
+        {
+          "category": "access",
+          "count": 5
+        },
+        {
+          "category": "network",
+          "count": 4
+        },
+        {
+          "category": "hardware",
+          "count": 1
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "2d7bd2d2-90d5-4618-8a43-ca29d48f1865",
+          "title": "Port 808 are blocked",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "network",
+          "createdAt": "2026-04-04T18:54:41.655Z"
+        },
+        {
+          "id": "02ce72cb-bf5f-46f5-9555-903cc4660bfb",
+          "title": "The USB sensor is down, quantify the bluetooth port so we can navigate the DNS protocol!",
+          "priority": "medium",
+          "status": "In_progress",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.090Z"
+        },
+        {
+          "id": "6e53c422-f576-4280-a4fb-cb39b3f14ff3",
+          "title": "Use the optical AGP firewall, then you can compress the back-end protocol!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.085Z"
+        },
+        {
+          "id": "9b8550cb-7186-4109-a8b2-b1a9ca057572",
+          "title": "You can't transmit the port without indexing the haptic EXE array!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.080Z"
+        },
+        {
+          "id": "f3b112dd-84b7-4ebe-82fb-b60144c8c987",
+          "title": "We need to hack the bluetooth SCSI pixel!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.076Z"
+        },
+        {
+          "id": "7b0b015d-0a43-4d74-9d18-57e27e971a21",
+          "title": "You can't navigate the port without navigating the optical RSS sensor!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.071Z"
+        },
+        {
+          "id": "fe87151c-367d-4d83-9d3d-ab6b4eafc6b9",
+          "title": "I'll hack the back-end IB capacitor, that should matrix the ADP firewall!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.067Z"
+        },
+        {
+          "id": "d14cade2-363f-405d-9f7c-5eee83061709",
+          "title": "If we back up the feed, we can get to the AGP microchip through the optical SAS circuit!",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.057Z"
+        },
+        {
+          "id": "ab49c101-d726-48d0-96a9-2cfadabce4ba",
+          "title": "If we calculate the interface, we can get to the CSS alarm through the online SSD array!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-04-03T09:59:19.052Z"
+        },
+        {
+          "id": "93a29883-b3c6-49d0-931d-d88555d83600",
+          "title": "We need to calculate the digital UDP card!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.041Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-05-07T06:21:03.258Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-04-07T06:21:00.215Z",
+        "end": "2026-05-07T06:21:00.215Z"
+      },
+      "emailRecipients": [
+        "tayondimitrie@gmail.com"
+      ],
+      "sentAt": "2026-05-07T06:22:23.601Z",
+      "lastEmailSubject": "Weekly Summary - 7.5.2026"
+    },
+    "createdAt": "2026-05-07T06:21:03.258Z",
+    "updatedAt": "2026-05-07T06:22:23.601Z",
+    "summary": "**Wöchentliche Zusammenfassung – 07.05.2026**\n\n**Wichtigste Erkenntnisse:**\n- **Kapazitätsproblem:** Von 25 gemeldeten Tickets sind noch 14 offen. Die Auflösungsrate von 44% ist niedrig.\n- **Häufigste Kategorien:** „Sonstiges“ (8) und „Software“ (7) dominieren. Dies deutet auf unklare Klassifizierung und mögliche Software-Probleme hin.\n\n**Trends:**\n- Die durchschnittliche Lösungszeit und SLA-Einhaltung sind nicht messbar (N/A). Dies erschwert die Leistungsbewertung.\n\n**Empfehlungen:**\n1. **Kategorie „Sonstiges“ analysieren:** Ursachen identifizieren und korrekte Zuordnung schulen.\n2. **Software-Tickets priorisieren:** Häufung prüfen, ggf. Patch- oder Update-Problem.\n3. **Tracking verbessern:** Durchschnittliche Lösungszeit und SLA-Kennzahlen erfassen, um Engpässe zu erkennen."
+  },
+  {
+    "id": "c8cff994-9858-4ae6-8758-8724ff39ad8e",
+    "name": "Weekly Summary - 7.5.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 25,
+      "openTickets": 14,
+      "resolvedTickets": 11,
+      "resolutionRate": 44,
+      "totalArticles": 5,
+      "categoryDistribution": {
+        "network": 4,
+        "other": 8,
+        "access": 5,
+        "software": 7,
+        "hardware": 1
+      },
+      "priorityDistribution": {
+        "critical": 6,
+        "medium": 7,
+        "low": 7,
+        "high": 5
+      },
+      "topCategories": [
+        {
+          "category": "other",
+          "count": 8
+        },
+        {
+          "category": "software",
+          "count": 7
+        },
+        {
+          "category": "access",
+          "count": 5
+        },
+        {
+          "category": "network",
+          "count": 4
+        },
+        {
+          "category": "hardware",
+          "count": 1
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "2d7bd2d2-90d5-4618-8a43-ca29d48f1865",
+          "title": "Port 808 are blocked",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "network",
+          "createdAt": "2026-04-04T18:54:41.655Z"
+        },
+        {
+          "id": "02ce72cb-bf5f-46f5-9555-903cc4660bfb",
+          "title": "The USB sensor is down, quantify the bluetooth port so we can navigate the DNS protocol!",
+          "priority": "medium",
+          "status": "In_progress",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.090Z"
+        },
+        {
+          "id": "6e53c422-f576-4280-a4fb-cb39b3f14ff3",
+          "title": "Use the optical AGP firewall, then you can compress the back-end protocol!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.085Z"
+        },
+        {
+          "id": "9b8550cb-7186-4109-a8b2-b1a9ca057572",
+          "title": "You can't transmit the port without indexing the haptic EXE array!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.080Z"
+        },
+        {
+          "id": "f3b112dd-84b7-4ebe-82fb-b60144c8c987",
+          "title": "We need to hack the bluetooth SCSI pixel!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.076Z"
+        },
+        {
+          "id": "7b0b015d-0a43-4d74-9d18-57e27e971a21",
+          "title": "You can't navigate the port without navigating the optical RSS sensor!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.071Z"
+        },
+        {
+          "id": "fe87151c-367d-4d83-9d3d-ab6b4eafc6b9",
+          "title": "I'll hack the back-end IB capacitor, that should matrix the ADP firewall!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.067Z"
+        },
+        {
+          "id": "d14cade2-363f-405d-9f7c-5eee83061709",
+          "title": "If we back up the feed, we can get to the AGP microchip through the optical SAS circuit!",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.057Z"
+        },
+        {
+          "id": "ab49c101-d726-48d0-96a9-2cfadabce4ba",
+          "title": "If we calculate the interface, we can get to the CSS alarm through the online SSD array!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-04-03T09:59:19.052Z"
+        },
+        {
+          "id": "93a29883-b3c6-49d0-931d-d88555d83600",
+          "title": "We need to calculate the digital UDP card!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.041Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-05-07T06:36:10.154Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-04-07T06:36:09.808Z",
+        "end": "2026-05-07T06:36:09.808Z"
+      },
+      "emailRecipients": []
+    },
+    "createdAt": "2026-05-07T06:36:10.154Z",
+    "updatedAt": "2026-05-07T06:36:10.154Z"
+  },
+  {
+    "id": "c13f11e8-37f2-404e-8698-be6cff16bd1e",
+    "name": "Weekly Summary - 7.5.2026",
+    "type": "weekly",
+    "format": "pdf",
+    "status": "generated",
+    "description": "Weekly ticket and performance summary report",
+    "data": {
+      "totalTickets": 25,
+      "openTickets": 14,
+      "resolvedTickets": 11,
+      "resolutionRate": 44,
+      "totalArticles": 5,
+      "categoryDistribution": {
+        "network": 4,
+        "other": 8,
+        "access": 5,
+        "software": 7,
+        "hardware": 1
+      },
+      "priorityDistribution": {
+        "critical": 6,
+        "medium": 7,
+        "low": 7,
+        "high": 5
+      },
+      "topCategories": [
+        {
+          "category": "other",
+          "count": 8
+        },
+        {
+          "category": "software",
+          "count": 7
+        },
+        {
+          "category": "access",
+          "count": 5
+        },
+        {
+          "category": "network",
+          "count": 4
+        },
+        {
+          "category": "hardware",
+          "count": 1
+        }
+      ],
+      "recentTickets": [
+        {
+          "id": "2d7bd2d2-90d5-4618-8a43-ca29d48f1865",
+          "title": "Port 808 are blocked",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "network",
+          "createdAt": "2026-04-04T18:54:41.655Z"
+        },
+        {
+          "id": "02ce72cb-bf5f-46f5-9555-903cc4660bfb",
+          "title": "The USB sensor is down, quantify the bluetooth port so we can navigate the DNS protocol!",
+          "priority": "medium",
+          "status": "In_progress",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.090Z"
+        },
+        {
+          "id": "6e53c422-f576-4280-a4fb-cb39b3f14ff3",
+          "title": "Use the optical AGP firewall, then you can compress the back-end protocol!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.085Z"
+        },
+        {
+          "id": "9b8550cb-7186-4109-a8b2-b1a9ca057572",
+          "title": "You can't transmit the port without indexing the haptic EXE array!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.080Z"
+        },
+        {
+          "id": "f3b112dd-84b7-4ebe-82fb-b60144c8c987",
+          "title": "We need to hack the bluetooth SCSI pixel!",
+          "priority": "low",
+          "status": "Assigned",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.076Z"
+        },
+        {
+          "id": "7b0b015d-0a43-4d74-9d18-57e27e971a21",
+          "title": "You can't navigate the port without navigating the optical RSS sensor!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.071Z"
+        },
+        {
+          "id": "fe87151c-367d-4d83-9d3d-ab6b4eafc6b9",
+          "title": "I'll hack the back-end IB capacitor, that should matrix the ADP firewall!",
+          "priority": "medium",
+          "status": "New",
+          "category": "Software",
+          "createdAt": "2026-04-03T09:59:19.067Z"
+        },
+        {
+          "id": "d14cade2-363f-405d-9f7c-5eee83061709",
+          "title": "If we back up the feed, we can get to the AGP microchip through the optical SAS circuit!",
+          "priority": "critical",
+          "status": "Resolved",
+          "category": "Access",
+          "createdAt": "2026-04-03T09:59:19.057Z"
+        },
+        {
+          "id": "ab49c101-d726-48d0-96a9-2cfadabce4ba",
+          "title": "If we calculate the interface, we can get to the CSS alarm through the online SSD array!",
+          "priority": "high",
+          "status": "In_progress",
+          "category": "Network",
+          "createdAt": "2026-04-03T09:59:19.052Z"
+        },
+        {
+          "id": "93a29883-b3c6-49d0-931d-d88555d83600",
+          "title": "We need to calculate the digital UDP card!",
+          "priority": "low",
+          "status": "Closed",
+          "category": "Other",
+          "createdAt": "2026-04-03T09:59:19.041Z"
+        }
+      ]
+    },
+    "metadata": {
+      "generatedAt": "2026-05-07T06:36:12.070Z",
+      "generatedBy": "system",
+      "dateRange": {
+        "start": "2026-04-07T06:36:10.838Z",
+        "end": "2026-05-07T06:36:10.838Z"
+      },
+      "emailRecipients": []
+    },
+    "createdAt": "2026-05-07T06:36:12.070Z",
+    "updatedAt": "2026-05-07T06:36:19.624Z",
+    "summary": "**Wochenbericht – Zusammenfassung vom 7. Mai 2026**\n\n**Wichtigste Kennzahlen:**\n- Insgesamt 25 Tickets erfasst, davon 14 noch offen und 11 gelöst (Lösungsrate: 44 %).\n- Keine Angaben zu durchschnittlicher Lösungszeit oder SLA-Einhaltung.\n\n**Trends und Erkenntnisse:**\n- Die meisten Tickets fallen in die Kategorien \"Sonstiges\" (8) und \"Software\" (7), gefolgt von Zugriffsproblemen (5) und Netzwerk (4).\n- Die hohe Anzahl offener Tickets (14) und die niedrige Lösungsrate deuten auf Engpässe oder unzureichende Bearbeitungskapazitäten hin.\n\n**Empfehlungen:**\n1. **Datenlücken schließen:** Erfassung von Lösungszeiten und SLA-Einhaltung verbessern, um fundierte Analysen zu ermöglichen.\n2. **Priorisierung:** Offene Tickets nach Kategorie priorisieren, insbesondere \"Software\" und \"Sonstiges\", da hier die meisten Fälle anfallen.\n3. **Ursachenanalyse:** Bei \"Sonstiges\"-Tickets die genauen Probleme erfassen, um wiederkehrende Muster zu erkennen und präventiv zu handeln."
   }
 ]

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TicketStatus } from "@/lib/generated/prisma/enums"
 import { Loader2, CheckCircle, XCircle } from "lucide-react"
@@ -69,6 +70,7 @@ interface TicketEditDialogProps {
   onOpenChange: (open: boolean) => void
   ticket: Ticket | null
   onSave: (ticketId: string, updates: { status?: string; assignedToId?: string | null }) => Promise<void>
+  fullEditHref?: (ticketId: string) => string
   // Optional list of users for assignment
   users?: Array<{
     id: string
@@ -82,10 +84,12 @@ export function TicketEditDialog({
   onOpenChange,
   ticket,
   onSave,
+  fullEditHref,
   users = []
 }: TicketEditDialogProps) {
   const [status, setStatus] = useState<string>(TicketStatus.NEW)
   const [assignedToId, setAssignedToId] = useState<string | null>(null)
+  const [assigneeSearch, setAssigneeSearch] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const statusSelectRef = useRef<HTMLButtonElement>(null)
 
@@ -105,6 +109,12 @@ export function TicketEditDialog({
       label: user.name || user.email
     }))
   ], [users])
+
+  const filteredUserOptions = useMemo(() => {
+    const query = assigneeSearch.trim().toLowerCase()
+    if (!query) return userOptions
+    return userOptions.filter((option) => option.value === "unassigned" || option.label.toLowerCase().includes(query))
+  }, [userOptions, assigneeSearch])
 
   // Helper function to normalize status to TicketStatus enum
   const normalizeStatus = useCallback((status: string): TicketStatus => {
@@ -306,7 +316,15 @@ export function TicketEditDialog({
                   <SelectValue placeholder="Select agent" />
                 </SelectTrigger>
                 <SelectContent>
-                  {userOptions.map(option => (
+                  <div className="p-2">
+                    <Input
+                      placeholder="Search user..."
+                      value={assigneeSearch}
+                      onChange={(e) => setAssigneeSearch(e.target.value)}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  {filteredUserOptions.map(option => (
                     <SelectItem 
                       key={option.value} 
                       value={option.value} 
@@ -352,7 +370,7 @@ export function TicketEditDialog({
             <p>Tip: Use <kbd className="px-1 py-0.5 bg-muted rounded border">Tab</kbd> to navigate between fields.</p>
             {ticket && (
               <Button variant="link" size="sm" asChild className="h-auto p-0 text-xs">
-                <Link href={`/tickets/${ticket.id}/edit`}>Open full edit page</Link>
+                <Link href={fullEditHref ? fullEditHref(ticket.id) : `/tickets/${ticket.id}/edit`}>Open full edit page</Link>
               </Button>
             )}
           </div>

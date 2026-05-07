@@ -6,12 +6,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ArrowLeft, Calendar, FileText, Mail, Download, BarChart, User } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { generateReport } from "../actions"
+import { generateReport, getReportRecipientOptions } from "../actions"
 
 const reportTypes = [
   { id: 'weekly', label: 'Weekly Summary', description: 'Weekly ticket and performance summary', icon: Calendar },
@@ -30,11 +35,13 @@ const formats = [
 export default function NewReportPage() {
   const router = useRouter()
   const [isGenerating, setIsGenerating] = useState(false)
+  const [recipientOptions, setRecipientOptions] = useState<Array<{ email: string; label: string }>>([])
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([])
+  const [recipientSearch, setRecipientSearch] = useState("")
   const [formData, setFormData] = useState({
     type: 'weekly',
     name: '',
     format: 'pdf',
-    emailRecipients: '',
     notes: '',
     dateRange: 'last30' // last30, last7, custom
   })
@@ -43,15 +50,56 @@ export default function NewReportPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  useEffect(() => {
+    const loadRecipientOptions = async () => {
+      try {
+        const response = await getReportRecipientOptions()
+        if (response.success && response.options.length > 0) {
+          setRecipientOptions(response.options)
+          return
+        }
+      } catch (_error) {
+        // Fallback below
+      }
+
+      try {
+        const apiResponse = await fetch("/api/assignable-users", { cache: "no-store" })
+        if (!apiResponse.ok) return
+        const users: Array<{ email: string; name: string | null }> = await apiResponse.json()
+        setRecipientOptions(
+          users
+            .filter((user) => !!user.email)
+            .map((user) => ({
+              email: user.email,
+              label: user.name || user.email,
+            }))
+        )
+      } catch (_error) {
+        setRecipientOptions([])
+      }
+    }
+    loadRecipientOptions()
+  }, [])
+
+  const toggleRecipient = (email: string) => {
+    setSelectedRecipients((prev) =>
+      prev.includes(email) ? prev.filter((item) => item !== email) : [...prev, email]
+    )
+  }
+
+  const filteredRecipientOptions = recipientOptions.filter((option) => {
+    const query = recipientSearch.trim().toLowerCase()
+    if (!query) return true
+    return option.label.toLowerCase().includes(query) || option.email.toLowerCase().includes(query)
+  })
+
   const handleGenerateReport = async () => {
     setIsGenerating(true)
 
     try {
-      // E-Mail-Empfänger parsen
-      const emailRecipients = formData.emailRecipients
-        .split(',')
-        .map(email => email.trim())
-        .filter(email => email.length > 0)
+      const emailRecipients = selectedRecipients
+        .map((email) => email.trim())
+        .filter((email) => email.length > 0)
 
       // Datumsbereich berechnen
       let dateRange
@@ -186,16 +234,49 @@ export default function NewReportPage() {
 
             <div className="space-y-2">
               <Label htmlFor="emailRecipients">Email Recipients (Optional)</Label>
-              <Input
-                id="emailRecipients"
-                placeholder="recipient1@example.com, recipient2@example.com"
-                value={formData.emailRecipients}
-                onChange={(e) => handleInputChange('emailRecipients', e.target.value)}
-                disabled={isGenerating}
-              />
-              <p className="text-sm text-muted-foreground">
-                Separate multiple email addresses with commas
-              </p>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="h-10 w-[240px] justify-between" disabled={isGenerating}>
+                    <span>
+                      {selectedRecipients.length > 0
+                        ? `${selectedRecipients.length} selected`
+                        : "Select recipients"}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[420px] max-h-80 overflow-auto" align="start">
+                  <div className="p-2">
+                    <Input
+                      placeholder="Search recipients..."
+                      value={recipientSearch}
+                      onChange={(e) => setRecipientSearch(e.target.value)}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  {filteredRecipientOptions.length === 0 ? (
+                    <div className="px-2 py-2 text-sm text-muted-foreground">No users found</div>
+                  ) : (
+                    filteredRecipientOptions.map((option) => (
+                      <button
+                        key={option.email}
+                        type="button"
+                        className="flex w-full items-center justify-between px-2 py-2 text-left text-sm hover:bg-accent"
+                        onClick={() => toggleRecipient(option.email)}
+                      >
+                        <span>{option.label}</span>
+                        {selectedRecipients.includes(option.email) && (
+                          <span className="text-xs text-primary">selected</span>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {selectedRecipients.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Selected: {selectedRecipients.join(", ")}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -257,11 +338,11 @@ export default function NewReportPage() {
                     {formData.dateRange === 'last7' ? 'Last 7 days' : 'Last 30 days'}
                   </span>
                 </div>
-                {formData.emailRecipients && (
+                {selectedRecipients.length > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Email to:</span>
                     <span className="font-medium text-sm text-right max-w-[150px] truncate">
-                      {formData.emailRecipients.split(',').length} recipient(s)
+                      {selectedRecipients.length} recipient(s)
                     </span>
                   </div>
                 )}
@@ -294,7 +375,7 @@ export default function NewReportPage() {
                   )}
                 </Button>
                 
-                {formData.emailRecipients && (
+                {selectedRecipients.length > 0 && (
                   <Button 
                     variant="outline" 
                     disabled={isGenerating}

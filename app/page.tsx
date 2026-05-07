@@ -13,6 +13,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { getDashboardData } from "./dashboard-actions"
 import { getEndUserDashboardData } from "./enduser-dashboard-actions"
+import ForcePasswordResetDialog from "./force-password-reset-dialog"
 
 // Hilfsfunktion zum Berechnen der relativen Zeit
 function timeAgo(dateString: string): string {
@@ -111,6 +112,10 @@ export default async function DashboardPage() {
   const canViewDashboard = hasPermission(session, "dashboard.view")
   if (!canViewDashboard) {
     redirect('/unauthorized')
+  }
+
+  if ((session.user as { mustChangePassword?: boolean }).mustChangePassword) {
+    return <ForcePasswordResetDialog userEmail={session.user.email || ""} />
   }
   
   // Check if user is an end user

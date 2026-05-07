@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Dialog, DialogOverlay, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { TicketStatus } from "@/lib/generated/prisma/enums"
@@ -30,6 +31,7 @@ interface TicketPopupProps {
 export function TicketPopup({ open, onOpenChange, ticket }: TicketPopupProps) {
   const [status, setStatus] = useState<string>(TicketStatus.NEW)
   const [assignedToId, setAssignedToId] = useState<string | null>(null)
+  const [assigneeSearch, setAssigneeSearch] = useState("")
   const [users, setUsers] = useState<Array<{id: string, name: string | null, email: string}>>([])
   const [isSaving, setIsSaving] = useState(false)
 
@@ -79,6 +81,11 @@ export function TicketPopup({ open, onOpenChange, ticket }: TicketPopupProps) {
       label: user.name || user.email
     }))
   ]
+  const filteredUserOptions = userOptions.filter((option) => {
+    const query = assigneeSearch.trim().toLowerCase()
+    if (!query) return true
+    return option.value === "unassigned" || option.label.toLowerCase().includes(query)
+  })
 
   const hasChanges = ticket && (status !== ticket.status || assignedToId !== ticket.assignedToId)
 
@@ -186,7 +193,15 @@ export function TicketPopup({ open, onOpenChange, ticket }: TicketPopupProps) {
                     <SelectValue placeholder="Select agent" />
                   </SelectTrigger>
                   <SelectContent>
-                    {userOptions.map((option) => (
+                    <div className="p-2">
+                      <Input
+                        placeholder="Search user..."
+                        value={assigneeSearch}
+                        onChange={(e) => setAssigneeSearch(e.target.value)}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    {filteredUserOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>

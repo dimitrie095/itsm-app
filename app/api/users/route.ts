@@ -4,8 +4,13 @@ import { withAuth } from "@/lib/auth/middleware";
 import { Role } from "@/lib/generated/prisma/enums";
 import bcrypt from "bcryptjs";
 import { createAuditLogFromRequest } from "@/lib/logging/audit";
+import { sendOutlookEmail } from "@/lib/outlook-mailer";
 
 export const runtime = "nodejs";
+
+function isMissingMustChangePasswordColumn(error: unknown) {
+  return String(error).includes("Unknown argument `mustChangePassword`");
+}
 
 export async function GET(request: Request) {
   try {
@@ -89,24 +94,73 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Create user
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        name: name || null,
-        role: role in Role ? role : Role.END_USER,
-        department: department || null,
-        passwordHash: hashedPassword,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        department: true,
-        createdAt: true,
-        avatarUrl: true,
-      },
-    });
+    let newUser;
+    try {
+      newUser = await prisma.user.create({
+        data: {
+          email,
+          name: name || null,
+          role: role in Role ? role : Role.END_USER,
+          department: department || null,
+          passwordHash: hashedPassword,
+          mustChangePassword: true,
+        } as any,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          department: true,
+          createdAt: true,
+          avatarUrl: true,
+        },
+      });
+    } catch (createError) {
+      if (!isMissingMustChangePasswordColumn(createError)) {
+        throw createError;
+      }
+      newUser = await prisma.user.create({
+        data: {
+          email,
+          name: name || null,
+          role: role in Role ? role : Role.END_USER,
+          department: department || null,
+          passwordHash: hashedPassword,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          department: true,
+          createdAt: true,
+          avatarUrl: true,
+        },
+      });
+    }
+
+    const loginUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/login`;
+    const welcomeHtml = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2>Your Ponturo ITSM account is ready</h2>
+        <p>Hello ${newUser.name || newUser.email},</p>
+        <p>An account was created for you.</p>
+        <p><strong>Login:</strong> ${newUser.email}<br/>
+        <strong>Initial password:</strong> ${password}</p>
+        <p>Please sign in using this link: <a href="${loginUrl}">${loginUrl}</a></p>
+        <p>You will be asked to change your password immediately after your first login.</p>
+      </div>
+    `;
+
+    try {
+      await sendOutlookEmail({
+        to: newUser.email,
+        subject: "Your Ponturo ITSM login details",
+        html: welcomeHtml,
+      });
+    } catch (mailError) {
+      console.error("Failed to send new user credentials email:", mailError);
+    }
     
     // Audit log for user creation
     await createAuditLogFromRequest(nextRequest, {

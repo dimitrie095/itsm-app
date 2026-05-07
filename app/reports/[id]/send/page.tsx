@@ -5,52 +5,148 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ArrowLeft, Mail, Send, FileText, User } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { sendReport } from "../../actions"
+import {
+  generateReportEmailContent,
+  getReportById,
+  getReportRecipientOptions,
+  sendReportEmail,
+} from "../../actions"
 
-export default function SendReportPage({ params }: { params: Promise<{ id: string }> }) {
+export default function SendReportPage() {
+  const params = useParams<{ id: string }>()
+  const reportId = params?.id
   const router = useRouter()
   const [isSending, setIsSending] = useState(false)
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false)
+  const [isLoadingReport, setIsLoadingReport] = useState(true)
+  const [report, setReport] = useState<any | null>(null)
+  const [recipientOptions, setRecipientOptions] = useState<Array<{ email: string; label: string }>>([])
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([])
+  const [recipientSearch, setRecipientSearch] = useState("")
   const [formData, setFormData] = useState({
-    recipients: '',
     subject: '',
     message: '',
     includeAttachment: true
   })
 
-  // In einer echten App würde man den Report hier laden
-  // Für Demo verwenden wir Platzhalter-Daten
-  const report = {
-    id: (params as any).id,
-    name: 'Sample Report',
-    type: 'weekly',
-    format: 'pdf'
-  }
+  useEffect(() => {
+    const loadReport = async () => {
+      if (!reportId) return
+      setIsLoadingReport(true)
+      try {
+        const data = await getReportById(reportId)
+        if (!data) {
+          toast.error("Report not found")
+          router.push("/reports")
+          return
+        }
+        setReport(data)
+        const reportRecipients = Array.isArray(data?.metadata?.emailRecipients)
+          ? data.metadata.emailRecipients.filter((email: string) => !!email)
+          : []
+        setSelectedRecipients(reportRecipients)
+        setFormData((prev) => ({
+          ...prev,
+          subject: prev.subject || `ITSM Report: ${data.name}`,
+        }))
+      } catch (error) {
+        toast.error("Failed to load report")
+      } finally {
+        setIsLoadingReport(false)
+      }
+    }
+    loadReport()
+  }, [reportId, router])
+
+  useEffect(() => {
+    const loadRecipientOptions = async () => {
+      try {
+        const response = await getReportRecipientOptions()
+        if (response.success && response.options.length > 0) {
+          setRecipientOptions(response.options)
+          return
+        }
+      } catch (_error) {
+        // Fallback below
+      }
+
+      try {
+        const apiResponse = await fetch("/api/assignable-users", { cache: "no-store" })
+        if (!apiResponse.ok) return
+        const users: Array<{ email: string; name: string | null }> = await apiResponse.json()
+        setRecipientOptions(
+          users
+            .filter((user) => !!user.email)
+            .map((user) => ({
+              email: user.email,
+              label: user.name || user.email,
+            }))
+        )
+      } catch (_error) {
+        setRecipientOptions([])
+      }
+    }
+    loadRecipientOptions()
+  }, [])
+
+  useEffect(() => {
+    if (selectedRecipients.length === 0) return
+    setRecipientOptions((prev) => {
+      const existing = new Set(prev.map((option) => option.email))
+      const missing = selectedRecipients
+        .filter((email) => !existing.has(email))
+        .map((email) => ({ email, label: email }))
+      return missing.length > 0 ? [...prev, ...missing] : prev
+    })
+  }, [selectedRecipients])
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  const toggleRecipient = (email: string) => {
+    setSelectedRecipients((prev) =>
+      prev.includes(email) ? prev.filter((item) => item !== email) : [...prev, email]
+    )
+  }
+
+  const filteredRecipientOptions = recipientOptions.filter((option) => {
+    const query = recipientSearch.trim().toLowerCase()
+    if (!query) return true
+    return option.label.toLowerCase().includes(query) || option.email.toLowerCase().includes(query)
+  })
+
   const handleSendReport = async () => {
+    if (!report) return
     setIsSending(true)
 
     try {
-      // E-Mail-Empfänger parsen
-      const recipients = formData.recipients
-        .split(',')
-        .map(email => email.trim())
-        .filter(email => email.length > 0)
+      const recipients = selectedRecipients
+        .map((email) => email.trim())
+        .filter((email) => email.length > 0)
 
       if (recipients.length === 0) {
-        throw new Error('Please enter at least one email recipient')
+        throw new Error('Please select at least one email recipient')
       }
 
       // Report senden
-      const result = await sendReport(report.id, recipients)
+      const result = await sendReportEmail({
+        id: report.id,
+        recipients,
+        subject: formData.subject,
+        message: formData.message,
+        includeAttachment: formData.includeAttachment,
+      })
 
       toast.success('Report sent successfully', {
         description: `The report has been sent to ${recipients.length} recipient(s).`,
@@ -68,6 +164,37 @@ export default function SendReportPage({ params }: { params: Promise<{ id: strin
     } finally {
       setIsSending(false)
     }
+  }
+
+  const handleGenerateAiContent = async () => {
+    if (!report) return
+    setIsGeneratingAi(true)
+    try {
+      const generated = await generateReportEmailContent(report.id)
+      if (!generated.success || !generated.subject || !generated.message) {
+        throw new Error(generated.error || "AI generation failed")
+      }
+      setFormData((prev) => ({
+        ...prev,
+        subject: generated.subject!,
+        message: generated.message!,
+      }))
+      toast.success("AI email content generated")
+    } catch (error) {
+      toast.error("Failed to generate AI content", {
+        description: error instanceof Error ? error.message : "Please try again.",
+      })
+    } finally {
+      setIsGeneratingAi(false)
+    }
+  }
+
+  if (isLoadingReport || !report) {
+    return (
+      <div className="space-y-6">
+        <div className="text-muted-foreground">Loading report...</div>
+      </div>
+    )
   }
 
   return (
@@ -94,16 +221,49 @@ export default function SendReportPage({ params }: { params: Promise<{ id: strin
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="recipients">Recipients *</Label>
-              <Input
-                id="recipients"
-                placeholder="recipient1@example.com, recipient2@example.com"
-                value={formData.recipients}
-                onChange={(e) => handleInputChange('recipients', e.target.value)}
-                disabled={isSending}
-              />
-              <p className="text-sm text-muted-foreground">
-                Separate multiple email addresses with commas
-              </p>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="h-10 w-[240px] justify-between" disabled={isSending}>
+                    <span>
+                      {selectedRecipients.length > 0
+                        ? `${selectedRecipients.length} selected`
+                        : "Select recipients"}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[380px] max-h-80 overflow-auto" align="start">
+                  <div className="p-2">
+                    <Input
+                      placeholder="Search recipients..."
+                      value={recipientSearch}
+                      onChange={(e) => setRecipientSearch(e.target.value)}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  {recipientOptions.length === 0 ? (
+                    <div className="px-2 py-2 text-sm text-muted-foreground">No users found</div>
+                  ) : (
+                    filteredRecipientOptions.map((option) => (
+                      <button
+                        key={option.email}
+                        type="button"
+                        className="flex w-full items-center justify-between px-2 py-2 text-left text-sm hover:bg-accent"
+                        onClick={() => toggleRecipient(option.email)}
+                      >
+                        <span>{option.label}</span>
+                        {selectedRecipients.includes(option.email) && (
+                          <span className="text-xs text-primary">selected</span>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {selectedRecipients.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Selected: {selectedRecipients.join(", ")}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -142,6 +302,17 @@ export default function SendReportPage({ params }: { params: Promise<{ id: strin
                 Include report as {report.format.toUpperCase()} attachment
               </Label>
             </div>
+
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGenerateAiContent}
+                disabled={isSending || isGeneratingAi}
+              >
+                {isGeneratingAi ? "Generating..." : "Generate Content with AI"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -170,11 +341,7 @@ export default function SendReportPage({ params }: { params: Promise<{ id: strin
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Recipients:</span>
-                  <span className="font-medium">
-                    {formData.recipients 
-                      ? formData.recipients.split(',').filter(e => e.trim()).length 
-                      : 0}
-                  </span>
+                  <span className="font-medium">{selectedRecipients.length}</span>
                 </div>
               </div>
             </CardContent>
@@ -189,7 +356,7 @@ export default function SendReportPage({ params }: { params: Promise<{ id: strin
               <div className="grid gap-2">
                 <Button 
                   onClick={handleSendReport}
-                  disabled={isSending || !formData.recipients.trim()}
+                  disabled={isSending || selectedRecipients.length === 0}
                   className="w-full"
                 >
                   {isSending ? (

@@ -105,7 +105,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-950">
       <div className="min-h-screen flex flex-col lg:flex-row">
         {/* Left side - Branding and info for desktop */}
-        <div className="hidden lg:flex lg:w-1/2 p-8 lg:p-12 flex-col justify-between bg-slate-900 border-r border-slate-800">
+        <div className="hidden lg:flex lg:w-1/2 p-10 lg:p-14 flex-col justify-between bg-slate-900 border-r border-slate-800">
           <div className="space-y-8">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
@@ -183,7 +183,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Card className="border-slate-800 bg-slate-900">
+            <Card className="border-slate-800 bg-slate-900 rounded-2xl">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-xl text-white">
                   <LogIn className="h-5 w-5 text-primary" />
@@ -208,7 +208,7 @@ export default function LoginPage() {
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         disabled={isLoading}
-                        className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                        className="h-12 pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                       />
                     </div>
                   </div>
@@ -233,7 +233,7 @@ export default function LoginPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         disabled={isLoading}
-                        className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                        className="h-12 pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                       />
                     </div>
                     {isDevelopment && (
@@ -251,7 +251,7 @@ export default function LoginPage() {
 
                   <Button 
                     type="submit" 
-                    className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-medium"
+                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-medium rounded-xl"
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -288,7 +288,7 @@ export default function LoginPage() {
                             key={provider.id}
                             type="button"
                             variant="outline"
-                            className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                            className="h-11 rounded-xl bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
                             onClick={() => signIn(provider.id)}
                             disabled={isLoading}
                           >
@@ -326,7 +326,7 @@ export default function LoginPage() {
                             type="button"
                             onClick={() => handleDemoLogin(user.email, user.password)}
                             disabled={isLoading}
-                            className="group p-4 rounded-lg bg-slate-800 border border-slate-700 hover:border-slate-600 hover:bg-slate-800/80 transition-colors duration-200 text-left"
+                            className="group p-4 rounded-xl bg-slate-800 border border-slate-700 hover:border-slate-600 hover:bg-slate-800/80 transition-colors duration-200 text-left"
                           >
                             <div className="flex flex-col items-center text-center space-y-3">
                               <div className={`p-3 rounded-full ${user.color} shadow-lg`}>

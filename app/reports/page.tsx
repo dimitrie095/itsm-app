@@ -52,10 +52,10 @@ export default async function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
+          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Reports</h1>
           <p className="text-muted-foreground">Generate, view, and share analytical reports.</p>
         </div>
         {canCreateReport && (
@@ -68,7 +68,7 @@ export default async function ReportsPage() {
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-7 lg:grid-cols-3">
         {/* Report Types */}
         <Card>
           <CardHeader>
@@ -82,12 +82,12 @@ export default async function ReportsPage() {
                   <Button
                     key={type.id}
                     variant="outline"
-                    className="w-full justify-start h-auto py-3"
+                    className="h-auto w-full justify-start py-4"
                     asChild
                   >
                     <Link href={`/reports/new?type=${type.id}`}>
                       <div className="flex items-center gap-3 text-left">
-                        <div className="p-2 rounded-md bg-primary/10">
+                        <div className="rounded-lg bg-primary/10 p-2.5">
                           {typeIcon(type.id)}
                         </div>
                         <div className="flex-1">
@@ -218,7 +218,7 @@ export default async function ReportsPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Reports</CardTitle>

@@ -16,6 +16,7 @@ declare module "next-auth" {
     name?: string | null;
     role: Role;
     department?: string | null;
+    mustChangePassword?: boolean;
     permissions?: string[];
   }
   
@@ -26,6 +27,7 @@ declare module "next-auth" {
       name?: string | null;
       role: Role;
       department?: string | null;
+      mustChangePassword?: boolean;
       permissions: string[];
     }
   }
@@ -36,6 +38,7 @@ declare module "next-auth/jwt" {
     id: string;
     role: Role;
     department?: string | null;
+    mustChangePassword?: boolean;
     permissions: string[];
   }
 }
@@ -78,16 +81,24 @@ export const authOptions: NextAuthOptions = {
           
           const demoUser = demoUsers.find(u => u.email === credentials.email);
           if (demoUser) {
-            user = await prisma.user.create({
-              data: {
-                email: demoUser.email,
-                name: demoUser.name,
-                role: demoUser.role as Role,
-                department: demoUser.department,
-                passwordHash: await bcryptjs.hash("demo123", 10),
-                emailVerified: new Date(),
-              },
-            });
+            const demoData = {
+              email: demoUser.email,
+              name: demoUser.name,
+              role: demoUser.role as Role,
+              department: demoUser.department,
+              passwordHash: await bcryptjs.hash("demo123", 10),
+              emailVerified: new Date(),
+            };
+            try {
+              user = await prisma.user.create({
+                data: { ...demoData, mustChangePassword: false } as any,
+              });
+            } catch (createError) {
+              if (!String(createError).includes("Unknown argument `mustChangePassword`")) {
+                throw createError;
+              }
+              user = await prisma.user.create({ data: demoData });
+            }
           }
         }
 
@@ -115,6 +126,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           department: user.department,
+          mustChangePassword: (user as any).mustChangePassword,
         };
       }
     }),
@@ -139,10 +151,16 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.department = user.department;
+        token.mustChangePassword = user.mustChangePassword;
         // Fetch user permissions
         const permissions = await getUserPermissionNames(user.id);
         console.log(`[auth] User ${user.id} permissions:`, permissions);
         token.permissions = permissions;
+      } else if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id },
+        });
+        token.mustChangePassword = Boolean((dbUser as any)?.mustChangePassword);
       }
       return token;
     },
@@ -151,6 +169,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id;
         session.user.role = token.role;
         session.user.department = token.department;
+        session.user.mustChangePassword = token.mustChangePassword;
         session.user.permissions = token.permissions || [];
       }
       return session;
