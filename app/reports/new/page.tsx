@@ -6,11 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { ArrowLeft, Calendar, FileText, Mail, Download, BarChart, User } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -38,6 +33,7 @@ export default function NewReportPage() {
   const [recipientOptions, setRecipientOptions] = useState<Array<{ email: string; label: string }>>([])
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([])
   const [recipientSearch, setRecipientSearch] = useState("")
+  const [recipientToAdd, setRecipientToAdd] = useState("")
   const [formData, setFormData] = useState({
     type: 'weekly',
     name: '',
@@ -89,9 +85,21 @@ export default function NewReportPage() {
 
   const filteredRecipientOptions = recipientOptions.filter((option) => {
     const query = recipientSearch.trim().toLowerCase()
-    if (!query) return true
+    if (!query) return false
     return option.label.toLowerCase().includes(query) || option.email.toLowerCase().includes(query)
   })
+
+  const visibleRecipientOptions = (() => {
+    const query = recipientSearch.trim().toLowerCase()
+    if (query) return filteredRecipientOptions
+
+    const topRecipients = recipientOptions.slice(0, 6)
+    const topRecipientSet = new Set(topRecipients.map((option) => option.email))
+    const selectedExtras = recipientOptions.filter(
+      (option) => selectedRecipients.includes(option.email) && !topRecipientSet.has(option.email)
+    )
+    return [...topRecipients, ...selectedExtras]
+  })()
 
   const handleGenerateReport = async () => {
     setIsGenerating(true)
@@ -234,17 +242,18 @@ export default function NewReportPage() {
 
             <div className="space-y-2">
               <Label htmlFor="emailRecipients">Email Recipients (Optional)</Label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-10 w-[240px] justify-between" disabled={isGenerating}>
-                    <span>
-                      {selectedRecipients.length > 0
-                        ? `${selectedRecipients.length} selected`
-                        : "Select recipients"}
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[420px] max-h-80 overflow-auto" align="start">
+              <Select
+                value={recipientToAdd}
+                onValueChange={(value) => {
+                  toggleRecipient(value)
+                  setRecipientToAdd("")
+                }}
+                disabled={isGenerating}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select recipients" />
+                </SelectTrigger>
+                <SelectContent>
                   <div className="p-2">
                     <Input
                       placeholder="Search recipients..."
@@ -253,29 +262,36 @@ export default function NewReportPage() {
                       onKeyDown={(e) => e.stopPropagation()}
                     />
                   </div>
-                  {filteredRecipientOptions.length === 0 ? (
-                    <div className="px-2 py-2 text-sm text-muted-foreground">No users found</div>
+                  {recipientOptions.length === 0 ? (
+                    <SelectItem value="__no_users__" disabled>
+                      No users found
+                    </SelectItem>
+                  ) : visibleRecipientOptions.length === 0 ? (
+                    <SelectItem value="__no_results__" disabled>
+                      No matching users
+                    </SelectItem>
                   ) : (
-                    filteredRecipientOptions.map((option) => (
-                      <button
-                        key={option.email}
-                        type="button"
-                        className="flex w-full items-center justify-between px-2 py-2 text-left text-sm hover:bg-accent"
-                        onClick={() => toggleRecipient(option.email)}
-                      >
-                        <span>{option.label}</span>
-                        {selectedRecipients.includes(option.email) && (
-                          <span className="text-xs text-primary">selected</span>
-                        )}
-                      </button>
+                    visibleRecipientOptions.map((option) => (
+                      <SelectItem key={option.email} value={option.email}>
+                        {option.label}
+                      </SelectItem>
                     ))
                   )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </SelectContent>
+              </Select>
               {selectedRecipients.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Selected: {selectedRecipients.join(", ")}
-                </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {selectedRecipients.map((email) => (
+                    <button
+                      key={email}
+                      type="button"
+                      className="text-xs border rounded-full px-2 py-1 hover:bg-accent"
+                      onClick={() => toggleRecipient(email)}
+                    >
+                      {email} x
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 

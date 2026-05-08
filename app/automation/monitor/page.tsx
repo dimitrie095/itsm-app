@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -79,6 +79,15 @@ interface ExecutionFilters {
   startDate?: string
   endDate?: string
   ticketId?: string
+}
+
+type RuleAnalytics = {
+  ruleId: string
+  ruleName: string
+  executions: number
+  success: number
+  failed: number
+  successRate: number
 }
 
 export default function AutomationMonitorPage() {
@@ -207,9 +216,89 @@ export default function AutomationMonitorPage() {
     }
   }
 
-  const handleExport = () => {
-    toast.info("Export feature coming soon")
-    // In a real implementation, this would generate and download a CSV/Excel file
+  const downloadFile = (content: string, filename: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const escapeCsvValue = (value: unknown) => {
+    const text = String(value ?? "")
+    if (text.includes(",") || text.includes('"') || text.includes("\n")) {
+      return `"${text.replace(/"/g, '""')}"`
+    }
+    return text
+  }
+
+  const handleExport = (format: "json" | "csv") => {
+    if (executions.length === 0) {
+      toast.info("No execution logs to export")
+      return
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
+
+    if (format === "json") {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        filters: {
+          search,
+          selectedRule,
+          successFilter,
+          timeRange,
+          dateRange,
+        },
+        total: executions.length,
+        executions,
+      }
+      downloadFile(
+        JSON.stringify(payload, null, 2),
+        `automation-monitor-${timestamp}.json`,
+        "application/json"
+      )
+      toast.success(`Exported ${executions.length} logs as JSON`)
+      return
+    }
+
+    const headers = [
+      "id",
+      "ruleId",
+      "ruleName",
+      "ruleTrigger",
+      "ruleAction",
+      "ruleActive",
+      "ticketId",
+      "success",
+      "executedAt",
+      "details",
+    ]
+
+    const rows = executions.map((execution) =>
+      [
+        execution.id,
+        execution.ruleId,
+        execution.ruleName,
+        execution.ruleTrigger,
+        execution.ruleAction,
+        execution.ruleActive,
+        execution.ticketId ?? "",
+        execution.success,
+        execution.executedAt,
+        execution.details ?? "",
+      ]
+        .map(escapeCsvValue)
+        .join(",")
+    )
+
+    const csv = [headers.join(","), ...rows].join("\n")
+    downloadFile(csv, `automation-monitor-${timestamp}.csv`, "text/csv;charset=utf-8")
+    toast.success(`Exported ${executions.length} logs as CSV`)
   }
 
   const handleClearFilters = () => {
@@ -244,6 +333,96 @@ export default function AutomationMonitorPage() {
     }
   }
 
+  const analytics = useMemo(() => {
+    const groupedByRule = new Map<string, RuleAnalytics>()
+    const groupedByDay = new Map<string, { success: number; failed: number }>()
+    const groupedByActionFailure = new Map<string, number>()
+    const groupedByTrigger = new Map<string, number>()
+
+    for (const execution of executions) {
+      const existing = groupedByRule.get(execution.ruleId)
+      if (!existing) {
+        groupedByRule.set(execution.ruleId, {
+          ruleId: execution.ruleId,
+          ruleName: execution.ruleName,
+          executions: 1,
+          success: execution.success ? 1 : 0,
+          failed: execution.success ? 0 : 1,
+          successRate: execution.success ? 100 : 0,
+        })
+      } else {
+        existing.executions += 1
+        if (execution.success) {
+          existing.success += 1
+        } else {
+          existing.failed += 1
+        }
+      }
+
+      const dayKey = new Date(execution.executedAt).toISOString().slice(0, 10)
+      const day = groupedByDay.get(dayKey) ?? { success: 0, failed: 0 }
+      if (execution.success) {
+        day.success += 1
+      } else {
+        day.failed += 1
+        groupedByActionFailure.set(
+          execution.ruleAction,
+          (groupedByActionFailure.get(execution.ruleAction) ?? 0) + 1
+        )
+      }
+      groupedByDay.set(dayKey, day)
+
+      groupedByTrigger.set(execution.ruleTrigger, (groupedByTrigger.get(execution.ruleTrigger) ?? 0) + 1)
+    }
+
+    const ruleStats = Array.from(groupedByRule.values()).map((rule) => ({
+      ...rule,
+      successRate: rule.executions > 0 ? (rule.success / rule.executions) * 100 : 0,
+    }))
+
+    const topRules = [...ruleStats]
+      .sort((a, b) => b.executions - a.executions)
+      .slice(0, 5)
+
+    const worstRules = [...ruleStats]
+      .filter((rule) => rule.executions >= 3)
+      .sort((a, b) => a.successRate - b.successRate)
+      .slice(0, 5)
+
+    const dailyTrend = Array.from(groupedByDay.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-10)
+      .map(([date, value]) => ({
+        date,
+        total: value.success + value.failed,
+        success: value.success,
+        failed: value.failed,
+      }))
+
+    const triggerDistribution = Array.from(groupedByTrigger.entries())
+      .map(([trigger, count]) => ({ trigger, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6)
+
+    const topFailureActions = Array.from(groupedByActionFailure.entries())
+      .map(([action, count]) => ({ action, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+
+    const avgExecutionsPerRule =
+      ruleStats.length > 0 ? ruleStats.reduce((sum, r) => sum + r.executions, 0) / ruleStats.length : 0
+
+    return {
+      topRules,
+      worstRules,
+      dailyTrend,
+      triggerDistribution,
+      topFailureActions,
+      avgExecutionsPerRule,
+      rulesWithFailures: ruleStats.filter((r) => r.failed > 0).length,
+    }
+  }, [executions])
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
@@ -269,9 +448,13 @@ export default function AutomationMonitorPage() {
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button variant="outline" onClick={handleExport}>
+          <Button variant="outline" onClick={() => handleExport("csv")}>
             <Download className="mr-2 h-4 w-4" />
-            Export
+            Export CSV
+          </Button>
+          <Button variant="outline" onClick={() => handleExport("json")}>
+            <Download className="mr-2 h-4 w-4" />
+            Export JSON
           </Button>
         </div>
       </div>
@@ -624,15 +807,102 @@ export default function AutomationMonitorPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center border rounded-lg">
-                <div className="text-center space-y-2">
-                  <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto" />
-                  <p className="text-muted-foreground">Analytics dashboard coming soon</p>
-                  <p className="text-sm text-muted-foreground">
-                    Charts and graphs showing execution trends over time
-                  </p>
+              {executions.length === 0 ? (
+                <div className="h-64 flex items-center justify-center border rounded-lg">
+                  <div className="text-center space-y-2">
+                    <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto" />
+                    <p className="text-muted-foreground">No analytics data available</p>
+                    <p className="text-sm text-muted-foreground">
+                      Execute some rules or expand your filters/time range.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 border rounded-lg">
+                      <p className="text-xs text-muted-foreground">Unique rules executed</p>
+                      <p className="text-2xl font-semibold">{analytics.topRules.length}</p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <p className="text-xs text-muted-foreground">Avg executions per rule</p>
+                      <p className="text-2xl font-semibold">{analytics.avgExecutionsPerRule.toFixed(1)}</p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <p className="text-xs text-muted-foreground">Rules with failures</p>
+                      <p className="text-2xl font-semibold text-amber-600">{analytics.rulesWithFailures}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="p-4 border rounded-lg space-y-3">
+                      <h4 className="font-medium">Top Rules by Execution Volume</h4>
+                      {analytics.topRules.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No rule executions in the selected range.</p>
+                      ) : (
+                        analytics.topRules.map((rule) => (
+                          <div key={rule.ruleId} className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="truncate pr-3">{rule.ruleName}</span>
+                              <span className="font-medium">{rule.executions}</span>
+                            </div>
+                            <Progress value={Math.min(rule.successRate, 100)} className="h-2" />
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="p-4 border rounded-lg space-y-3">
+                      <h4 className="font-medium">Daily Execution Trend (last 10 days)</h4>
+                      {analytics.dailyTrend.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No executions for trend analysis.</p>
+                      ) : (
+                        analytics.dailyTrend.map((day) => (
+                          <div key={day.date} className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span>{day.date}</span>
+                              <span>
+                                {day.total} total ({day.failed} failed)
+                              </span>
+                            </div>
+                            <Progress value={day.total > 0 ? (day.success / day.total) * 100 : 0} className="h-2" />
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="p-4 border rounded-lg space-y-3">
+                      <h4 className="font-medium">Trigger Distribution</h4>
+                      {analytics.triggerDistribution.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No trigger data available.</p>
+                      ) : (
+                        analytics.triggerDistribution.map((entry) => (
+                          <div key={entry.trigger} className="flex items-center justify-between text-sm">
+                            <span className="truncate pr-3">{entry.trigger}</span>
+                            <Badge variant="outline">{entry.count}</Badge>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="p-4 border rounded-lg space-y-3">
+                      <h4 className="font-medium">Top Failure Actions</h4>
+                      {analytics.topFailureActions.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No failures detected in selected range.</p>
+                      ) : (
+                        analytics.topFailureActions.map((entry) => (
+                          <div key={entry.action} className="flex items-center justify-between text-sm">
+                            <span className="truncate pr-3">{entry.action}</span>
+                            <Badge variant="destructive">{entry.count}</Badge>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -647,6 +917,13 @@ export default function AutomationMonitorPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {executions.length === 0 ? (
+                <div className="p-6 text-center border rounded-lg">
+                  <p className="text-muted-foreground">
+                    No insights yet. Execute rules first or broaden filters/time range.
+                  </p>
+                </div>
+              ) : (
               <div className="space-y-4">
                 <div className="p-4 border rounded-lg">
                   <h4 className="font-medium flex items-center gap-2">
@@ -664,18 +941,65 @@ export default function AutomationMonitorPage() {
 
                 <div className="p-4 border rounded-lg">
                   <h4 className="font-medium">Top Rules by Execution Count</h4>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    View which rules are executed most frequently to identify optimization opportunities.
-                  </p>
+                  {analytics.topRules.length === 0 ? (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      No execution data for ranking.
+                    </p>
+                  ) : (
+                    <div className="mt-2 space-y-1">
+                      {analytics.topRules.slice(0, 3).map((rule) => (
+                        <p key={rule.ruleId} className="text-sm text-muted-foreground">
+                          {rule.ruleName}: {rule.executions} executions, {rule.successRate.toFixed(1)}% success.
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-4 border rounded-lg">
                   <h4 className="font-medium">Common Failure Patterns</h4>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Analyze failure patterns to improve rule reliability and error handling.
-                  </p>
+                  {analytics.topFailureActions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      No repeated failure pattern found in current range.
+                    </p>
+                  ) : (
+                    <div className="mt-2 space-y-1">
+                      {analytics.topFailureActions.slice(0, 3).map((entry) => (
+                        <p key={entry.action} className="text-sm text-muted-foreground">
+                          {entry.action}: {entry.count} failures.
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium">Recommendations</h4>
+                  <div className="mt-2 space-y-1">
+                    {statistics.successRate < 90 && (
+                      <p className="text-sm text-muted-foreground">
+                        - Focus first on rules below 80% success and validate their condition/action parameters.
+                      </p>
+                    )}
+                    {analytics.worstRules.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        - Lowest stability rule: {analytics.worstRules[0].ruleName} ({analytics.worstRules[0].successRate.toFixed(1)}% success).
+                      </p>
+                    )}
+                    {analytics.topFailureActions.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        - Most failing action type: {analytics.topFailureActions[0].action}.
+                      </p>
+                    )}
+                    {statistics.successRate >= 95 && (
+                      <p className="text-sm text-muted-foreground">
+                        - Great performance. Keep monitoring weekly and expand automation coverage incrementally.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

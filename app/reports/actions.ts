@@ -9,6 +9,37 @@ import { prisma } from '@/lib/prisma'
 
 const MAX_RECIPIENTS = 50
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+let hasWarnedMissingReportsStore = false
+let hasAttemptedReportsStoreBootstrap = false
+
+function isMissingReportsStoreTable(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const candidate = error as { code?: string; meta?: { [key: string]: unknown } }
+  if (candidate.code === 'P2010') {
+    const metaText = JSON.stringify(candidate.meta || {}).toLowerCase()
+    return metaText.includes('42p01') || metaText.includes('reports_store') || metaText.includes('tabledoesnotexist')
+  }
+  return false
+}
+
+function warnMissingReportsStoreOnce() {
+  if (hasWarnedMissingReportsStore) return
+  hasWarnedMissingReportsStore = true
+  console.warn('reports_store table not found; reports persistence is disabled until migration is applied.')
+}
+
+async function ensureReportsStoreTableExists() {
+  if (hasAttemptedReportsStoreBootstrap) return
+  hasAttemptedReportsStoreBootstrap = true
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "reports_store" (
+      "id" TEXT PRIMARY KEY,
+      "payload" JSONB NOT NULL,
+      "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+}
 
 function escapeHtml(value: string) {
   return value
@@ -39,6 +70,32 @@ async function readReports() {
       })
       .filter(Boolean)
   } catch (error) {
+    if (isMissingReportsStoreTable(error)) {
+      try {
+        await ensureReportsStoreTableExists()
+        const retryRows = await prisma.$queryRaw<Array<{ payload: unknown }>>`
+          SELECT "payload"
+          FROM "reports_store"
+          ORDER BY "created_at" DESC
+        `
+        return retryRows
+          .map((row) => {
+            if (typeof row.payload === "string") {
+              try {
+                return JSON.parse(row.payload)
+              } catch {
+                return null
+              }
+            }
+            return row.payload
+          })
+          .filter(Boolean)
+      } catch (bootstrapError) {
+        warnMissingReportsStoreOnce()
+        console.error('Failed to bootstrap reports_store table:', bootstrapError)
+        return []
+      }
+    }
     console.error('Error reading reports from database:', error)
     return []
   }
@@ -63,6 +120,31 @@ async function getReportByIdFromStore(id: string) {
     }
     return payload
   } catch (error) {
+    if (isMissingReportsStoreTable(error)) {
+      try {
+        await ensureReportsStoreTableExists()
+        const retryRows = await prisma.$queryRaw<Array<{ payload: unknown }>>`
+          SELECT "payload"
+          FROM "reports_store"
+          WHERE "id" = ${id}
+          LIMIT 1
+        `
+        const retryPayload = retryRows[0]?.payload
+        if (!retryPayload) return null
+        if (typeof retryPayload === "string") {
+          try {
+            return JSON.parse(retryPayload)
+          } catch {
+            return null
+          }
+        }
+        return retryPayload
+      } catch (bootstrapError) {
+        warnMissingReportsStoreOnce()
+        console.error('Failed to bootstrap reports_store table:', bootstrapError)
+        return null
+      }
+    }
     console.error('Error reading report by id from database:', error)
     return null
   }
@@ -81,6 +163,22 @@ async function upsertReportToStore(report: any) {
       DO UPDATE SET "payload" = EXCLUDED."payload", "updated_at" = NOW()
     `
   } catch (error) {
+    if (isMissingReportsStoreTable(error)) {
+      try {
+        await ensureReportsStoreTableExists()
+        await prisma.$executeRaw`
+          INSERT INTO "reports_store" ("id", "payload", "updated_at")
+          VALUES (${reportId}, ${JSON.stringify(report)}::jsonb, NOW())
+          ON CONFLICT ("id")
+          DO UPDATE SET "payload" = EXCLUDED."payload", "updated_at" = NOW()
+        `
+        return
+      } catch (bootstrapError) {
+        warnMissingReportsStoreOnce()
+        console.error('Failed to bootstrap reports_store table:', bootstrapError)
+        throw new Error('Reports table is missing. Please run database migrations.')
+      }
+    }
     console.error('Error upserting report to database:', error)
     throw new Error('Failed to persist report')
   }
@@ -470,7 +568,22 @@ export async function deleteReport(id: string) {
   const existing = await getReportByIdFromStore(id)
   if (!existing) throw new Error('Report not found')
 
-  await prisma.$executeRaw`DELETE FROM "reports_store" WHERE "id" = ${id}`
+  try {
+    await prisma.$executeRaw`DELETE FROM "reports_store" WHERE "id" = ${id}`
+  } catch (error) {
+    if (isMissingReportsStoreTable(error)) {
+      try {
+        await ensureReportsStoreTableExists()
+        await prisma.$executeRaw`DELETE FROM "reports_store" WHERE "id" = ${id}`
+      } catch (bootstrapError) {
+        warnMissingReportsStoreOnce()
+        console.error('Failed to bootstrap reports_store table:', bootstrapError)
+        throw new Error('Reports table is missing. Please run database migrations.')
+      }
+    } else {
+      throw error
+    }
+  }
   revalidatePath('/reports')
   
   return true

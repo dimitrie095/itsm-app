@@ -32,17 +32,29 @@ export async function GET(request: Request) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50")))
     const search = (searchParams.get("search") || "").trim()
+    const role = (searchParams.get("role") || "").trim()
+    const department = (searchParams.get("department") || "").trim()
     const paginate = searchParams.get("paginate") === "true"
 
-    const whereClause = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: "insensitive" as const } },
-            { email: { contains: search, mode: "insensitive" as const } },
-            { department: { contains: search, mode: "insensitive" as const } },
-          ],
-        }
-      : undefined
+    const andFilters: any[] = []
+    if (search) {
+      andFilters.push({
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { email: { contains: search, mode: "insensitive" as const } },
+          { department: { contains: search, mode: "insensitive" as const } },
+        ],
+      })
+    }
+    if (role && role !== "all") {
+      andFilters.push({ role: role as Role })
+    }
+    if (department) {
+      andFilters.push({
+        department: { contains: department, mode: "insensitive" as const },
+      })
+    }
+    const whereClause = andFilters.length > 0 ? { AND: andFilters } : undefined
 
     const users = await prisma.user.findMany({
       where: whereClause,

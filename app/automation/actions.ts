@@ -3,6 +3,78 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { requireServerActionAuth } from "@/lib/auth/server-actions"
+import {
+  SUPPORTED_AUTOMATION_CATEGORIES,
+  SUPPORTED_AUTOMATION_TRIGGERS,
+  SUPPORTED_CONDITIONS,
+  SUPPORTED_ACTIONS,
+  SUPPORTED_PRIORITY_PARAMS,
+  SUPPORTED_STATUS_PARAMS,
+  SUPPORTED_ASSET_STATUS_PARAMS,
+  SUPPORTED_ARTICLE_CATEGORY_PARAMS,
+  buildStoredAction,
+  splitStoredAction,
+} from "@/lib/automation/rule-support"
+
+function validateRuleConfig(input: {
+  category: string
+  trigger: string
+  condition?: string
+  action: string
+  actionParam?: string
+}) {
+  if (!SUPPORTED_AUTOMATION_CATEGORIES.includes(input.category as (typeof SUPPORTED_AUTOMATION_CATEGORIES)[number])) {
+    throw new Error("Unsupported rule category")
+  }
+
+  if (!SUPPORTED_AUTOMATION_TRIGGERS.includes(input.trigger as (typeof SUPPORTED_AUTOMATION_TRIGGERS)[number])) {
+    throw new Error("Unsupported trigger")
+  }
+
+  const normalizedCondition = (input.condition || "").trim()
+  if (normalizedCondition) {
+    const parts = normalizedCondition.split(/\s+AND\s+/i).map((part) => part.trim()).filter(Boolean)
+    if (parts.length === 0) {
+      throw new Error("Unsupported condition")
+    }
+    const allSupported = parts.every((part) =>
+      SUPPORTED_CONDITIONS.includes(part as (typeof SUPPORTED_CONDITIONS)[number])
+    )
+    if (!allSupported) {
+      throw new Error("Unsupported condition")
+    }
+  }
+
+  const actionDef = SUPPORTED_ACTIONS.find((item) => item.value === input.action)
+  if (!actionDef) {
+    throw new Error("Unsupported action")
+  }
+
+  const trimmedParam = (input.actionParam || "").trim()
+  if (actionDef.hasParam && !trimmedParam) {
+    throw new Error(`${actionDef.value} requires a parameter`)
+  }
+
+  if (!actionDef.hasParam && trimmedParam) {
+    throw new Error(`${actionDef.value} does not accept a parameter`)
+  }
+
+  if (input.action === "Change Priority" && !SUPPORTED_PRIORITY_PARAMS.includes(trimmedParam as (typeof SUPPORTED_PRIORITY_PARAMS)[number])) {
+    throw new Error("Unsupported priority parameter")
+  }
+
+  if (input.action === "Change Status" && !SUPPORTED_STATUS_PARAMS.includes(trimmedParam as (typeof SUPPORTED_STATUS_PARAMS)[number])) {
+    throw new Error("Unsupported status parameter")
+  }
+
+  if (input.action === "Update Asset Status" && !SUPPORTED_ASSET_STATUS_PARAMS.includes(trimmedParam as (typeof SUPPORTED_ASSET_STATUS_PARAMS)[number])) {
+    throw new Error("Unsupported asset status parameter")
+  }
+
+  if (input.action === "Update Article Category" && !SUPPORTED_ARTICLE_CATEGORY_PARAMS.includes(trimmedParam as (typeof SUPPORTED_ARTICLE_CATEGORY_PARAMS)[number])) {
+    throw new Error("Unsupported article category parameter")
+  }
+}
 
 export async function getAutomationRules() {
   await requireServerActionAuth({ permissions: ["automation.view"] })
@@ -288,10 +360,15 @@ export async function createRule(formData: {
 }) {
   await requireServerActionAuth({ permissions: ["automation.create"] })
   try {
-    // Combine action and param if provided
-    const fullAction = formData.actionParam 
-      ? `${formData.action}: ${formData.actionParam}`
-      : formData.action
+    validateRuleConfig({
+      category: formData.category,
+      trigger: formData.trigger,
+      condition: formData.condition,
+      action: formData.action,
+      actionParam: formData.actionParam,
+    })
+
+    const fullAction = buildStoredAction(formData.action, formData.actionParam)
 
     const rule = await prisma.automationRule.create({
       data: {
@@ -325,10 +402,15 @@ export async function updateRule(ruleId: string, formData: {
 }) {
   await requireServerActionAuth({ permissions: ["automation.update"] })
   try {
-    // Combine action and param if provided
-    const fullAction = formData.actionParam 
-      ? `${formData.action}: ${formData.actionParam}`
-      : formData.action
+    validateRuleConfig({
+      category: formData.category,
+      trigger: formData.trigger,
+      condition: formData.condition,
+      action: formData.action,
+      actionParam: formData.actionParam,
+    })
+
+    const fullAction = buildStoredAction(formData.action, formData.actionParam)
 
     const rule = await prisma.automationRule.update({
       where: { id: ruleId },
@@ -577,8 +659,23 @@ export async function executeRule(ruleId: string) {
       return { success: false, error: "Rule not found" }
     }
 
-    // In a real implementation, this would execute the rule logic
-    // For now, we just log it
+    if (!rule.isActive) {
+      return { success: false, error: "Rule is inactive" }
+    }
+
+    const { actionName, actionParam } = splitStoredAction(rule.action)
+    const actionDef = SUPPORTED_ACTIONS.find((item) => item.value === actionName)
+    if (!actionDef) {
+      await logRuleExecution(ruleId, 'manual', false)
+      return { success: false, error: "Rule action is not supported" }
+    }
+
+    if (actionDef.hasParam && !actionParam) {
+      await logRuleExecution(ruleId, 'manual', false)
+      return { success: false, error: "Rule action parameter is missing" }
+    }
+
+    // Manual test validates and logs executable rules.
     await logRuleExecution(ruleId, 'manual', true)
 
     revalidatePath('/automation')

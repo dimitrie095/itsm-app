@@ -1,0 +1,22 @@
+services:
+  itsm-app:
+    container_name: itsm-app-prod
+    env_file:
+      - .env.prod
+    environment:
+      NODE_ENV: production
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
+      RUN_SEED_ON_START: ${RUN_SEED_ON_START:-false}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    restart: always
+
+  postgres:
+    container_name: itsm-postgres-prod
+    env_file:
+      - .env.prod
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    restart: always

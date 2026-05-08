@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Plus, Search, Filter, Mail, Building, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -35,6 +36,9 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [debouncedDepartmentFilter, setDebouncedDepartmentFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [limit] = useState(25);
   const [total, setTotal] = useState(0);
@@ -62,10 +66,27 @@ export default function UsersPage() {
   }, [searchTerm]);
 
   useEffect(() => {
-    fetchUsers(page, debouncedSearchTerm);
-  }, [page, debouncedSearchTerm]);
+    const timer = setTimeout(() => {
+      setDebouncedDepartmentFilter(departmentFilter.trim());
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [departmentFilter]);
 
-  const fetchUsers = async (targetPage = page, search = debouncedSearchTerm) => {
+  useEffect(() => {
+    setPage(1);
+  }, [roleFilter]);
+
+  useEffect(() => {
+    fetchUsers(page, debouncedSearchTerm, roleFilter, debouncedDepartmentFilter);
+  }, [page, debouncedSearchTerm, roleFilter, debouncedDepartmentFilter]);
+
+  const fetchUsers = async (
+    targetPage = page,
+    search = debouncedSearchTerm,
+    role = roleFilter,
+    department = debouncedDepartmentFilter
+  ) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -75,6 +96,12 @@ export default function UsersPage() {
       });
       if (search) {
         params.set("search", search);
+      }
+      if (role && role !== "all") {
+        params.set("role", role);
+      }
+      if (department) {
+        params.set("department", department);
       }
       const response = await fetch(`/api/users?${params.toString()}`);
       if (!response.ok) {
@@ -128,7 +155,14 @@ export default function UsersPage() {
     endUsers: users.filter(u => u.role === "END_USER").length,
   };
 
-  if (loading) {
+  const clearFilters = () => {
+    setSearchTerm("");
+    setDepartmentFilter("");
+    setRoleFilter("all");
+    setPage(1);
+  };
+
+  if (loading && users.length === 0 && !error) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -150,7 +184,7 @@ export default function UsersPage() {
     );
   }
 
-  if (error) {
+  if (error && users.length === 0) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -202,7 +236,7 @@ export default function UsersPage() {
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-2xl font-bold text-blue-700">{stats.total}</div>
             <p className="text-xs text-muted-foreground">All registered users</p>
           </CardContent>
         </Card>
@@ -211,7 +245,7 @@ export default function UsersPage() {
             <CardTitle className="text-sm font-medium">Admins</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.admins}</div>
+            <div className="text-2xl font-bold text-purple-700">{stats.admins}</div>
             <p className="text-xs text-muted-foreground">Manage system</p>
           </CardContent>
         </Card>
@@ -220,7 +254,7 @@ export default function UsersPage() {
             <CardTitle className="text-sm font-medium">Agents</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.agents}</div>
+            <div className="text-2xl font-bold text-green-700">{stats.agents}</div>
             <p className="text-xs text-muted-foreground">Support staff</p>
           </CardContent>
         </Card>
@@ -229,7 +263,7 @@ export default function UsersPage() {
             <CardTitle className="text-sm font-medium">End Users</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.endUsers}</div>
+            <div className="text-2xl font-bold text-amber-700">{stats.endUsers}</div>
             <p className="text-xs text-muted-foreground">Internal customers</p>
           </CardContent>
         </Card>
@@ -242,23 +276,48 @@ export default function UsersPage() {
               <CardTitle>User Directory</CardTitle>
               <CardDescription>All users with access to the system.</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search users..."
-                  className="w-[300px] pl-9"
+                  className="w-[260px] pl-9"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
+              <Input
+                placeholder="Filter competence center..."
+                className="w-[220px]"
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+              />
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="All roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All roles</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="AGENT">Agent</SelectItem>
+                  <SelectItem value="END_USER">End User</SelectItem>
+                  <SelectItem value="CUSTOM">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={clearFilters}>
+                <Filter className="mr-2 h-4 w-4" />
+                Clear
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
+          {loading && users.length > 0 && (
+            <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Updating results...
+            </div>
+          )}
           <Table>
             <TableHeader>
               <TableRow>
@@ -274,7 +333,9 @@ export default function UsersPage() {
               {users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    {searchTerm ? "No users match your search." : "No users found."}
+                    {searchTerm || roleFilter !== "all" || departmentFilter
+                      ? "No users match your current filters."
+                      : "No users found."}
                   </TableCell>
                 </TableRow>
               ) : (

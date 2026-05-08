@@ -33,6 +33,7 @@ import { AlertCircle } from "lucide-react"
 import { RuleActionsDropdown } from "./rule-actions"
 import { FilterControls } from "./filter-controls"
 import { SearchInput } from "./search-input"
+import { RuleSummaryRow } from "./rule-summary-row"
 
 export const dynamic = 'force-dynamic'
 
@@ -828,97 +829,15 @@ export default async function AutomationPage({
               </TableHeader>
               <TableBody>
                 {filteredRules.map((rule) => (
-                  <TableRow key={rule.id} className="group">
-                    {/* Status Toggle */}
-                    <TableCell>
-                      {canToggleRule ? (
-                        <form action={toggleRuleStatus}>
-                          <input type="hidden" name="ruleId" value={rule.id} />
-                          <input type="hidden" name="currentStatus" value={String(rule.status)} />
-                          <Switch 
-                            name="status"
-                            defaultChecked={rule.status}
-                            className="data-[state=checked]:bg-emerald-500"
-                          />
-                        </form>
-                      ) : (
-                        <Badge variant={rule.status ? "default" : "secondary"} className={rule.status ? "bg-emerald-500" : ""}>
-                          {rule.status ? 'On' : 'Off'}
-                        </Badge>
-                      )}
-                    </TableCell>
-
-                    {/* Rule Info */}
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">{rule.name}</span>
-                          {rule.status && (
-                            <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                          )}
-                        </div>
-                        {rule.description && (
-                          <span className="text-xs text-muted-foreground line-clamp-1">
-                            {rule.description}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-
-                    {/* Category */}
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {getRuleCategory(rule.trigger)}
-                      </Badge>
-                    </TableCell>
-
-                    {/* Trigger */}
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getTriggerIcon(rule.trigger)}
-                        <div className="flex flex-col">
-                          <Badge variant={getTriggerBadgeVariant(rule.trigger)} className="w-fit text-xs">
-                            {rule.trigger}
-                          </Badge>
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    {/* Condition */}
-                    <TableCell>
-                      {rule.condition ? (
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-blue-400"></div>
-                          {formatCondition(rule.condition)}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">No condition</span>
-                      )}
-                    </TableCell>
-
-                    {/* Action */}
-                    <TableCell>
-                      {formatAction(rule.action)}
-                    </TableCell>
-
-                    {/* Last Execution */}
-                    <TableCell>
-                      {formatLastExecution(rule.lastExecution, rule.lastExecutionSuccess)}
-                    </TableCell>
-
-                    {/* Actions Menu */}
-                    <TableCell>
-                      <RuleActionsDropdown 
-                        rule={rule}
-                        canUpdateRule={canUpdateRule}
-                        canCreateRule={canCreateRule}
-                        canDeleteRule={canDeleteRule}
-                      />
-                    </TableCell>
-                  </TableRow>
+                  <RuleSummaryRow
+                    key={rule.id}
+                    rule={rule}
+                    canToggleRule={canToggleRule}
+                    canUpdateRule={canUpdateRule}
+                    canCreateRule={canCreateRule}
+                    canDeleteRule={canDeleteRule}
+                    toggleRuleStatus={toggleRuleStatus}
+                  />
                 ))}
               </TableBody>
             </Table>

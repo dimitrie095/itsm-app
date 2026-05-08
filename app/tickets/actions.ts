@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { buildTicketClarificationEmailHtml, sendTicketEmail } from "@/lib/outlook-mailer"
 import { requireServerActionAuth } from "@/lib/auth/server-actions"
+import { runAutomationForTicketUpdated } from "@/lib/automation/engine"
 
 export async function getTicketsFromDatabase(userId?: string, userRole?: string) {
   await requireServerActionAuth({ permissions: ["tickets.view"] })
@@ -277,6 +278,10 @@ export async function updateTicket(
       notifyTicketAssigned(ticketId, ticketTitle, updates.assignedToId)
         .catch(error => console.error('Failed to send assignment notification:', error))
     }
+
+    runAutomationForTicketUpdated(ticketId).catch((error) => {
+      console.error("Failed to run ticket-updated automations:", error)
+    })
     
     return {
       success: true,

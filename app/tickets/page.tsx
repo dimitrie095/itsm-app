@@ -25,7 +25,7 @@ export default async function TicketsPage() {
             <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalTickets}</div>
+            <div className="text-2xl font-bold text-blue-700">{stats.totalTickets}</div>
             <div className="text-xs text-muted-foreground">All tickets in the system</div>
           </CardContent>
         </Card>
@@ -34,7 +34,7 @@ export default async function TicketsPage() {
             <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.openTickets}</div>
+            <div className="text-2xl font-bold text-amber-700">{stats.openTickets}</div>
             <div className="text-xs text-muted-foreground">Requiring attention</div>
           </CardContent>
         </Card>
@@ -43,7 +43,7 @@ export default async function TicketsPage() {
             <CardTitle className="text-sm font-medium">Resolved</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.resolvedTickets}</div>
+            <div className="text-2xl font-bold text-green-700">{stats.resolvedTickets}</div>
             <div className="text-xs text-muted-foreground">Completed tickets</div>
           </CardContent>
         </Card>

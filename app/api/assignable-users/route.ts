@@ -8,18 +8,24 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
     const nextRequest = new NextRequest(request.url, request)
-    const authResult = await withAuth({ permissions: ['tickets.assign'] })(nextRequest);
+    const target = nextRequest.nextUrl.searchParams.get("target")
+    const requiredPermission = target === "assets" ? "assets.assign" : "tickets.assign"
+    const authResult = await withAuth({ permissions: [requiredPermission] })(nextRequest);
     if (authResult instanceof NextResponse) {
       return authResult;
     }
     
-    // Fetch users with role AGENT or ADMIN (who can be assigned tickets)
-    const users = await prisma.user.findMany({
-      where: {
-        role: {
-          in: [Role.AGENT, Role.ADMIN]
+    // For assets allow all users, for tickets keep AGENT/ADMIN restriction.
+    const whereClause = target === "assets"
+      ? {}
+      : {
+          role: {
+            in: [Role.AGENT, Role.ADMIN]
+          }
         }
-      },
+
+    const users = await prisma.user.findMany({
+      where: whereClause,
       select: {
         id: true,
         email: true,

@@ -18,6 +18,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronUp, ChevronDown } from "lucide-react"
+import {
+  SUPPORTED_AUTOMATION_TRIGGERS,
+  SUPPORTED_ACTIONS,
+  SUPPORTED_CONDITIONS,
+} from "@/lib/automation/rule-support"
 
 // Extended trigger options for ITSM
 const TRIGGER_OPTIONS = [
@@ -423,14 +428,7 @@ const ROLE_OPTIONS = [
 const CATEGORY_OPTIONS = [
   { value: "Ticket", label: "Ticket Automations" },
   { value: "Asset", label: "Asset Automations" },
-  { value: "User", label: "User Automations" },
   { value: "Knowledge Base", label: "Knowledge Base" },
-  { value: "Reporting", label: "Reporting & Analytics" },
-  { value: "Role & Permission", label: "Role & Permission" },
-  { value: "SLA", label: "SLA Automations" },
-  { value: "Notification", label: "Notification" },
-  { value: "Schedule", label: "Scheduled" },
-  { value: "General", label: "General" },
 ]
 
 interface FormData {
@@ -596,6 +594,16 @@ export default function EditRulePage() {
       return
     }
 
+    const selectedActionDef = SUPPORTED_ACTIONS.find((action) => action.value === formData.action)
+    if (!selectedActionDef) {
+      toast.error("Please choose a supported action")
+      return
+    }
+    if (selectedActionDef.hasParam && !formData.actionParam.trim()) {
+      toast.error("This action requires a parameter")
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -630,9 +638,11 @@ export default function EditRulePage() {
   const selectedTrigger = TRIGGER_OPTIONS.find(t => t.value === formData.trigger)
 
   // Filter triggers by selected category
-  const filteredTriggers = formData.category 
-    ? TRIGGER_OPTIONS.filter(t => t.category === formData.category)
-    : TRIGGER_OPTIONS;
+  const filteredTriggers = TRIGGER_OPTIONS.filter(
+    (t) =>
+      (!formData.category || t.category === formData.category) &&
+      SUPPORTED_AUTOMATION_TRIGGERS.includes(t.value as (typeof SUPPORTED_AUTOMATION_TRIGGERS)[number])
+  )
 
   // Group triggers by category
   const triggerCategories = filteredTriggers.reduce((acc, trigger) => {
@@ -642,20 +652,34 @@ export default function EditRulePage() {
   }, {} as Record<string, typeof TRIGGER_OPTIONS>)
 
   // Filter actions by selected category
-  const filteredActions = formData.category
-    ? ACTION_OPTIONS.filter(a => a.category === formData.category)
-    : ACTION_OPTIONS;
+  const filteredActions = ACTION_OPTIONS.filter(
+    (a) =>
+      (!formData.category || a.category === formData.category) &&
+      SUPPORTED_ACTIONS.some((supported) => supported.value === a.value)
+  )
 
   // Filter conditions by selected category
-  const filteredConditions = formData.category
-    ? CONDITION_OPTIONS_WITH_CATEGORY.filter(c => c.category === formData.category)
-    : CONDITION_OPTIONS_WITH_CATEGORY;
+  const filteredConditions = CONDITION_OPTIONS_WITH_CATEGORY.filter(
+    (c) =>
+      (!formData.category || c.category === formData.category) &&
+      SUPPORTED_CONDITIONS.includes(c.value as (typeof SUPPORTED_CONDITIONS)[number])
+  )
   const filteredAgents = agents.filter((agent) => {
     const query = agentSearch.trim().toLowerCase()
     if (!query) return true
     const label = `${agent.name || ""} ${agent.email} ${agent.department || ""}`.toLowerCase()
     return label.includes(query)
   })
+
+  const selectedConditions = formData.condition
+    ? formData.condition.split(/\s+AND\s+/i).map((part) => part.trim()).filter(Boolean)
+    : []
+
+  const toggleCondition = (value: string) => {
+    const exists = selectedConditions.includes(value)
+    const next = exists ? selectedConditions.filter((item) => item !== value) : [...selectedConditions, value]
+    setFormData({ ...formData, condition: next.join(" AND ") })
+  }
 
   if (isLoading) {
     return (
@@ -815,48 +839,23 @@ export default function EditRulePage() {
                     </CollapsibleTrigger>
                   </div>
                   <CollapsibleContent>
-                        <div className="flex items-center justify-end">
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={useConditionPreset}
-                              onCheckedChange={setUseConditionPreset}
-                              id="condition-preset"
-                            />
-                            <Label htmlFor="condition-preset" className="text-sm">
-                              Use preset conditions
-                            </Label>
+                        <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground">Only supported conditions are available.</p>
+                          <div className="flex flex-wrap gap-2">
+                             {filteredConditions.map((condition) => (
+                               <button
+                                 key={condition.value}
+                                 type="button"
+                                 onClick={() => toggleCondition(condition.value)}
+                                 className={`text-xs px-2 py-1 rounded-full border ${
+                                   selectedConditions.includes(condition.value) ? "border-primary bg-primary/10" : "border-border hover:bg-muted"
+                                 }`}
+                               >
+                                 {condition.value}
+                               </button>
+                             ))}
                           </div>
                         </div>
-        
-                        {useConditionPreset ? (
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap gap-2">
-                               {filteredConditions.map((condition) => (
-                                 <button
-                                   key={condition.value}
-                                   type="button"
-                                   onClick={() => setFormData({ ...formData, condition: condition.value })}
-                                   className={`text-xs px-2 py-1 rounded-full border ${
-                                     formData.condition === condition.value ? "border-primary bg-primary/10" : "border-border hover:bg-muted"
-                                   }`}
-                                 >
-                                   {condition.value}
-                                 </button>
-                               ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <Input
-                              placeholder="e.g., Category = 'Hardware' AND Priority = 'High'"
-                              value={formData.condition}
-                              onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Use simple expressions like: Category = &apos;Hardware&apos;, Priority = &apos;High&apos;, Age &gt; 24
-                            </p>
-                          </div>
-                        )}
         
                         {formData.condition && (
                           <div className="flex items-center gap-2 p-3 bg-muted rounded">

@@ -1,6 +1,13 @@
 "use server"
 
 import { computeSlaSnapshot } from "@/lib/sla"
+function calculatePercentageChange(current: number, previous: number): number {
+  if (previous === 0) {
+    return current > 0 ? 100 : 0
+  }
+  return Math.round(((current - previous) / previous) * 100)
+}
+
 
 
 
@@ -132,8 +139,12 @@ export async function getDashboardData() {
       articles: [],
       userCount: 0,
       openTickets: 0,
+      openTicketsChangePct: 0,
       managedAssets: 0,
+      managedAssetsChangePct: 0,
+      activeUsersChangePct: 0,
       totalArticles: 0,
+      totalArticlesChangePct: 0,
       slaCompliance: [
         { level: "Critical", target: 99, actual: null },
         { level: "High", target: 95, actual: null },
@@ -146,7 +157,25 @@ export async function getDashboardData() {
   }
   
   const { prisma } = await import('@/lib/prisma')
-  const [dbTickets, articles, slas, userCount, managedAssets] = await Promise.all([
+  const now = new Date()
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+
+  const [
+    dbTickets,
+    articles,
+    slas,
+    userCount,
+    managedAssets,
+    currentOpenTicketsCount,
+    previousOpenTicketsCount,
+    usersCreatedThisMonth,
+    usersCreatedLastMonth,
+    assetsCreatedThisMonth,
+    assetsCreatedLastMonth,
+    articlesCreatedThisMonth,
+    articlesCreatedLastMonth
+  ] = await Promise.all([
     prisma.ticket.findMany({
       select: {
         id: true,
@@ -190,6 +219,50 @@ export async function getDashboardData() {
     getSLAFromDatabase(),
     prisma.user.count(),
     prisma.asset.count(),
+    prisma.ticket.count({
+      where: {
+        status: { in: ['NEW', 'ASSIGNED', 'IN_PROGRESS'] },
+        createdAt: { gte: startOfCurrentMonth },
+      },
+    }),
+    prisma.ticket.count({
+      where: {
+        status: { in: ['NEW', 'ASSIGNED', 'IN_PROGRESS'] },
+        createdAt: { gte: startOfPreviousMonth, lt: startOfCurrentMonth },
+      },
+    }),
+    prisma.user.count({
+      where: {
+        createdAt: { gte: startOfCurrentMonth },
+      },
+    }),
+    prisma.user.count({
+      where: {
+        createdAt: { gte: startOfPreviousMonth, lt: startOfCurrentMonth },
+      },
+    }),
+    prisma.asset.count({
+      where: {
+        createdAt: { gte: startOfCurrentMonth },
+      },
+    }),
+    prisma.asset.count({
+      where: {
+        createdAt: { gte: startOfPreviousMonth, lt: startOfCurrentMonth },
+      },
+    }),
+    prisma.knowledgeBaseArticle.count({
+      where: {
+        isPublished: true,
+        createdAt: { gte: startOfCurrentMonth },
+      },
+    }),
+    prisma.knowledgeBaseArticle.count({
+      where: {
+        isPublished: true,
+        createdAt: { gte: startOfPreviousMonth, lt: startOfCurrentMonth },
+      },
+    }),
   ])
   
   // Transform tickets to match the expected JSON shape
@@ -246,14 +319,22 @@ export async function getDashboardData() {
   const openTickets = dbTickets.filter(ticket => 
     ticket.status === 'NEW' || ticket.status === 'ASSIGNED' || ticket.status === 'IN_PROGRESS'
   ).length
+  const openTicketsChangePct = calculatePercentageChange(currentOpenTicketsCount, previousOpenTicketsCount)
+  const activeUsersChangePct = calculatePercentageChange(usersCreatedThisMonth, usersCreatedLastMonth)
+  const managedAssetsChangePct = calculatePercentageChange(assetsCreatedThisMonth, assetsCreatedLastMonth)
+  const totalArticlesChangePct = calculatePercentageChange(articlesCreatedThisMonth, articlesCreatedLastMonth)
   
   return {
     tickets: sortedTickets,
     articles: publishedArticles,
     userCount,
     openTickets,
+    openTicketsChangePct,
     managedAssets,
+    managedAssetsChangePct,
+    activeUsersChangePct,
     totalArticles: publishedArticles.length,
+    totalArticlesChangePct,
     slaCompliance,
     averageResponseTime: responseTime.average,
     isWithinSLA: responseTime.withinSLA

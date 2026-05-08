@@ -1,8 +1,7 @@
 import { getAuditLogs } from "./actions"
 import { AuditLogsTable } from "./components/AuditLogsTable"
+import { AuditExportButton } from "./components/AuditExportButton"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Download } from "lucide-react"
 
 export const metadata = {
   title: "Audit Logs",
@@ -23,10 +22,7 @@ export default async function AuditLogsPage() {
             Track all critical activities: user deletions, role changes, password resets, and more.
           </p>
         </div>
-        <Button variant="outline" size="sm">
-          <Download className="mr-2 h-4 w-4" />
-          Export
-        </Button>
+        <AuditExportButton logs={logs} />
       </div>
 
       <Card>

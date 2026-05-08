@@ -139,11 +139,10 @@ export function RecentTicketsTable({ tickets, showAssignee = true }: RecentTicke
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-4">ID</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
-                  {showAssignee && <TableHead>Assigned To</TableHead>}
+                  {showAssignee && <TableHead>Request Owner</TableHead>}
                   <TableHead>Updated</TableHead>
                 </TableRow>
               </TableHeader>
@@ -154,9 +153,6 @@ export function RecentTicketsTable({ tickets, showAssignee = true }: RecentTicke
                     className="hover:bg-muted/40 cursor-pointer"
                     onClick={() => handleRowClick(ticket)}
                   >
-                    <TableCell className="font-medium pl-4">
-                      <span className="font-mono text-xs">{ticket.id}</span>
-                    </TableCell>
                     <TableCell className="max-w-[180px] truncate" title={ticket.title}>
                       {ticket.title}
                     </TableCell>

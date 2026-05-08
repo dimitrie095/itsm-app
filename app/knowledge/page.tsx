@@ -2,19 +2,23 @@ export const dynamic = 'force-dynamic'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Plus, Search, Filter, Eye, ThumbsUp, BookOpen, Tag, Sparkles } from "lucide-react"
+import { MoreHorizontal, Plus, Eye, ThumbsUp, BookOpen, Tag, Sparkles } from "lucide-react"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
 import { getArticles, deleteArticle } from "./actions"
+import { KnowledgeFilters } from "./knowledge-filters"
 
-export default async function KnowledgePage({ searchParams }: { searchParams?: { search?: string } }) {
+export default async function KnowledgePage({
+  searchParams,
+}: {
+  searchParams?: { search?: string; category?: string; status?: string }
+}) {
   const session = await getServerSession(authOptions)
   
   // Check if user has permission to view knowledge base
@@ -32,41 +36,56 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
   const canPublishArticle = userPermissions.includes("knowledge.publish")
 
   const searchTerm = (searchParams?.search || "").trim().toLowerCase()
+  const categoryFilter = (searchParams?.category || "all").trim()
+  const statusFilter = (searchParams?.status || "all").trim().toLowerCase()
+  const allArticles = articles
 
-  // If no articles, fallback to static data for demo
-  const baseArticles = articles.length > 0 ? articles : [
-    { id: "KB-001", title: "How to reset your password", category: "Security", views: 245, helpful: 89, status: "Published", lastUpdated: "2025-03-10" },
-    { id: "KB-002", title: "VPN setup guide for remote work", category: "Networking", views: 189, helpful: 67, status: "Published", lastUpdated: "2025-03-09" },
-    { id: "KB-003", title: "Troubleshooting printer issues", category: "Hardware", views: 156, helpful: 42, status: "Published", lastUpdated: "2025-03-08" },
-    { id: "KB-004", title: "Microsoft Teams installation", category: "Software", views: 134, helpful: 38, status: "Draft", lastUpdated: "2025-03-07" },
-    { id: "KB-005", title: "Email signature configuration", category: "Email", views: 98, helpful: 25, status: "Published", lastUpdated: "2025-03-06" },
-    { id: "KB-006", title: "Software license renewal process", category: "Process", views: 76, helpful: 18, status: "Published", lastUpdated: "2025-03-05" },
-  ]
+  const displayArticles = allArticles.filter((article: any) => {
+    const title = String(article.title || "").toLowerCase()
+    const category = String(article.category || "").toLowerCase()
+    const id = String(article.id || "").toLowerCase()
+    const matchesSearch =
+      !searchTerm || title.includes(searchTerm) || category.includes(searchTerm) || id.includes(searchTerm)
+    const matchesCategory =
+      categoryFilter === "all" || String(article.category || "") === categoryFilter
+    const articleStatus = String(article.status || (article.isPublished ? "Published" : "Draft")).toLowerCase()
+    const matchesStatus = statusFilter === "all" || articleStatus === statusFilter
+    return matchesSearch && matchesCategory && matchesStatus
+  })
 
-  const displayArticles = searchTerm
-    ? baseArticles.filter((article: any) => {
-        const title = String(article.title || "").toLowerCase()
-        const category = String(article.category || "").toLowerCase()
-        const id = String(article.id || "").toLowerCase()
-        return title.includes(searchTerm) || category.includes(searchTerm) || id.includes(searchTerm)
-      })
-    : baseArticles
-
-  // Calculate metrics
-  const totalArticles = displayArticles.length
-  const totalViews = displayArticles.reduce((sum: number, article: any) => sum + (article.views || 0), 0)
-  const totalHelpful = displayArticles.reduce((sum: number, article: any) => sum + (article.helpful || 0), 0)
-  const totalNotHelpful = displayArticles.reduce((sum: number, article: any) => sum + (article.notHelpful || 0), 0)
+  // Calculate metrics from the full dataset (not affected by search filters)
+  const totalArticles = allArticles.length
+  const totalViews = allArticles.reduce((sum: number, article: any) => sum + (article.views || 0), 0)
+  const totalHelpful = allArticles.reduce((sum: number, article: any) => sum + (article.helpful || 0), 0)
+  const totalNotHelpful = allArticles.reduce((sum: number, article: any) => sum + (article.notHelpful || 0), 0)
   const helpfulRate = totalHelpful + totalNotHelpful > 0 
     ? Math.round((totalHelpful / (totalHelpful + totalNotHelpful)) * 100) 
     : 0
   const issueReportRate = totalHelpful + totalNotHelpful > 0
     ? Math.round((totalNotHelpful / (totalHelpful + totalNotHelpful)) * 100)
     : 0
-  const draftArticles = displayArticles.filter((article: any) => article.status === "Draft" || article.isPublished === false).length
+  const draftArticles = allArticles.filter((article: any) => article.status === "Draft" || article.isPublished === false).length
+
+  const now = new Date()
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const createdThisMonth = allArticles.filter((article: any) => {
+    const createdAt = new Date(article.createdAt)
+    return !Number.isNaN(createdAt.getTime()) && createdAt >= startOfCurrentMonth
+  }).length
+  const createdLastMonth = allArticles.filter((article: any) => {
+    const createdAt = new Date(article.createdAt)
+    return !Number.isNaN(createdAt.getTime()) && createdAt >= startOfPreviousMonth && createdAt < startOfCurrentMonth
+  }).length
+  const monthlyArticleDelta = createdThisMonth - createdLastMonth
+  const monthlyDeltaPrefix = monthlyArticleDelta > 0 ? "+" : ""
+  const monthlyDeltaLabel =
+    monthlyArticleDelta === 0
+      ? "No change from last month"
+      : `${monthlyDeltaPrefix}${monthlyArticleDelta} from last month`
 
   // Extract unique categories
-  const categories = Array.from(new Set(displayArticles.map((article: any) => article.category))).filter(Boolean)
+  const categories = Array.from(new Set(allArticles.map((article: any) => article.category))).filter(Boolean)
   // Count articles per category
   const categoryCounts = categories.map(cat => ({
     name: cat as string,
@@ -113,8 +132,8 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
             <CardTitle className="text-sm font-medium">Total Articles</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalArticles}</div>
-            <p className="text-xs text-muted-foreground">+0 this month</p>
+            <div className="text-2xl font-bold text-blue-700">{totalArticles}</div>
+            <p className="text-xs text-muted-foreground">{monthlyDeltaLabel}</p>
           </CardContent>
         </Card>
         <Card>
@@ -122,8 +141,8 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
             <CardTitle className="text-sm font-medium">Total Views</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalViews.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">+0% from last month</p>
+            <div className="text-2xl font-bold text-purple-700">{totalViews.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Across all articles</p>
           </CardContent>
         </Card>
         <Card>
@@ -131,7 +150,7 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
             <CardTitle className="text-sm font-medium">Helpful Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{helpfulRate}%</div>
+            <div className="text-2xl font-bold text-green-700">{helpfulRate}%</div>
             <p className="text-xs text-muted-foreground">Based on user feedback</p>
           </CardContent>
         </Card>
@@ -140,7 +159,7 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
             <CardTitle className="text-sm font-medium">Draft Articles</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{draftArticles}</div>
+            <div className="text-2xl font-bold text-amber-700">{draftArticles}</div>
             <p className="text-xs text-muted-foreground">Need review</p>
           </CardContent>
         </Card>
@@ -149,7 +168,7 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
             <CardTitle className="text-sm font-medium">Issue Report Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{issueReportRate}%</div>
+            <div className="text-2xl font-bold text-red-700">{issueReportRate}%</div>
             <p className="text-xs text-muted-foreground">Reported issues vs. all feedback</p>
           </CardContent>
         </Card>
@@ -163,22 +182,12 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
                 <CardTitle>Articles</CardTitle>
                 <CardDescription>All knowledge base articles.</CardDescription>
               </div>
-              <div className="flex items-center gap-2">
-                <form className="flex items-center gap-2" method="get">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search articles..."
-                      className="w-[320px] pl-10"
-                      name="search"
-                      defaultValue={searchParams?.search || ""}
-                    />
-                  </div>
-                  <Button variant="outline" size="icon" type="submit">
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                </form>
-              </div>
+              <KnowledgeFilters
+                initialSearch={searchParams?.search || ""}
+                initialCategory={categoryFilter}
+                initialStatus={statusFilter}
+                categories={categories.map((category) => String(category))}
+              />
             </div>
           </CardHeader>
           <CardContent>

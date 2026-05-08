@@ -2,16 +2,19 @@
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Copy, Trash2, Play, Power, ToggleRight } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { MoreHorizontal, Copy, Trash2, Play, Pencil, ToggleRight } from "lucide-react"
 import { duplicateRule, deleteRule, executeRule, setRuleStatus } from "./actions"
 import { toast } from "sonner"
 import Link from "next/link"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 interface AutomationRule {
   id: string
   name: string
   description: string
-  category: string
+  category?: string
   trigger: string
   condition: string
   action: string
@@ -31,9 +34,23 @@ export function RuleActionsDropdown({
   canCreateRule,
   canDeleteRule,
 }: RuleActionsDropdownProps) {
-  const handleDelete = (e: React.MouseEvent) => {
-    if (!confirm('Are you sure you want to delete this rule?')) {
-      e.preventDefault()
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter()
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true)
+    try {
+      const formData = new FormData()
+      formData.append("ruleId", rule.id)
+      await deleteRule(formData)
+      toast.success("Rule deleted")
+      setConfirmDeleteOpen(false)
+      router.refresh()
+    } catch (error) {
+      toast.error("Failed to delete rule")
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -83,7 +100,7 @@ export function RuleActionsDropdown({
         {canUpdateRule && (
           <DropdownMenuItem asChild>
             <Link href={`/automation/${rule.id}/edit`} className="flex items-center w-full">
-              <Power className="mr-2 h-4 w-4" />
+              <Pencil className="mr-2 h-4 w-4" />
               Edit Rule
             </Link>
           </DropdownMenuItem>
@@ -124,21 +141,44 @@ export function RuleActionsDropdown({
         <DropdownMenuSeparator />
         
         {canDeleteRule && (
-          <form action={deleteRule} className="w-full">
-            <input type="hidden" name="ruleId" value={rule.id} />
-            <DropdownMenuItem asChild className="text-red-600 focus:text-red-600">
-              <button 
-                type="submit" 
-                className="w-full"
-                onClick={handleDelete}
-              >
+          <DropdownMenuItem
+            className="text-red-600 focus:text-red-600"
+            onSelect={(e) => {
+              e.preventDefault()
+              setConfirmDeleteOpen(true)
+            }}
+          >
+            <span className="w-full flex items-center">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
-              </button>
-            </DropdownMenuItem>
-          </form>
+            </span>
+          </DropdownMenuItem>
         )}
       </DropdownMenuContent>
+
+      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Rule</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{rule.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Confirm Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DropdownMenu>
   )
 }

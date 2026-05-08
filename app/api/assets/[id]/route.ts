@@ -4,6 +4,7 @@ import { withAuth } from "@/lib/auth/middleware"
 import { AssetType, AssetStatus, Role } from "@/lib/generated/prisma/enums"
 import { getRequestLogger } from "@/lib/logging/middleware"
 import { z, ZodError } from 'zod'
+import { runAutomationForAssetUpdated } from "@/lib/automation/engine"
 
 export const runtime = 'nodejs'
 
@@ -144,6 +145,7 @@ export async function GET(
       name: asset.name,
       type: mapAssetTypeToDisplay(asset.type),
       status: mapAssetStatusToDisplay(asset.status),
+      assignedToId: asset.userId,
       assignedTo: asset.user?.name || asset.user?.email || 'Unassigned',
       location: asset.location || '',
       warranty,
@@ -321,6 +323,7 @@ export async function PUT(
       name: asset.name,
       type: mapAssetTypeToDisplay(asset.type),
       status: mapAssetStatusToDisplay(asset.status),
+      assignedToId: asset.userId,
       assignedTo: asset.user?.name || asset.user?.email || 'Unassigned',
       location: asset.location || '',
       warranty,
@@ -336,6 +339,10 @@ export async function PUT(
       operation: 'asset_update',
       assetId: asset.id,
       userId: user!.id,
+    })
+
+    runAutomationForAssetUpdated(asset.id).catch((error) => {
+      console.error("Failed to run asset-updated automations:", error)
     })
     
     return NextResponse.json(formattedAsset)

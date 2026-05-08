@@ -1,15 +1,20 @@
 "use client"
 
+import { useState } from "react"
 import { AuditLog } from "../actions"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { User } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { User, Eye } from "lucide-react"
 
 interface AuditLogsTableProps {
   logs: AuditLog[]
 }
 
 export function AuditLogsTable({ logs }: AuditLogsTableProps) {
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
+
   const getActionColor = (action: string) => {
     if (action.includes("DELETE")) return "destructive"
     if (action.includes("CREATE")) return "default"
@@ -41,12 +46,13 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
             <TableHead>User</TableHead>
             <TableHead>Details</TableHead>
             <TableHead>IP Address</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {logs.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                 No audit logs found.
               </TableCell>
             </TableRow>
@@ -84,11 +90,54 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
                   {formatDetails(log.details)}
                 </TableCell>
                 <TableCell className="text-sm font-mono">{log.ipAddress || "-"}</TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedLog(log)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Open Log
+                  </Button>
+                </TableCell>
               </TableRow>
             ))
           )}
         </TableBody>
       </Table>
+
+      <Dialog open={selectedLog !== null} onOpenChange={(open) => !open && setSelectedLog(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Audit Log Details</DialogTitle>
+            <DialogDescription>
+              Full details for action <span className="font-medium">{selectedLog?.action}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLog && (
+            <div className="space-y-3 text-sm">
+              <div><span className="font-medium">Timestamp:</span> {new Date(selectedLog.createdAt).toLocaleString()}</div>
+              <div><span className="font-medium">Action:</span> {selectedLog.action}</div>
+              <div><span className="font-medium">Entity:</span> {selectedLog.entityType}</div>
+              <div><span className="font-medium">Entity ID:</span> {selectedLog.entityId || "-"}</div>
+              <div><span className="font-medium">User:</span> {selectedLog.user?.name || selectedLog.user?.email || "System"}</div>
+              <div><span className="font-medium">User Email:</span> {selectedLog.user?.email || "-"}</div>
+              <div><span className="font-medium">IP Address:</span> {selectedLog.ipAddress || "-"}</div>
+              <div><span className="font-medium">User Agent:</span> {selectedLog.userAgent || "-"}</div>
+              <div>
+                <span className="font-medium">Details:</span>
+                <pre className="mt-2 max-h-56 overflow-auto rounded-md border bg-muted/40 p-3 text-xs">
+                  {selectedLog.details
+                    ? (() => {
+                        try {
+                          return JSON.stringify(JSON.parse(selectedLog.details), null, 2)
+                        } catch {
+                          return selectedLog.details
+                        }
+                      })()
+                    : "-"}
+                </pre>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

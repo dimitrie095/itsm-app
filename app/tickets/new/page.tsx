@@ -9,19 +9,84 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { useSession } from "next-auth/react"
 import { Role } from "@/lib/generated/prisma/enums"
+
+interface AssignableUser {
+  id: string
+  name: string | null
+  email: string
+  role: string
+  department: string | null
+}
 
 export default function NewTicketPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { data: session, status } = useSession()
+  const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([])
+  const [isLoadingAssignableUsers, setIsLoadingAssignableUsers] = useState(false)
+  const [requestOwnerId, setRequestOwnerId] = useState<string>("")
+  const [requestOwnerSearch, setRequestOwnerSearch] = useState("")
   
   const userRole = session?.user?.role
   const isEndUser = userRole === Role.END_USER
   const isAdminOrAgent = userRole === Role.ADMIN || userRole === Role.AGENT
+
+  const selectedRequestOwner = useMemo(
+    () => assignableUsers.find((user) => user.id === requestOwnerId) ?? null,
+    [assignableUsers, requestOwnerId]
+  )
+
+  const requestOwnerOptions = useMemo(
+    () =>
+      assignableUsers.map((user) => ({
+        value: user.id,
+        label: user.name || user.email,
+      })),
+    [assignableUsers]
+  )
+
+  const filteredRequestOwnerOptions = useMemo(() => {
+    const query = requestOwnerSearch.trim().toLowerCase()
+    if (!query) {
+      const topUsers = requestOwnerOptions.slice(0, 6)
+      if (requestOwnerId && !topUsers.some((option) => option.value === requestOwnerId)) {
+        const selectedOption = requestOwnerOptions.find((option) => option.value === requestOwnerId)
+        return selectedOption ? [...topUsers, selectedOption] : topUsers
+      }
+      return topUsers
+    }
+
+    return requestOwnerOptions.filter((option) => option.label.toLowerCase().includes(query))
+  }, [requestOwnerOptions, requestOwnerSearch, requestOwnerId])
+
+  useEffect(() => {
+    const fetchAssignableUsers = async () => {
+      if (!isAdminOrAgent || status !== "authenticated") {
+        return
+      }
+
+      setIsLoadingAssignableUsers(true)
+      try {
+        const response = await fetch("/api/assignable-users", { cache: "no-store" })
+        if (!response.ok) {
+          throw new Error(`Failed to load users (${response.status})`)
+        }
+        const users = (await response.json()) as AssignableUser[]
+        setAssignableUsers(users)
+      } catch (error) {
+        console.error("Failed to fetch assignable users:", error)
+        toast.error("Could not load request owners")
+      } finally {
+        setIsLoadingAssignableUsers(false)
+      }
+    }
+
+    void fetchAssignableUsers()
+  }, [isAdminOrAgent, status])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -79,22 +144,18 @@ export default function NewTicketPage() {
     
     // Add user information for admin/agent creating tickets for others
     if (isAdminOrAgent) {
-      const customerName = (formData.get("customer") as string).trim()
-      const customerEmail = (formData.get("email") as string).trim()
-      const department = (formData.get("department") as string).trim()
-      
-      if (customerEmail) {
-        payload.userEmail = customerEmail
-        if (customerName) {
-          payload.userName = customerName
-        }
-        if (department) {
-          payload.department = department
-        }
-      } else {
-        toast.error("Customer email is required when creating tickets for others")
+      if (!selectedRequestOwner) {
+        toast.error("Request owner is required when creating tickets for others")
         setIsSubmitting(false)
         return
+      }
+
+      payload.userEmail = selectedRequestOwner.email
+      if (selectedRequestOwner.name) {
+        payload.userName = selectedRequestOwner.name
+      }
+      if (selectedRequestOwner.department) {
+        payload.department = selectedRequestOwner.department
       }
     }
     
@@ -266,12 +327,45 @@ export default function NewTicketPage() {
               {isAdminOrAgent ? (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="customer">Customer Name *</Label>
-                    <Input id="customer" name="customer" placeholder="Customer name" required disabled={isSubmitting} />
+                    <Label htmlFor="requestOwner">Request Owner *</Label>
+                    <Select
+                      value={requestOwnerId}
+                      onValueChange={setRequestOwnerId}
+                      disabled={isSubmitting || isLoadingAssignableUsers || assignableUsers.length === 0}
+                    >
+                      <SelectTrigger id="requestOwner">
+                        <SelectValue
+                          placeholder={isLoadingAssignableUsers ? "Loading users..." : "Select request owner"}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div className="p-2">
+                          <Input
+                            placeholder="Search user..."
+                            value={requestOwnerSearch}
+                            onChange={(e) => setRequestOwnerSearch(e.target.value)}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            disabled={isLoadingAssignableUsers}
+                          />
+                        </div>
+                        {filteredRequestOwnerOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Customer Email *</Label>
-                    <Input id="email" name="email" type="email" placeholder="customer@example.com" required disabled={isSubmitting} />
+                    <Label htmlFor="requestOwnerEmail" className="text-muted-foreground">
+                      Request Owner Email
+                    </Label>
+                    <Input
+                      id="requestOwnerEmail"
+                      value={selectedRequestOwner?.email || "Select a request owner"}
+                      disabled
+                      className="bg-muted"
+                    />
                   </div>
                 </>
               ) : (
@@ -297,24 +391,6 @@ export default function NewTicketPage() {
                 </>
               )}
             </div>
-
-            {isAdminOrAgent && (
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select name="department" disabled={isSubmitting}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="it">IT</SelectItem>
-                    <SelectItem value="hr">HR</SelectItem>
-                    <SelectItem value="finance">Finance</SelectItem>
-                    <SelectItem value="sales">Sales</SelectItem>
-                    <SelectItem value="support">Support</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
 
             <div className="flex flex-col-reverse md:flex-row justify-end gap-4 pt-4">
               <Button variant="outline" type="button" asChild disabled={isSubmitting}>

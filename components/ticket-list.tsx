@@ -639,7 +639,7 @@ export function TicketList({
                     <TableHead>Title</TableHead>
                     <TableHead>Priority</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Customer</TableHead>
+                    <TableHead>Request Owner</TableHead>
                     <TableHead>Assigned To</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead>SLA</TableHead>

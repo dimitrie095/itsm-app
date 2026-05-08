@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/auth/middleware"
+import { runAutomationForArticleCreated } from "@/lib/automation/engine"
 
 export async function GET(request: Request) {
   try {
@@ -92,6 +93,10 @@ export async function POST(request: Request) {
           }
         }
       }
+    })
+
+    runAutomationForArticleCreated(article.id).catch((error) => {
+      console.error("Failed to run article-created automations:", error)
     })
     
     return NextResponse.json(article, { status: 201 })

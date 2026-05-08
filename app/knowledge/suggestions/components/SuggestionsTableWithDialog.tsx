@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MoreHorizontal, Search, Filter, Eye, ThumbsUp, CheckCircle, XCircle, FileText, Edit, Save, X, Globe, Users } from "lucide-react"
+import { MoreHorizontal, Eye, CheckCircle, XCircle, FileText, Edit, Save, X, Globe, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { updateSuggestion, convertSuggestionToArticle, deleteSuggestion } from "../actions"
 import { useRouter } from "next/navigation"
@@ -58,6 +58,12 @@ export function SuggestionsTableWithDialog({
   const [editedDraftResolution, setEditedDraftResolution] = useState("")
   const [editedTargetAudience, setEditedTargetAudience] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [activeRowActionId, setActiveRowActionId] = useState<string | null>(null)
+  const [pendingStatusAction, setPendingStatusAction] = useState<{
+    id: string
+    type: "approve" | "decline" | "publish"
+    title: string
+  } | null>(null)
 
   // Helper to format date
   const formatDate = (dateString: string) => {
@@ -129,6 +135,24 @@ export function SuggestionsTableWithDialog({
     setIsEditMode(!isEditMode)
   }
 
+  const handleOpenEdit = (suggestion: Suggestion) => {
+    setSelectedSuggestion(suggestion)
+    setEditedTitle(suggestion.title)
+    setEditedProblemSummary(suggestion.problemSummary)
+    setEditedDraftResolution(suggestion.draftResolution)
+    setEditedTargetAudience(suggestion.targetAudience)
+    setIsEditMode(true)
+    setIsDialogOpen(true)
+  }
+
+  const openStatusConfirmDialog = (suggestion: Suggestion, type: "approve" | "decline" | "publish") => {
+    setPendingStatusAction({
+      id: suggestion.id,
+      type,
+      title: suggestion.title,
+    })
+  }
+
   const handleSaveEdit = async () => {
     if (!selectedSuggestion) return
     setIsSubmitting(true)
@@ -189,40 +213,77 @@ export function SuggestionsTableWithDialog({
   }
 
   const handleApprove = async (id: string) => {
+    setIsSubmitting(true)
+    setActiveRowActionId(id)
     try {
       await updateSuggestion(id, { status: "APPROVED" })
+      if (selectedSuggestion?.id === id) {
+        setSelectedSuggestion({ ...selectedSuggestion, status: "APPROVED" })
+      }
       router.refresh()
     } catch (error) {
       console.error("Failed to approve suggestion:", error)
+      alert("Failed to approve suggestion. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+      setActiveRowActionId(null)
     }
   }
 
   const handleReject = async (id: string) => {
+    setIsSubmitting(true)
+    setActiveRowActionId(id)
     try {
       await updateSuggestion(id, { status: "REJECTED" })
+      if (selectedSuggestion?.id === id) {
+        setSelectedSuggestion({ ...selectedSuggestion, status: "REJECTED" })
+      }
       router.refresh()
     } catch (error) {
       console.error("Failed to reject suggestion:", error)
+      alert("Failed to reject suggestion. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+      setActiveRowActionId(null)
     }
+  }
+
+  const handleConfirmStatusAction = async () => {
+    if (!pendingStatusAction) return
+    if (pendingStatusAction.type === "approve") {
+      await handleApprove(pendingStatusAction.id)
+    } else if (pendingStatusAction.type === "publish") {
+      await handleConvert(pendingStatusAction.id, true)
+    } else {
+      await handleReject(pendingStatusAction.id)
+    }
+    setPendingStatusAction(null)
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this suggestion?")) return
+    setActiveRowActionId(id)
     try {
       await deleteSuggestion(id)
       router.refresh()
     } catch (error) {
       console.error("Failed to delete suggestion:", error)
+      alert("Failed to delete suggestion. Please try again.")
+    } finally {
+      setActiveRowActionId(null)
     }
   }
 
   const handleConvert = async (id: string, publish: boolean) => {
+    setActiveRowActionId(id)
     try {
       await convertSuggestionToArticle(id, publish)
       router.refresh()
     } catch (error) {
       console.error("Failed to convert suggestion:", error)
       alert("Failed to convert suggestion. Please try again.")
+    } finally {
+      setActiveRowActionId(null)
     }
   }
 
@@ -283,7 +344,7 @@ export function SuggestionsTableWithDialog({
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" disabled={activeRowActionId === suggestion.id}>
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">Open menu</span>
                       </Button>
@@ -294,28 +355,60 @@ export function SuggestionsTableWithDialog({
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
+                      {canManageSuggestions && suggestion.status !== "PUBLISHED" && (
+                        <DropdownMenuItem onClick={() => handleOpenEdit(suggestion)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                      )}
                       {canManageSuggestions && suggestion.status === "PENDING_REVIEW" && (
                         <>
-                          <DropdownMenuItem onClick={() => handleApprove(suggestion.id)}>
-                            <CheckCircle className="mr-2 h-4 w-4" />
+                          <DropdownMenuItem onClick={() => openStatusConfirmDialog(suggestion, "approve")} disabled={activeRowActionId === suggestion.id}>
+                            {activeRowActionId === suggestion.id ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                            )}
                             Approve
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleReject(suggestion.id)}>
-                            <XCircle className="mr-2 h-4 w-4" />
-                            Reject
+                          <DropdownMenuItem onClick={() => openStatusConfirmDialog(suggestion, "decline")} disabled={activeRowActionId === suggestion.id}>
+                            {activeRowActionId === suggestion.id ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <XCircle className="mr-2 h-4 w-4" />
+                            )}
+                            Decline
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {canManageSuggestions && suggestion.status === "REJECTED" && (
+                        <>
+                          <DropdownMenuItem onClick={() => openStatusConfirmDialog(suggestion, "approve")} disabled={activeRowActionId === suggestion.id}>
+                            {activeRowActionId === suggestion.id ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                            )}
+                            Approve
                           </DropdownMenuItem>
                         </>
                       )}
                       {canCreateArticles && suggestion.status === "APPROVED" && (
-                        <DropdownMenuItem onClick={() => handleConvert(suggestion.id, canPublishArticles)}>
+                        <DropdownMenuItem onClick={() => handleConvert(suggestion.id, false)} disabled={activeRowActionId === suggestion.id}>
                           <FileText className="mr-2 h-4 w-4" />
-                          Convert to Article {canPublishArticles ? '(Publish)' : '(Draft)'}
+                          Convert to Article (Draft)
+                        </DropdownMenuItem>
+                      )}
+                      {canPublishArticles && suggestion.status === "APPROVED" && (
+                        <DropdownMenuItem onClick={() => openStatusConfirmDialog(suggestion, "publish")} disabled={activeRowActionId === suggestion.id}>
+                          <Globe className="mr-2 h-4 w-4" />
+                          Publish Article
                         </DropdownMenuItem>
                       )}
                       {canManageSuggestions && suggestion.status !== "PUBLISHED" && (
                         <>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleDelete(suggestion.id)} className="text-destructive">
+                          <DropdownMenuItem onClick={() => handleDelete(suggestion.id)} className="text-destructive" disabled={activeRowActionId === suggestion.id}>
                             <XCircle className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
@@ -334,15 +427,7 @@ export function SuggestionsTableWithDialog({
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Suggestion Details</span>
-              {!isEditMode && canManageSuggestions && selectedSuggestion?.status !== "PUBLISHED" && (
-                <Button variant="outline" size="sm" onClick={handleEditToggle}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
-              )}
-            </DialogTitle>
+            <DialogTitle>Suggestion Details</DialogTitle>
             <DialogDescription>
               Review and manage this AI-generated suggestion.
             </DialogDescription>
@@ -474,29 +559,40 @@ export function SuggestionsTableWithDialog({
                   </>
                 ) : (
                   <>
-                    <Button variant="outline" onClick={handleCloseDialog}>
-                      Close
-                    </Button>
+                    {canManageSuggestions && selectedSuggestion.status !== "PUBLISHED" && (
+                      <Button variant="outline" onClick={handleEditToggle} disabled={isSubmitting}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </Button>
+                    )}
                     {canManageSuggestions && selectedSuggestion.status === "PENDING_REVIEW" && (
                       <>
-                        <Button variant="default" onClick={() => handleApprove(selectedSuggestion.id)}>
+                        <Button
+                          variant="default"
+                          onClick={() => openStatusConfirmDialog(selectedSuggestion, "approve")}
+                          disabled={isSubmitting}
+                        >
                           <CheckCircle className="mr-2 h-4 w-4" />
-                          Approve
+                          {isSubmitting ? "Approving..." : "Approve"}
                         </Button>
-                        <Button variant="destructive" onClick={() => handleReject(selectedSuggestion.id)}>
+                        <Button
+                          variant="destructive"
+                          onClick={() => openStatusConfirmDialog(selectedSuggestion, "decline")}
+                          disabled={isSubmitting}
+                        >
                           <XCircle className="mr-2 h-4 w-4" />
-                          Reject
+                          {isSubmitting ? "Declining..." : "Decline"}
                         </Button>
                       </>
                     )}
-                    {canCreateArticles && selectedSuggestion.status === "APPROVED" && (
-                      <Button variant="secondary" onClick={() => handleConvertToArticle(canPublishArticles)}>
+                    {canCreateArticles && selectedSuggestion.status === "APPROVED" && !canPublishArticles && (
+                      <Button variant="secondary" onClick={() => handleConvertToArticle(false)} disabled={isSubmitting}>
                         <FileText className="mr-2 h-4 w-4" />
-                        Convert to Article {canPublishArticles ? '(Publish)' : '(Draft)'}
+                        {isSubmitting ? "Converting..." : "Convert to Article (Draft)"}
                       </Button>
                     )}
                     {canPublishArticles && selectedSuggestion.status === "APPROVED" && (
-                      <Button onClick={handlePublish} disabled={isSubmitting}>
+                      <Button onClick={() => openStatusConfirmDialog(selectedSuggestion, "publish")} disabled={isSubmitting}>
                         <Globe className="mr-2 h-4 w-4" />
                         {isSubmitting ? "Publishing..." : "Publish Article"}
                       </Button>
@@ -506,6 +602,58 @@ export function SuggestionsTableWithDialog({
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={pendingStatusAction !== null} onOpenChange={(open) => !open && setPendingStatusAction(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {pendingStatusAction?.type === "approve"
+                ? "Approve Suggestion"
+                : pendingStatusAction?.type === "publish"
+                  ? "Publish Article"
+                  : "Decline Suggestion"}
+            </DialogTitle>
+            <DialogDescription>
+              {pendingStatusAction?.type === "approve"
+                ? `Are you sure you want to approve "${pendingStatusAction?.title}"?`
+                : pendingStatusAction?.type === "publish"
+                  ? `Are you sure you want to publish "${pendingStatusAction?.title}" as an article?`
+                : `Are you sure you want to decline "${pendingStatusAction?.title}"?`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPendingStatusAction(null)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant={
+                pendingStatusAction?.type === "decline"
+                  ? "destructive"
+                  : "default"
+              }
+              onClick={handleConfirmStatusAction}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : pendingStatusAction?.type === "approve" ? (
+                "Confirm Approve"
+              ) : pendingStatusAction?.type === "publish" ? (
+                "Confirm Publish"
+              ) : (
+                "Confirm Decline"
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

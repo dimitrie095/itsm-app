@@ -112,9 +112,20 @@ export function TicketEditDialog({
 
   const filteredUserOptions = useMemo(() => {
     const query = assigneeSearch.trim().toLowerCase()
-    if (!query) return userOptions
+    if (!query) {
+      const topUsers = userOptions.filter((option) => option.value !== "unassigned").slice(0, 6)
+      const selectedOption =
+        assignedToId && !topUsers.some((option) => option.value === assignedToId)
+          ? userOptions.find((option) => option.value === assignedToId) ?? null
+          : null
+      return [
+        userOptions[0], // unassigned
+        ...topUsers,
+        ...(selectedOption ? [selectedOption] : []),
+      ]
+    }
     return userOptions.filter((option) => option.value === "unassigned" || option.label.toLowerCase().includes(query))
-  }, [userOptions, assigneeSearch])
+  }, [userOptions, assigneeSearch, assignedToId])
 
   // Helper function to normalize status to TicketStatus enum
   const normalizeStatus = useCallback((status: string): TicketStatus => {

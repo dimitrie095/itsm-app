@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Search, Filter, Cpu, Monitor, Printer, Server, Smartphone, HardDrive, Database } from "lucide-react"
@@ -13,12 +14,14 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { usePermission } from "@/hooks/use-permission"
 import { useSearchParams } from "next/navigation"
+import { AssetEditDialog } from "@/components/asset-edit-dialog"
 
 interface Asset {
   id: string
   name: string
   type: string
   status: string
+  assignedToId?: string | null
   assignedTo: string
   location: string
   warranty: string
@@ -40,6 +43,8 @@ interface AssetsResponse {
   }
 }
 
+type AssetStatusValue = "ACTIVE" | "INACTIVE" | "MAINTENANCE" | "RETIRED" | "LOST"
+
 export function AssetList() {
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
@@ -57,6 +62,14 @@ export function AssetList() {
   const [hasMore, setHasMore] = useState(false)
   const [search, setSearch] = useState(searchParams.get("search") || "")
   const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("search") || "")
+  const [locationFilter, setLocationFilter] = useState("")
+  const [debouncedLocationFilter, setDebouncedLocationFilter] = useState("")
+  const [typeFilter, setTypeFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [users, setUsers] = useState<Array<{ id: string; name: string | null; email: string }>>([])
+  const [usersLoading, setUsersLoading] = useState(false)
 
   const typeIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -110,9 +123,13 @@ export function AssetList() {
       
       // Build query parameters
       const params = new URLSearchParams()
+      const page = Math.floor(newSkip / 50) + 1
       params.append("limit", "50")
-      params.append("skip", newSkip.toString())
+      params.append("page", page.toString())
       if (debouncedSearch) params.append("search", debouncedSearch)
+      if (debouncedLocationFilter) params.append("location", debouncedLocationFilter)
+      if (typeFilter !== "all") params.append("type", typeFilter)
+      if (statusFilter !== "all") params.append("status", statusFilter)
       
       const response = await fetch(`/api/assets?${params.toString()}`, {
         cache: 'default',
@@ -135,7 +152,7 @@ export function AssetList() {
     } finally {
       setLoading(false)
     }
-  }, [status, debouncedSearch])
+  }, [status, debouncedSearch, debouncedLocationFilter, typeFilter, statusFilter])
 
   const handleSearch = (value: string) => {
     setSearch(value)
@@ -155,8 +172,73 @@ export function AssetList() {
   }, [search])
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedLocationFilter(locationFilter)
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [locationFilter])
+
+  useEffect(() => {
     fetchAssets(0)
   }, [fetchAssets])
+
+  const fetchAssignableUsers = useCallback(async () => {
+    if (usersLoading || users.length > 0) return
+    try {
+      setUsersLoading(true)
+      const response = await fetch("/api/assignable-users?target=assets", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.status}`)
+      }
+      const data = await response.json()
+      setUsers(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error("Error fetching assignable users:", error)
+    } finally {
+      setUsersLoading(false)
+    }
+  }, [users.length, usersLoading])
+
+  useEffect(() => {
+    if (editDialogOpen && users.length === 0) {
+      void fetchAssignableUsers()
+    }
+  }, [editDialogOpen, fetchAssignableUsers, users.length])
+
+  const handleAssetClick = (asset: Asset) => {
+    if (!canUpdateAsset) return
+    if (users.length === 0) {
+      void fetchAssignableUsers()
+    }
+    setSelectedAsset(asset)
+    setEditDialogOpen(true)
+  }
+
+  const handleAssetSave = async (assetId: string, updates: { status?: AssetStatusValue; location?: string; userId?: string | null }) => {
+    const response = await fetch(`/api/assets/${assetId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      const message = errorData?.message || errorData?.error || `Failed to update asset: ${response.status}`
+      throw new Error(message)
+    }
+
+    await fetchAssets(skip)
+  }
+
+  const clearFilters = () => {
+    setSearch("")
+    setLocationFilter("")
+    setTypeFilter("all")
+    setStatusFilter("all")
+  }
 
 
 
@@ -183,26 +265,64 @@ export function AssetList() {
             <CardTitle>Asset Inventory</CardTitle>
             <CardDescription>All hardware and software assets.</CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input 
                 placeholder="Search assets..." 
-                className="w-[300px] pl-9"
+                className="w-[240px] pl-9"
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
               />
             </div>
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
+            <Input
+              placeholder="Filter location..."
+              className="w-[180px]"
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+            />
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="All types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="LAPTOP">Laptop</SelectItem>
+                <SelectItem value="DESKTOP">Desktop</SelectItem>
+                <SelectItem value="MONITOR">Monitor</SelectItem>
+                <SelectItem value="PHONE">Phone</SelectItem>
+                <SelectItem value="PRINTER">Printer</SelectItem>
+                <SelectItem value="SOFTWARE">Software</SelectItem>
+                <SelectItem value="SERVER">Server</SelectItem>
+                <SelectItem value="NETWORK">Network</SelectItem>
+                <SelectItem value="OTHER">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="All status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="INACTIVE">Inactive</SelectItem>
+                <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                <SelectItem value="RETIRED">Retired</SelectItem>
+                <SelectItem value="LOST">Lost</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={clearFilters}>
+              <Filter className="mr-2 h-4 w-4" />
+              Clear
             </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         {loading && assets.length === 0 ? (
-          <div className="flex items-center justify-center py-8">
-            <p>Loading assets...</p>
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading assets...</p>
           </div>
         ) : (
           <>
@@ -223,8 +343,14 @@ export function AssetList() {
                 <TableBody>
                   {assets.length > 0 ? (
                     assets.map((asset) => (
-                      <TableRow key={asset.id}>
-                        <TableCell className="font-medium">{asset.id}</TableCell>
+                      <TableRow
+                        key={asset.id}
+                        className={canUpdateAsset ? "cursor-pointer hover:bg-muted/50" : undefined}
+                        onClick={() => handleAssetClick(asset)}
+                      >
+                        <TableCell className="font-medium">
+                          <span className="font-mono text-xs">{asset.id.substring(0, 8).toUpperCase()}</span>
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {typeIcon(asset.type)}
@@ -244,10 +370,10 @@ export function AssetList() {
                             {asset.warranty || "N/A"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
+                              <Button variant="ghost" size="icon" onClick={(event) => event.stopPropagation()}>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -327,6 +453,13 @@ export function AssetList() {
           </>
         )}
       </CardContent>
+      <AssetEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        asset={selectedAsset}
+        onSave={handleAssetSave}
+        users={users}
+      />
     </Card>
   )
 }

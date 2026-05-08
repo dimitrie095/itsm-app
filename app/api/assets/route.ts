@@ -6,6 +6,7 @@ import { AssetType, AssetStatus, Role } from "@/lib/generated/prisma/enums"
 import { searchSchema } from "@/lib/validation/schemas"
 import { getRequestLogger } from "@/lib/logging/middleware"
 import { z, ZodError } from 'zod'
+import { runAutomationForAssetCreated } from "@/lib/automation/engine"
 
 export const runtime = 'nodejs'
 
@@ -97,6 +98,7 @@ export async function GET(request: Request) {
     // Validate query parameters
     const url = new URL(request.url)
     const validatedParams = assetSearchSchema.parse({
+      search: url.searchParams.get('search') || undefined,
       query: url.searchParams.get('search') || undefined,
       page: parseInt(url.searchParams.get('page') || '1'),
       limit: parseInt(url.searchParams.get('limit') || '50'),
@@ -162,12 +164,9 @@ export async function GET(request: Request) {
       }
     }
     
-    // Search filter (name or serialNumber)
+    // Search filter (asset name only)
     if (search) {
-      whereClause.OR = [
-        { name: { contains: search } },
-        { serialNumber: { contains: search } },
-      ]
+      ;(whereClause as any).name = { contains: search, mode: 'insensitive' }
     }
     
     // Get total count for pagination
@@ -254,6 +253,7 @@ export async function GET(request: Request) {
         name: asset.name,
         type: mapAssetTypeToDisplay(asset.type),
         status: mapAssetStatusToDisplay(asset.status),
+        assignedToId: asset.userId,
         assignedTo: asset.user?.name || asset.user?.email || 'Unassigned',
         location: asset.location || '',
         warranty,
@@ -416,6 +416,7 @@ export async function POST(request: Request) {
       name: asset.name,
       type: mapAssetTypeToDisplay(asset.type),
       status: mapAssetStatusToDisplay(asset.status),
+      assignedToId: asset.userId,
       assignedTo: asset.user?.name || asset.user?.email || 'Unassigned',
       location: asset.location || '',
       warranty,
@@ -431,6 +432,10 @@ export async function POST(request: Request) {
       operation: 'asset_create',
       assetId: asset.id,
       userId: user!.id,
+    })
+
+    runAutomationForAssetCreated(asset.id).catch((error) => {
+      console.error("Failed to run asset-created automations:", error)
     })
     
     return NextResponse.json(formattedAsset, { status: 201 })

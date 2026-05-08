@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { RecentTicketsTable } from "@/components/recent-tickets-table"
 import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
-import { AlertTriangle, ArrowDown, ArrowUp, BookOpen, CheckCircle, Clock, Cpu, HelpCircle, Plus, Settings, Ticket, Users } from "lucide-react"
+import { AlertTriangle, ArrowDown, ArrowUp, BookOpen, CheckCircle, Clock, Cpu, FileText, HelpCircle, Plus, Settings, Ticket, Users } from "lucide-react"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -323,8 +323,12 @@ async function AdminAgentDashboard({ session }: { session: any }) {
     articles, 
     userCount, 
     openTickets, 
+    openTicketsChangePct,
     managedAssets, 
+    managedAssetsChangePct,
+    activeUsersChangePct,
     totalArticles,
+    totalArticlesChangePct,
     slaCompliance,
     averageResponseTime,
     isWithinSLA
@@ -335,34 +339,38 @@ async function AdminAgentDashboard({ session }: { session: any }) {
     { 
       label: "Open Tickets", 
       value: openTickets.toString(), 
-      change: openTickets > 0 ? "+12%" : "0%", 
+      change: `${openTicketsChangePct > 0 ? "+" : ""}${openTicketsChangePct}%`, 
       icon: Ticket, 
       color: "text-blue-600", 
-      bgColor: "bg-blue-100" 
+      bgColor: "bg-blue-100",
+      valueColor: "text-blue-700"
     },
     { 
       label: "Active Users", 
       value: userCount.toString(), 
-      change: userCount > 1 ? "+5%" : "0%", 
+      change: `${activeUsersChangePct > 0 ? "+" : ""}${activeUsersChangePct}%`, 
       icon: Users, 
       color: "text-green-600", 
-      bgColor: "bg-green-100" 
+      bgColor: "bg-green-100",
+      valueColor: "text-green-700"
     },
     { 
       label: "Managed Assets", 
       value: managedAssets.toString(), 
-      change: "0%", 
+      change: `${managedAssetsChangePct > 0 ? "+" : ""}${managedAssetsChangePct}%`, 
       icon: Cpu, 
       color: "text-purple-600", 
-      bgColor: "bg-purple-100" 
+      bgColor: "bg-purple-100",
+      valueColor: "text-purple-700"
     },
     { 
       label: "Knowledge Articles", 
       value: totalArticles.toString(), 
-      change: totalArticles > 0 ? "+8%" : "0%", 
+      change: `${totalArticlesChangePct > 0 ? "+" : ""}${totalArticlesChangePct}%`, 
       icon: BookOpen, 
       color: "text-amber-600", 
-      bgColor: "bg-amber-100" 
+      bgColor: "bg-amber-100",
+      valueColor: "text-amber-700"
     },
   ]
 
@@ -394,13 +402,19 @@ async function AdminAgentDashboard({ session }: { session: any }) {
           <h1 className="text-[20px] font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground text-[15px]">Welcome back! Here&apos;s what&apos;s happening with your IT service management.</p>
         </div>
-        <div className="flex flex-row items-end gap-2 w-50 sm:w-auto">
-          <Button asChild className="w-30 sm:w-25 px-2 sm:px-2 py-1.5 h-9 !text-[14px] whitespace-nowrap min-w-0">
-            <Link href="/tickets/new">New Ticket</Link>
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
+          <Button asChild className="h-9 min-w-[140px] px-3 !text-[14px] whitespace-nowrap">
+            <Link href="/tickets/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New Ticket
+            </Link>
           </Button>
           {canCreateReport && (
-            <Button variant="outline" asChild className="w-30 sm:w-30 px-2 sm:px-2 py-1.5 h-9 !text-[14px] whitespace-nowrap min-w-0">
-              <Link href="/reports/new">Generate Report</Link>
+            <Button variant="outline" asChild className="h-9 min-w-[140px] px-3 !text-[14px] whitespace-nowrap">
+              <Link href="/reports/new">
+                <FileText className="mr-2 h-4 w-4" />
+                Generate Report
+              </Link>
             </Button>
           )}
         </div>
@@ -410,6 +424,8 @@ async function AdminAgentDashboard({ session }: { session: any }) {
       <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon
+          const isPositive = stat.change.startsWith("+")
+          const isNegative = stat.change.startsWith("-")
           return (
             <Card key={stat.label} className="overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6">
@@ -419,11 +435,11 @@ async function AdminAgentDashboard({ session }: { session: any }) {
                 </div>
               </CardHeader>
               <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-                <div className="text-[20px] font-bold">{stat.value}</div>
+                <div className={`text-[20px] font-bold ${stat.valueColor}`}>{stat.value}</div>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
-                  {stat.change.startsWith('+') ? (
+                  {isPositive ? (
                     <ArrowUp className="mr-1 h-3 w-3 text-green-600" />
-                  ) : stat.change.startsWith('-') ? (
+                  ) : isNegative ? (
                     <ArrowDown className="mr-1 h-3 w-3 text-red-600" />
                   ) : null}
                   <span className="truncate">{stat.change} from last month</span>

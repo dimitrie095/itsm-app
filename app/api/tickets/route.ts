@@ -10,6 +10,7 @@ import { notifyTicketAssigned, notifyTicketCreated } from "@/lib/notifications"
 import { buildTicketCreatedEmailHtml, sendTicketEmail } from "@/lib/outlook-mailer"
 import { buildTeamsTicketCreatedMessage, sendTeamsMessage } from "@/lib/teams-webhook"
 import { computeSlaSnapshot } from "@/lib/sla"
+import { runAutomationForTicketCreated } from "@/lib/automation/engine"
 
 export const runtime = 'nodejs'
 
@@ -481,6 +482,11 @@ export async function POST(request: Request) {
         console.error('Failed to send assignment notification:', error)
       })
     }
+
+    // Execute supported automation rules for ticket creation.
+    runAutomationForTicketCreated(ticket.id).catch((error) => {
+      console.error("Failed to run ticket-created automations:", error)
+    })
     
     return NextResponse.json(ticket, { status: 201 })
   } catch (error) {

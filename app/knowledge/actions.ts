@@ -8,6 +8,7 @@ import { createNotification } from "@/lib/notifications"
 import { sendOutlookEmail } from "@/lib/outlook-mailer"
 import { sendTeamsMessage } from "@/lib/teams-webhook"
 import { requireServerActionAuth } from "@/lib/auth/server-actions"
+import { runAutomationForArticleCreated, runAutomationForArticleUpdated } from "@/lib/automation/engine"
 const VIEW_REVALIDATE_THROTTLE_MS = 30_000
 const articleViewRevalidateTracker = new Map<string, number>()
 
@@ -161,6 +162,9 @@ export async function createArticle(data: ArticleInput) {
         }
       }
     })
+    runAutomationForArticleCreated(article.id).catch((error) => {
+      console.error("Failed to run article-created automations:", error)
+    })
     revalidatePath('/knowledge')
     return article
   } catch (error) {
@@ -192,6 +196,9 @@ export async function updateArticle(id: string, data: Partial<ArticleInput>) {
           }
         }
       }
+    })
+    runAutomationForArticleUpdated(article.id).catch((error) => {
+      console.error("Failed to run article-updated automations:", error)
     })
     revalidatePath('/knowledge')
     revalidatePath(`/knowledge/${id}`)
