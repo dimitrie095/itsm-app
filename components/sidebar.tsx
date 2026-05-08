@@ -14,9 +14,11 @@ import {
   Shield,
 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Role } from "@/lib/generated/prisma/enums"
+import ponturoLogo from "@/utils/logo/ponturo-logo.png"
 
 import { Separator } from "@/components/ui/separator"
 import {
@@ -180,8 +182,15 @@ export function Sidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center mb-2">
           <div className="flex items-center gap-2 overflow-hidden">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <Ticket className="h-5 w-5" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-transparent">
+              <Image
+                src={ponturoLogo}
+                alt="Ponturo logo"
+                width={32}
+                height={32}
+                className="h-[30px] w-[30px] object-contain"
+                priority
+              />
             </div>
             <span className="text-lg font-semibold text-sidebar-foreground whitespace-nowrap group-data-[collapsible=icon]:hidden">
               Ponturo ITSM Tool

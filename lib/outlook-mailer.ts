@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer"
 import { prisma } from "./prisma"
+import { decryptSecret } from "./security/secrets"
 
 type TicketEmailPayload = {
   to: string
@@ -21,6 +22,15 @@ type OutlookEmailPayload = {
 let transporter: nodemailer.Transporter | null = null
 let cachedConfigKey: string | null = null
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
 function getBaseUrl() {
   return process.env.NEXTAUTH_URL || "http://localhost:3000"
 }
@@ -33,12 +43,13 @@ async function getSmtpConfig() {
 
     if (integration?.enabled) {
       const cfg = JSON.parse(integration.config || "{}")
-      if (cfg.smtpUser && cfg.smtpPass) {
+      const smtpPass = decryptSecret(cfg.smtpPass)
+      if (cfg.smtpUser && smtpPass) {
         return {
           host: cfg.smtpHost || "smtp.office365.com",
           port: Number(cfg.smtpPort || 587),
           user: cfg.smtpUser,
-          pass: cfg.smtpPass,
+          pass: smtpPass,
           from: cfg.fromEmail || cfg.smtpUser,
           configKey: `${cfg.smtpHost}|${cfg.smtpPort}|${cfg.smtpUser}|${cfg.fromEmail}`,
         }
@@ -73,7 +84,11 @@ async function getTransporter() {
   transporter = nodemailer.createTransport({
     host: cfg.host,
     port: cfg.port,
-    secure: false,
+    secure: cfg.port === 465,
+    requireTLS: true,
+    tls: {
+      minVersion: "TLSv1.2",
+    },
     auth: {
       user: cfg.user,
       pass: cfg.pass,
@@ -113,12 +128,14 @@ export async function sendOutlookEmail(payload: OutlookEmailPayload) {
 
 export function buildTicketCreatedEmailHtml(ticketId: string, ticketTitle: string) {
   const ticketUrl = `${getBaseUrl()}/tickets`
+  const safeTitle = escapeHtml(ticketTitle)
+  const safeId = escapeHtml(ticketId)
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.5;">
       <h2>New ticket created</h2>
       <p>Your ticket has been created successfully.</p>
-      <p><strong>Ticket:</strong> ${ticketTitle}</p>
-      <p><strong>ID:</strong> ${ticketId}</p>
+      <p><strong>Ticket:</strong> ${safeTitle}</p>
+      <p><strong>ID:</strong> ${safeId}</p>
       <p>You can track updates here: <a href="${ticketUrl}">${ticketUrl}</a></p>
     </div>
   `
@@ -131,14 +148,18 @@ export function buildTicketStatusChangedEmailHtml(
   newStatus: string
 ) {
   const ticketUrl = `${getBaseUrl()}/tickets`
+  const safeTitle = escapeHtml(ticketTitle)
+  const safeId = escapeHtml(ticketId)
+  const safeOldStatus = escapeHtml(oldStatus)
+  const safeNewStatus = escapeHtml(newStatus)
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.5;">
       <h2>Ticket status updated</h2>
       <p>Your ticket status has changed.</p>
-      <p><strong>Ticket:</strong> ${ticketTitle}</p>
-      <p><strong>ID:</strong> ${ticketId}</p>
-      <p><strong>From:</strong> ${oldStatus}</p>
-      <p><strong>To:</strong> ${newStatus}</p>
+      <p><strong>Ticket:</strong> ${safeTitle}</p>
+      <p><strong>ID:</strong> ${safeId}</p>
+      <p><strong>From:</strong> ${safeOldStatus}</p>
+      <p><strong>To:</strong> ${safeNewStatus}</p>
       <p>View ticket details: <a href="${ticketUrl}">${ticketUrl}</a></p>
     </div>
   `
@@ -151,15 +172,19 @@ export function buildTicketClarificationEmailHtml(
   message: string
 ) {
   const ticketUrl = `${getBaseUrl()}/tickets`
+  const safeName = escapeHtml(requesterName)
+  const safeTitle = escapeHtml(ticketTitle)
+  const safeId = escapeHtml(ticketId)
+  const safeMessage = escapeHtml(message).replace(/\n/g, "<br/>")
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.5;">
       <h2>Question about your ticket</h2>
-      <p>Hello ${requesterName},</p>
+      <p>Hello ${safeName},</p>
       <p>Our support team needs more information to continue with your ticket.</p>
-      <p><strong>Ticket:</strong> ${ticketTitle}</p>
-      <p><strong>ID:</strong> ${ticketId}</p>
+      <p><strong>Ticket:</strong> ${safeTitle}</p>
+      <p><strong>ID:</strong> ${safeId}</p>
       <div style="margin: 16px 0; padding: 12px; border-radius: 8px; background: #f4f6f8;">
-        ${message.replace(/\n/g, "<br/>")}
+        ${safeMessage}
       </div>
       <p>Please reply with the requested details.</p>
       <p>Ticket overview: <a href="${ticketUrl}">${ticketUrl}</a></p>
@@ -169,13 +194,16 @@ export function buildTicketClarificationEmailHtml(
 
 export function buildTicketAssignedEmailHtml(ticketId: string, ticketTitle: string, assigneeName: string) {
   const ticketUrl = `${getBaseUrl()}/tickets/${ticketId}/edit`
+  const safeName = escapeHtml(assigneeName)
+  const safeTitle = escapeHtml(ticketTitle)
+  const safeId = escapeHtml(ticketId)
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.5;">
       <h2>New ticket assigned to you</h2>
-      <p>Hello ${assigneeName},</p>
+      <p>Hello ${safeName},</p>
       <p>A ticket has been assigned to you.</p>
-      <p><strong>Ticket:</strong> ${ticketTitle}</p>
-      <p><strong>ID:</strong> ${ticketId}</p>
+      <p><strong>Ticket:</strong> ${safeTitle}</p>
+      <p><strong>ID:</strong> ${safeId}</p>
       <p>Open ticket: <a href="${ticketUrl}">${ticketUrl}</a></p>
     </div>
   `

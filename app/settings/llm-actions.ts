@@ -1,6 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import type { LlmMessage } from "@/lib/services/llm-service"
 
 export interface LlmConfig {
   id?: string;
@@ -80,7 +81,7 @@ export async function testLlmConnection(config: LlmConfig) {
     }
 
     // Make a real API test call with a simple prompt
-    const { callLLM, LlmMessage } = await import("@/lib/services/llm-service");
+    const { callLLM } = await import("@/lib/services/llm-service");
     
     const testMessages: LlmMessage[] = [
       { role: "system", content: "You are a helpful assistant. Respond concisely." },

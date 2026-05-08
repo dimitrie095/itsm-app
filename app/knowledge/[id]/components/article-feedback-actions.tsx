@@ -11,19 +11,26 @@ import { useState } from "react"
 
 interface ArticleFeedbackActionsProps {
   articleId: string
+  initialHelpfulMarked?: boolean
 }
 
-export default function ArticleFeedbackActions({ articleId }: ArticleFeedbackActionsProps) {
+export default function ArticleFeedbackActions({ articleId, initialHelpfulMarked = false }: ArticleFeedbackActionsProps) {
   const [isPending, startTransition] = useTransition()
   const [issueText, setIssueText] = useState("")
   const [commentText, setCommentText] = useState("")
   const [issueDialogOpen, setIssueDialogOpen] = useState(false)
+  const [isHelpfulMarked, setIsHelpfulMarked] = useState(initialHelpfulMarked)
 
   const onHelpful = () => {
     startTransition(async () => {
       const result = await markArticleHelpful(articleId)
       if (result.success) {
-        toast.success("Thanks for your feedback")
+        setIsHelpfulMarked(Boolean(result.marked))
+        if (result.marked) {
+          toast.success("Thanks for your feedback")
+        } else {
+          toast.success("Helpful mark removed")
+        }
         return
       }
       toast.error(result.message || "Action failed")
@@ -67,12 +74,16 @@ export default function ArticleFeedbackActions({ articleId }: ArticleFeedbackAct
     <>
       <Button
         variant="outline"
-        className="w-full justify-start"
+        className={`w-full justify-start ${
+          isHelpfulMarked
+            ? "border-[#0073d2] bg-[#0073d2]/10 text-[#0073d2] hover:bg-[#0073d2]/15"
+            : ""
+        }`}
         onClick={onHelpful}
         disabled={isPending}
       >
-        <ThumbsUp className="mr-2 h-4 w-4" />
-        Mark as Helpful
+        <ThumbsUp className={`mr-2 h-4 w-4 ${isHelpfulMarked ? "fill-[#0073d2] text-[#0073d2]" : ""}`} />
+        {isHelpfulMarked ? "Marked as Helpful" : "Mark as Helpful"}
       </Button>
       <Dialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>
         <DialogTrigger asChild>

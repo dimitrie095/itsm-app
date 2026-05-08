@@ -123,7 +123,7 @@ export default function TeamsConfigComponent() {
             id="teams-webhook"
             value={config.webhookUrl}
             onChange={(e) => setConfig((prev) => ({ ...prev, webhookUrl: e.target.value }))}
-            placeholder="https://outlook.office.com/webhook/..."
+            placeholder={config.webhookConfigured ? "Stored securely (enter new to rotate)" : "https://outlook.office.com/webhook/..."}
             disabled={!config.enabled || loadingConfig}
           />
           <p className="text-xs text-muted-foreground">
@@ -135,14 +135,14 @@ export default function TeamsConfigComponent() {
           <Button
             variant="outline"
             onClick={handleTest}
-            disabled={!config.enabled || testing || !config.organizationName || !config.channelName || !config.webhookUrl}
+            disabled={!config.enabled || testing || !config.organizationName || !config.channelName || (!config.webhookUrl && !config.webhookConfigured)}
           >
             {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Test Connection
           </Button>
           <Button
             onClick={handleSave}
-            disabled={!config.enabled || saving || !config.organizationName || !config.channelName || !config.webhookUrl}
+            disabled={!config.enabled || saving || !config.organizationName || !config.channelName || (!config.webhookUrl && !config.webhookConfigured)}
           >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Teams Config

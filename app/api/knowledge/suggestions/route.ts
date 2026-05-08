@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { checkApiAuth } from '@/lib/api-auth-new'
+import { withAuth } from '@/lib/auth/middleware'
 import { SuggestionStatus, TargetAudience } from '@/lib/generated/prisma/enums'
 
 export async function GET(request: NextRequest) {
   try {
     // Check authentication and permission to view suggestions
-    const authResult = await checkApiAuth(request, undefined, ['knowledge.suggestions.view'])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const authResult = await withAuth({ permissions: ['knowledge.suggestions.view'] })(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
 
     const { user } = authResult
@@ -72,9 +72,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check authentication and permission to create suggestions
-    const authResult = await checkApiAuth(request, undefined, ['knowledge.suggestions.manage'])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const authResult = await withAuth({ permissions: ['knowledge.suggestions.manage'] })(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
 
     const { user } = authResult
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         ticketCluster: body.ticketCluster || null,
         ticketIds: body.ticketIds ? JSON.stringify(body.ticketIds) : '[]',
         complexityScore: body.complexityScore || null,
-        authorId: user.id
+        authorId: user!.id
       },
       include: {
         author: {
@@ -125,9 +125,9 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Check authentication and permission to manage suggestions
-    const authResult = await checkApiAuth(request, undefined, ['knowledge.suggestions.manage'])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const authResult = await withAuth({ permissions: ['knowledge.suggestions.manage'] })(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
 
     const { user } = authResult
@@ -155,7 +155,7 @@ export async function PUT(request: NextRequest) {
       updateData.status = body.status
       // If status is being changed to APPROVED/REJECTED/PUBLISHED, record reviewer and timestamp
       if ([SuggestionStatus.APPROVED, SuggestionStatus.REJECTED, SuggestionStatus.PUBLISHED].includes(body.status)) {
-        updateData.reviewedById = user.id
+        updateData.reviewedById = user!.id
         updateData.reviewedAt = new Date()
       }
     }
@@ -185,9 +185,9 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Check authentication and permission to manage suggestions
-    const authResult = await checkApiAuth(request, undefined, ['knowledge.suggestions.manage'])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const authResult = await withAuth({ permissions: ['knowledge.suggestions.manage'] })(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
 
     const { user } = authResult

@@ -1,10 +1,11 @@
 import { prisma } from '@/lib/prisma'
+import { Role } from '@/lib/generated/prisma/enums'
 
 // Global test setup
 beforeAll(async () => {
   // Set test environment
-  process.env.NODE_ENV = 'test'
-  process.env.LOG_LEVEL = 'error' // Reduce log noise during tests
+  ;(process.env as any).NODE_ENV = 'test'
+  ;(process.env as any).LOG_LEVEL = 'error' // Reduce log noise during tests
   
   // Verify database connection
   try {
@@ -58,7 +59,7 @@ afterEach(() => {
 
 // Export test utilities
 export const testUtils = {
-  createTestUser: async (email: string, role: string = 'END_USER') => {
+  createTestUser: async (email: string, role: Role = Role.END_USER) => {
     return await prisma.user.create({
       data: {
         email,
@@ -78,6 +79,7 @@ export const testUtils = {
         priority: 'MEDIUM',
         status: 'NEW',
         category: 'Test',
+        tags: 'test,security',
       },
     })
   },

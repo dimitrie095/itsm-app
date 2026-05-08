@@ -24,8 +24,11 @@ class ApplicationLogger {
   private requestId: string = ''
 
   constructor() {
+    const isProduction = process.env.NODE_ENV === 'production'
+    const defaultLevel = isProduction ? 'warn' : 'info'
+    const destination = pino.destination({ sync: false })
     this.logger = pino({
-      level: process.env.LOG_LEVEL || 'info',
+      level: process.env.LOG_LEVEL || defaultLevel,
       timestamp: pino.stdTimeFunctions.isoTime,
       formatters: {
         level: (label) => ({ level: label }),
@@ -39,7 +42,7 @@ class ApplicationLogger {
       // Avoid worker-based transports in Next.js dev runtime.
       // thread-stream/pino-pretty can crash with missing vendor chunk workers.
       transport: undefined,
-    })
+    }, destination)
   }
 
   // Set request ID for correlation

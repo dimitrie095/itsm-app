@@ -78,7 +78,19 @@ export function requireRole(allowedRoles: Role[]) {
       return authResult.error!
     }
     
-    const { user } = authResult
+    const user = authResult.user
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+          message: "User context is missing",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 401 }
+      )
+    }
+    const authenticatedUser = user
     
     if (!allowedRoles.includes(user!.role)) {
       return NextResponse.json(
@@ -108,8 +120,19 @@ export function requirePermission(requiredPermission: string) {
     }
     
     const { user } = authResult
-    
-    if (!user!.permissions.includes(requiredPermission)) {
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+          message: "User context is missing",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 401 }
+      )
+    }
+    const authenticatedUser = user
+    if (!authenticatedUser.permissions.includes(requiredPermission)) {
       return NextResponse.json(
         {
           success: false,
@@ -121,7 +144,7 @@ export function requirePermission(requiredPermission: string) {
       )
     }
     
-    return { user, session: authResult.session }
+    return { user: authenticatedUser, session: authResult.session }
   }
 }
 
@@ -141,6 +164,18 @@ export function checkResourceOwnership(
     }
     
     const { user } = authResult
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+          message: "User context is missing",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 401 }
+      )
+    }
+    const authenticatedUser = user
     
     // Admin and Agent can access all resources
     if (user!.role === Role.ADMIN || user!.role === Role.AGENT) {
@@ -248,10 +283,22 @@ export function withAuth(
     }
     
     const { user } = authResult
-    
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+          message: "User context is missing",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 401 }
+      )
+    }
+    const authenticatedUser = user
+
     // Check roles if specified
     if (options.roles && options.roles.length > 0) {
-      if (!options.roles.includes(user.role)) {
+      if (!options.roles.includes(authenticatedUser.role)) {
         return NextResponse.json(
           {
             success: false,
@@ -267,7 +314,7 @@ export function withAuth(
     // Check permissions if specified
     if (options.permissions && options.permissions.length > 0) {
       const hasPermission = options.permissions.some(permission => 
-        user.permissions.includes(permission)
+        authenticatedUser.permissions.includes(permission)
       )
       
       if (!hasPermission) {
@@ -284,14 +331,14 @@ export function withAuth(
     }
     
     // Check resource ownership if specified
-    if (options.resourceType && user.role === Role.END_USER) {
+    if (options.resourceType && authenticatedUser.role === Role.END_USER) {
       const ownershipCheck = await checkResourceOwnership(options.resourceType)(request)
       if (ownershipCheck instanceof NextResponse) {
         return ownershipCheck
       }
     }
     
-    return { user, session: authResult.session }
+    return { user: authenticatedUser, session: authResult.session }
   }
 }
 

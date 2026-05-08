@@ -5,6 +5,7 @@ import { Role } from "@/lib/generated/prisma/enums"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { createAuditLog } from "@/lib/logging/audit"
+import { requireServerActionAuth } from "@/lib/auth/server-actions"
 
 // Import default permissions from shared module
 import {
@@ -13,77 +14,111 @@ import {
   DEFAULT_ROLE_PERMISSIONS
 } from "@/lib/default-permissions"
 
-export async function initializePermissions() {
-  // Skip database initialization during build
-  if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
-    return { success: true, message: "Skipped during build" }
+let permissionsBootstrapPromise: Promise<{ success: boolean; message?: string; error?: string }> | null = null
+let permissionsBootstrapped = false
+
+async function bootstrapPermissions() {
+  if (permissionsBootstrapped) {
+    return { success: true, message: "Permissions already initialized" }
   }
-  
-  try {
-    // Create permission categories first
-    const categoryMap = new Map<string, string>()
-    for (const categoryData of PERMISSION_CATEGORIES) {
-      const category = await prisma.permissionCategory.upsert({
-        where: { name: categoryData.name },
-        update: { description: categoryData.description, order: categoryData.order },
-        create: {
-          name: categoryData.name,
-          description: categoryData.description,
-          order: categoryData.order
-        }
-      })
-      categoryMap.set(category.name, category.id)
+  if (permissionsBootstrapPromise) {
+    return permissionsBootstrapPromise
+  }
+
+  permissionsBootstrapPromise = (async () => {
+    // Skip database initialization during build
+    if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
+      permissionsBootstrapped = true
+      return { success: true, message: "Skipped during build" }
     }
 
-    // Create default permissions if they don't exist
-    for (const permData of DEFAULT_PERMISSIONS) {
-      const categoryId = categoryMap.get(permData.category)
-      await prisma.permission.upsert({
-        where: { name: permData.name },
-        update: { 
-          ...permData,
-          categoryId: categoryId || null
-        },
-        create: {
-          ...permData,
-          categoryId: categoryId || null
-        },
-      })
-    }
+    try {
+      const existingPermissionsCount = await prisma.permission.count()
+      if (existingPermissionsCount > 0) {
+        permissionsBootstrapped = true
+        return { success: true, message: "Permissions already initialized" }
+      }
 
-    // Set up default role permissions
-    const permissions = await prisma.permission.findMany()
-    const permissionMap = new Map<string, (typeof permissions)[0]>(permissions.map(p => [p.name, p]))
+      // Create permission categories first
+      const categoryMap = new Map<string, string>()
+      for (const categoryData of PERMISSION_CATEGORIES) {
+        const category = await prisma.permissionCategory.upsert({
+          where: { name: categoryData.name },
+          update: { description: categoryData.description, order: categoryData.order },
+          create: {
+            name: categoryData.name,
+            description: categoryData.description,
+            order: categoryData.order
+          }
+        })
+        categoryMap.set(category.name, category.id)
+      }
 
-    for (const [role, permissionNames] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
-      for (const permName of permissionNames) {
-        const permission = permissionMap.get(permName)
-        if (permission) {
-          await prisma.rolePermission.upsert({
-            where: {
-              role_permissionId: {
+      // Create default permissions if they don't exist
+      for (const permData of DEFAULT_PERMISSIONS) {
+        const categoryId = categoryMap.get(permData.category)
+        await prisma.permission.upsert({
+          where: { name: permData.name },
+          update: {
+            ...permData,
+            categoryId: categoryId || null
+          },
+          create: {
+            ...permData,
+            categoryId: categoryId || null
+          },
+        })
+      }
+
+      // Set up default role permissions
+      const permissions = await prisma.permission.findMany()
+      const permissionMap = new Map<string, (typeof permissions)[0]>(permissions.map(p => [p.name, p]))
+
+      for (const [role, permissionNames] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
+        for (const permName of permissionNames) {
+          const permission = permissionMap.get(permName)
+          if (permission) {
+            await prisma.rolePermission.upsert({
+              where: {
+                role_permissionId: {
+                  role: role as Role,
+                  permissionId: permission.id
+                }
+              },
+              update: {},
+              create: {
                 role: role as Role,
                 permissionId: permission.id
               }
-            },
-            update: {},
-            create: {
-              role: role as Role,
-              permissionId: permission.id
-            }
-          })
+            })
+          }
         }
       }
-    }
 
-    return { success: true, message: "Permissions initialized successfully" }
-  } catch (error) {
-    console.error("Error initializing permissions:", error)
-    return { success: false, error: "Failed to initialize permissions" }
-  }
+      permissionsBootstrapped = true
+      return { success: true, message: "Permissions initialized successfully" }
+    } catch (error) {
+      console.error("Error initializing permissions:", error)
+      return { success: false, error: "Failed to initialize permissions" }
+    } finally {
+      permissionsBootstrapPromise = null
+    }
+  })()
+
+  return permissionsBootstrapPromise
+}
+
+export async function ensurePermissionsBootstrap() {
+  return bootstrapPermissions()
+}
+
+export async function initializePermissions() {
+  await requireServerActionAuth({ permissions: ["roles.update"] })
+  return bootstrapPermissions()
 }
 
 export async function getRolesAndPermissions() {
+  await requireServerActionAuth({ permissions: ["roles.view"] })
   // Skip database queries during build
   if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
     return {
@@ -96,8 +131,8 @@ export async function getRolesAndPermissions() {
   }
   
   try {
-    // Initialize permissions if not already done
-    await initializePermissions()
+    // Initialize permissions once per process/runtime as bootstrap.
+    await bootstrapPermissions()
 
     const [permissions, customRoles, rolePermissions, users] = await Promise.all([
       prisma.permission.findMany({
@@ -186,6 +221,7 @@ export async function getRolesAndPermissions() {
 }
 
 export async function updateStandardRolePermissions(role: Role, permissionNames: string[]) {
+  await requireServerActionAuth({ permissions: ["roles.update"] })
   try {
     // Get current user for audit log
     const session = await getServerSession(authOptions)
@@ -264,6 +300,7 @@ export async function createCustomRole(data: {
   description?: string
   permissionNames: string[]
 }) {
+  await requireServerActionAuth({ permissions: ["roles.create"] })
   try {
     // Get current user for audit log
     const session = await getServerSession(authOptions)
@@ -335,6 +372,7 @@ export async function updateCustomRole(roleId: string, data: {
   isActive?: boolean
   permissionNames?: string[]
 }) {
+  await requireServerActionAuth({ permissions: ["roles.update"] })
   try {
     // Get current user for audit log
     const session = await getServerSession(authOptions)
@@ -461,6 +499,7 @@ export async function updateCustomRole(roleId: string, data: {
 }
 
 export async function deleteCustomRole(roleId: string) {
+  await requireServerActionAuth({ permissions: ["roles.delete"] })
   try {
     // Get current user for audit log
     const session = await getServerSession(authOptions)
@@ -518,6 +557,7 @@ export async function deleteCustomRole(roleId: string) {
 }
 
 export async function assignRoleToUser(userId: string, roleType: "standard" | "custom", roleValue: Role | string) {
+  await requireServerActionAuth({ permissions: ["roles.assign"] })
   try {
     // Get current user for audit log
     const session = await getServerSession(authOptions)
@@ -582,6 +622,7 @@ export async function assignRoleToUser(userId: string, roleType: "standard" | "c
 }
 
 export async function getUserPermissions(userId: string) {
+  await requireServerActionAuth({ permissions: ["roles.view"] })
   try {
     const userPermissions = await prisma.userPermission.findMany({
       where: { userId },
@@ -595,6 +636,7 @@ export async function getUserPermissions(userId: string) {
 }
 
 export async function assignPermissionToUser(userId: string, permissionName: string) {
+  await requireServerActionAuth({ permissions: ["roles.update"] })
   try {
     // Get current user for audit log
     const session = await getServerSession(authOptions)
@@ -639,6 +681,7 @@ export async function assignPermissionToUser(userId: string, permissionName: str
 }
 
 export async function removePermissionFromUser(userId: string, permissionName: string) {
+  await requireServerActionAuth({ permissions: ["roles.update"] })
   try {
     // Get current user for audit log
     const session = await getServerSession(authOptions)
@@ -676,6 +719,7 @@ export async function removePermissionFromUser(userId: string, permissionName: s
 }
 
 export async function updateUserPermissions(userId: string, permissionNames: string[]) {
+  await requireServerActionAuth({ permissions: ["roles.update"] })
   try {
     // Get current user for audit log
     const session = await getServerSession(authOptions)

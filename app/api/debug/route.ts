@@ -1,16 +1,16 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { checkApiAuth } from "@/lib/api-auth"
+import { withAuth } from "@/lib/auth/middleware"
 import { Role } from "@/lib/generated/prisma/enums"
 
 export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
   try {
-    // Only admins can access debug endpoints
-    const authResult = await checkApiAuth(request, Role.ADMIN)
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const nextRequest = new NextRequest(request.url, request)
+    const authResult = await withAuth({ roles: [Role.ADMIN] })(nextRequest)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
     
     const userCount = await prisma.user.count()
@@ -20,9 +20,9 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
+    console.error("GET /api/debug error:", error)
     return NextResponse.json({
-      error: String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+      error: "Failed to process debug request",
     }, { status: 500 })
   }
 }

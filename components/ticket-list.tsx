@@ -1,17 +1,15 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { TicketEditDialog } from "@/components/ticket-edit-dialog"
+import dynamic from "next/dynamic"
 import { updateTicket } from "@/app/tickets/actions"
-import { Search, ChevronLeft, ChevronRight, Plus, Calendar, User, Tag, AlertCircle, MessageSquare, Clock, CheckCircle, XCircle, Ticket } from "lucide-react"
+import { Search, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -19,6 +17,11 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Role } from "@/lib/generated/prisma/enums"
 import { usePermission } from "@/hooks/use-permission"
 import { NOTIFICATION_EVENTS } from "@/lib/notification-events"
+
+const TicketEditDialog = dynamic(
+  () => import("@/components/ticket-edit-dialog").then((mod) => mod.TicketEditDialog),
+  { ssr: false }
+)
 
 interface Ticket {
   id: string
@@ -64,6 +67,12 @@ interface Ticket {
     responseTime: number
     resolutionTime: number
   } | null
+  slaSnapshot?: {
+    responseState: "ok" | "warning" | "breached" | "met" | "not_started"
+    resolutionState: "ok" | "warning" | "breached" | "met" | "not_started"
+    responseMinutesRemaining: number | null
+    resolutionMinutesRemaining: number | null
+  }
 }
 
 interface TicketsResponse {
@@ -112,6 +121,7 @@ export function TicketList({
   
   // Filter states
   const [search, setSearch] = useState(searchParams.get("search") || "")
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("search") || "")
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
   const [assignedFilter, setAssignedFilter] = useState("all")
@@ -120,6 +130,8 @@ export function TicketList({
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [users, setUsers] = useState<Array<{ id: string; name: string | null; email: string }>>([])
+  const [usersLoading, setUsersLoading] = useState(false)
+  const lastNotificationRefetchAtRef = useRef(0)
   
   const priorityColor = (priority: string) => {
     switch (priority) {
@@ -142,6 +154,24 @@ export function TicketList({
       default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
     }
   }
+
+  const slaStateBadgeClass = (state?: string) => {
+    switch (state) {
+      case "breached":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+      case "warning":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300"
+      case "met":
+        return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300"
+      default:
+        return "bg-muted text-muted-foreground"
+    }
+  }
+
+  const formatEnumLabel = (value: string) => {
+    const normalized = value.toLowerCase().replace(/_/g, " ")
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+  }
   
   const fetchTickets = useCallback(async (newSkip = skip) => {
     if (status === "loading") return
@@ -154,19 +184,15 @@ export function TicketList({
       const params = new URLSearchParams()
       params.append("limit", limit.toString())
       params.append("skip", newSkip.toString())
-      params.append("_", Date.now().toString()) // Cache busting
       
-      if (search) params.append("search", search)
+      if (debouncedSearch) params.append("search", debouncedSearch)
       if (statusFilter && statusFilter !== "all") params.append("status", statusFilter)
       if (priorityFilter && priorityFilter !== "all") params.append("priority", priorityFilter)
       if (assignedFilter && assignedFilter !== "all") params.append("assigned", assignedFilter)
       
       const response = await fetch(`/api/tickets?${params.toString()}`, {
-        cache: 'no-store',
+        cache: 'default',
         credentials: 'same-origin',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-        }
       })
       
       if (!response.ok) {
@@ -185,32 +211,45 @@ export function TicketList({
     } finally {
       setLoading(false)
     }
-  }, [status, skip, search, statusFilter, priorityFilter, assignedFilter, limit])
+  }, [status, skip, debouncedSearch, statusFilter, priorityFilter, assignedFilter, limit])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [search])
   
   useEffect(() => {
     fetchTickets(0)
   }, [fetchTickets])
 
-  // Load assignable users (agents/admins) for assignment dropdown
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch('/api/assignable-users', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        })
-        if (!response.ok) {
-          throw new Error(`Failed to fetch users: ${response.status}`)
-        }
-        const data = await response.json()
-        setUsers(data)
-      } catch (error) {
-        console.error('Error fetching users:', error)
-        // Silently fail - assignment dropdown will be empty
+  const fetchAssignableUsers = useCallback(async () => {
+    if (usersLoading || users.length > 0) return
+    try {
+      setUsersLoading(true)
+      const response = await fetch('/api/assignable-users', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.status}`)
       }
+      const data = await response.json()
+      setUsers(data)
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      // Silently fail - assignment dropdown will be empty
+    } finally {
+      setUsersLoading(false)
     }
-    fetchUsers()
-  }, [])
+  }, [users.length, usersLoading])
+
+  useEffect(() => {
+    if (sheetOpen && users.length === 0) {
+      fetchAssignableUsers()
+    }
+  }, [sheetOpen, users.length, fetchAssignableUsers])
 
   // Check for successful ticket creation query parameter
   useEffect(() => {
@@ -245,15 +284,48 @@ export function TicketList({
 
   useEffect(() => {
     setSearch(searchParams.get("search") || "")
+    setDebouncedSearch(searchParams.get("search") || "")
   }, [searchParams])
 
   // Listen for notification events to refresh ticket list
   useEffect(() => {
     const handleNotificationReceived = (event: CustomEvent) => {
-      const { type } = event.detail
+      const { type, notification } = event.detail ?? {}
       if (type === 'ticket_status_changed') {
-        // Refresh ticket list when a ticket status change notification is received
-        fetchTickets()
+        const metadata = notification?.metadata as { ticketId?: string; newStatus?: string } | undefined
+        const ticketId = metadata?.ticketId
+        const newStatus = metadata?.newStatus
+
+        if (ticketId && newStatus) {
+          let wasPatched = false
+          setTickets((prev) =>
+            prev.map((ticket) => {
+              if (ticket.id !== ticketId) return ticket
+              wasPatched = true
+              return {
+                ...ticket,
+                status: newStatus,
+              }
+            })
+          )
+
+          // If affected ticket is not in current page/filter, do a throttled fallback refetch.
+          if (!wasPatched) {
+            const now = Date.now()
+            if (now - lastNotificationRefetchAtRef.current > 10000) {
+              lastNotificationRefetchAtRef.current = now
+              fetchTickets()
+            }
+          }
+          return
+        }
+
+        // Metadata missing: fallback refetch with the same throttle.
+        const now = Date.now()
+        if (now - lastNotificationRefetchAtRef.current > 10000) {
+          lastNotificationRefetchAtRef.current = now
+          fetchTickets()
+        }
       }
     }
 
@@ -283,6 +355,9 @@ export function TicketList({
   }
 
   const handleTicketClick = (ticket: Ticket) => {
+    if (users.length === 0) {
+      void fetchAssignableUsers()
+    }
     setSelectedTicket(ticket)
     setSheetOpen(true)
   }
@@ -437,7 +512,7 @@ export function TicketList({
           </div>
           
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-xl p-0.5">
+            <div className="flex items-center rounded-xl bg-muted p-0.5 shadow-sm">
               <Button
                 type="button"
                 variant={viewMode === "table" ? "default" : "ghost"}
@@ -584,13 +659,13 @@ export function TicketList({
                         {ticket.title}
                       </TableCell>
                       <TableCell>
-                        <Badge className={priorityColor(ticket.priority)}>
-                          {ticket.priority}
+                        <Badge className={`${priorityColor(ticket.priority)} !text-[12px]`}>
+                          {formatEnumLabel(ticket.priority)}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={statusColor(ticket.status)}>
-                          {ticket.status}
+                        <Badge className={`${statusColor(ticket.status)} !text-[12px]`}>
+                          {formatEnumLabel(ticket.status)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -618,9 +693,19 @@ export function TicketList({
                       </TableCell>
                       <TableCell>
                         {ticket.sla ? (
-                          <Badge variant="outline">
-                            {ticket.sla.responseTime}h / {ticket.sla.resolutionTime}h
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="outline">
+                              {ticket.sla.responseTime}m / {ticket.sla.resolutionTime}m
+                            </Badge>
+                            <div className="flex gap-1">
+                              <Badge className={`${slaStateBadgeClass(ticket.slaSnapshot?.responseState)} !text-[12px]`}>
+                                Response {ticket.slaSnapshot?.responseState ?? "ok"}
+                              </Badge>
+                              <Badge className={`${slaStateBadgeClass(ticket.slaSnapshot?.resolutionState)} !text-[12px]`}>
+                                Resolution {ticket.slaSnapshot?.resolutionState ?? "ok"}
+                              </Badge>
+                            </div>
+                          </div>
                         ) : (
                           <Badge variant="outline">No SLA</Badge>
                         )}
@@ -690,7 +775,7 @@ export function TicketList({
                       <span className="text-xs text-muted-foreground">{columnTickets.length}</span>
                     </div>
                     <div
-                      className={`min-h-[180px] space-y-2 rounded-lg p-3 transition ${
+                      className={`min-h-[180px] space-y-2 rounded-lg bg-muted/40 p-3 transition ${
                         canChangeStatus ? "hover:bg-muted/40" : ""
                       }`}
                     >
@@ -736,9 +821,8 @@ export function TicketList({
                               draggingTicketId === ticket.id ? "opacity-50" : ""
                             }`}
                           >
-                            <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2">
                               <p className="line-clamp-2 text-sm font-medium">{ticket.title}</p>
-                              <Badge className={priorityColor(ticket.priority)}>{ticket.priority}</Badge>
                             </div>
                             <p className="mt-2 text-xs text-muted-foreground">
                               {(ticket.user.name || ticket.user.email) ?? "Unknown user"}
@@ -746,6 +830,9 @@ export function TicketList({
                             <p className="mt-1 text-xs text-muted-foreground">
                               {new Date(ticket.createdAt).toLocaleDateString()}
                             </p>
+                            <div className="mt-2 flex justify-end">
+                              <Badge className={`${priorityColor(ticket.priority)} !text-[12px]`}>{formatEnumLabel(ticket.priority)}</Badge>
+                            </div>
                           </div>
                         ))
                       ) : (

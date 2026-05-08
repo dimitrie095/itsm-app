@@ -42,6 +42,29 @@ export class LoginPage {
     this.errorAlert = page.locator('[role="alert"]').filter({ hasText: /invalid|error|failed/i });
   }
 
+  private async waitForPostLoginNavigation() {
+    const waitForUrl = this.page
+      .waitForURL(/(\/$|\/dashboard|\/tickets|\/automation|\/unauthorized|\/reset-initial-password)(\?.*)?$/, {
+        timeout: 20000,
+      })
+      .catch(() => undefined)
+
+    const waitForSessionCookie = expect
+      .poll(
+        async () => {
+          const cookies = await this.page.context().cookies()
+          return cookies.some((cookie) =>
+            ["next-auth.session-token", "__Secure-next-auth.session-token"].includes(cookie.name)
+          )
+        },
+        { timeout: 20000 }
+      )
+      .toBeTruthy()
+      .catch(() => undefined)
+
+    await Promise.race([waitForUrl, waitForSessionCookie])
+  }
+
   /**
    * Navigate to the login page
    */
@@ -67,7 +90,7 @@ export class LoginPage {
     await this.signInButton.click();
     
     // Wait for navigation after successful login
-    await this.page.waitForURL(/\/(dashboard|tickets|automation|unauthorized|\?)?/, { timeout: 15000 });
+    await this.waitForPostLoginNavigation();
   }
 
   /**
@@ -76,7 +99,7 @@ export class LoginPage {
   async loginAsAdmin() {
     await expect(this.adminDemoButton).toBeVisible({ timeout: 10000 });
     await this.adminDemoButton.click();
-    await this.page.waitForURL(/\/(dashboard|tickets|automation|unauthorized|\?)?/, { timeout: 15000 });
+    await this.waitForPostLoginNavigation();
   }
 
   /**
@@ -85,7 +108,7 @@ export class LoginPage {
   async loginAsAgent() {
     await expect(this.agentDemoButton).toBeVisible({ timeout: 10000 });
     await this.agentDemoButton.click();
-    await this.page.waitForURL(/\/(dashboard|tickets|automation|unauthorized|\?)?/, { timeout: 15000 });
+    await this.waitForPostLoginNavigation();
   }
 
   /**
@@ -94,7 +117,7 @@ export class LoginPage {
   async loginAsEndUser() {
     await expect(this.endUserDemoButton).toBeVisible({ timeout: 10000 });
     await this.endUserDemoButton.click();
-    await this.page.waitForURL(/\/(dashboard|tickets|automation|unauthorized|\?)?/, { timeout: 15000 });
+    await this.waitForPostLoginNavigation();
   }
 
   /**

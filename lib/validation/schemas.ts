@@ -4,7 +4,8 @@ import { z } from 'zod'
 export const userSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
   email: z.string().email('Invalid email address'),
-  role: z.enum(['ADMIN', 'AGENT', 'END_USER']),
+  role: z.enum(['ADMIN', 'AGENT', 'END_USER', 'CUSTOM']),
+  customRoleId: z.string().uuid('Invalid custom role ID').optional().nullable(),
   department: z.string().optional(),
   isActive: z.boolean().default(true),
 })
@@ -72,7 +73,7 @@ export const reportSchema = z.object({
   type: z.enum(['DASHBOARD', 'TICKETS', 'ASSETS', 'KNOWLEDGE', 'CUSTOM']),
   format: z.enum(['PDF', 'HTML', 'CSV', 'JSON']),
   description: z.string().max(500).optional(),
-  filters: z.record(z.any()).optional(),
+  filters: z.record(z.string(), z.any()).optional(),
 })
 
 // Automation rule schemas
@@ -80,8 +81,8 @@ export const automationRuleSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters').max(100),
   description: z.string().max(500).optional(),
   trigger: z.enum(['TICKET_CREATED', 'TICKET_UPDATED', 'STATUS_CHANGED', 'PRIORITY_CHANGED', 'SCHEDULED']),
-  conditions: z.array(z.record(z.any())),
-  actions: z.array(z.record(z.any())),
+  conditions: z.array(z.record(z.string(), z.any())),
+  actions: z.array(z.record(z.string(), z.any())),
   isActive: z.boolean().default(true),
 })
 
@@ -102,7 +103,7 @@ export const searchSchema = z.object({
   limit: z.number().min(1).max(100).default(20),
   sortBy: z.string().optional(),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
-  filters: z.record(z.any()).optional(),
+  filters: z.record(z.string(), z.any()).optional(),
 })
 
 // API response schemas
@@ -121,7 +122,7 @@ export function validateSchema<T extends z.ZodType<any, any>>(schema: T) {
       return await schema.parseAsync(data)
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => ({
+        const errors = error.issues.map(err => ({
           path: err.path.join('.'),
           message: err.message,
         }))

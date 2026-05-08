@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Search, Filter, Save, Users, Shield, Check, X, Loader2 } from "lucide-react"
+import { Search, Save, Users, Shield, Check, X, Loader2, ChevronDown, ChevronRight } from "lucide-react"
 import { getPermissionMatrix, bulkUpdatePermissions, PermissionMatrixData } from "../matrix/actions"
 
 interface PermissionMatrixProps {
@@ -23,6 +23,7 @@ export function PermissionMatrix({ initialData }: PermissionMatrixProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [pendingUpdates, setPendingUpdates] = useState<Map<string, boolean>>(new Map())
   const [message, setMessage] = useState<{ type: "success" | "error", text: string } | null>(null)
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
 
   // Load data if not provided
   useEffect(() => {
@@ -155,6 +156,15 @@ export function PermissionMatrix({ initialData }: PermissionMatrixProps) {
       return <Badge variant="outline" className="ml-2">Standard</Badge>
     }
     return <Badge variant="secondary" className="ml-2">Custom</Badge>
+  }
+
+  const isCategoryCollapsed = (categoryId: string) => collapsedCategories[categoryId] ?? false
+
+  const toggleCategory = (categoryId: string) => {
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [categoryId]: !(prev[categoryId] ?? false)
+    }))
   }
 
   if (loading) {
@@ -294,12 +304,23 @@ export function PermissionMatrix({ initialData }: PermissionMatrixProps) {
             <tbody>
               {Object.entries(permissionsByCategory).map(([categoryId, categoryPermissions]) => (
                 <React.Fragment key={categoryId}>
-                  <tr className="bg-muted/30">
+                  <tr>
                     <td colSpan={data.roles.length + 1} className="p-3 font-semibold">
-                      {getCategoryName(categoryId)}
+                      <button
+                        type="button"
+                        onClick={() => toggleCategory(categoryId)}
+                        className="flex w-full items-center justify-between rounded-lg bg-muted/70 px-3 py-2 text-left"
+                      >
+                        <span>{getCategoryName(categoryId)}</span>
+                        {isCategoryCollapsed(categoryId) ? (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
                     </td>
                   </tr>
-                  {categoryPermissions.map(permission => (
+                  {!isCategoryCollapsed(categoryId) && categoryPermissions.map(permission => (
                     <tr key={permission.id} className="border-b hover:bg-muted/50">
                       <td className="p-4">
                         <div>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import * as fs from 'fs/promises'
 import * as path from 'path'
+import { requireServerActionAuth } from "@/lib/auth/server-actions"
 
 interface CreateTicketInput {
   title: string
@@ -31,6 +32,7 @@ async function writeTickets(tickets: any[]) {
 }
 
 export async function createTicket(data: CreateTicketInput) {
+  await requireServerActionAuth({ permissions: ["tickets.create"] })
   // Validate required fields
   if (!data.title.trim()) {
     throw new Error("Title is required")

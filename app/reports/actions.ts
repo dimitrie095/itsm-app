@@ -1,32 +1,89 @@
 "use server"
 
-import * as fs from 'fs/promises'
-import * as path from 'path'
 import { revalidatePath } from 'next/cache'
 import { generateWithDefaultLLM } from '@/lib/services/llm-service'
 import { markdownToHtml } from '@/lib/formatting'
 import { sendOutlookEmail } from '@/lib/outlook-mailer'
+import { requireServerActionAuth } from '@/lib/auth/server-actions'
+import { prisma } from '@/lib/prisma'
 
-const reportsFilePath = path.join(process.cwd(), 'reports.json')
+const MAX_RECIPIENTS = 50
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 
-// Hilfsfunktion zum Lesen von Reports
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
 async function readReports() {
   try {
-    const data = await fs.readFile(reportsFilePath, 'utf-8')
-    return JSON.parse(data)
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      // Datei existiert nicht, leeres Array zurückgeben
-      return []
-    }
-    console.error('Error reading reports:', error)
+    const rows = await prisma.$queryRaw<Array<{ payload: unknown }>>`
+      SELECT "payload"
+      FROM "reports_store"
+      ORDER BY "created_at" DESC
+    `
+    return rows
+      .map((row) => {
+        if (typeof row.payload === "string") {
+          try {
+            return JSON.parse(row.payload)
+          } catch {
+            return null
+          }
+        }
+        return row.payload
+      })
+      .filter(Boolean)
+  } catch (error) {
+    console.error('Error reading reports from database:', error)
     return []
   }
 }
 
-// Hilfsfunktion zum Schreiben von Reports
-async function writeReports(reports: any[]) {
-  await fs.writeFile(reportsFilePath, JSON.stringify(reports, null, 2), 'utf-8')
+async function getReportByIdFromStore(id: string) {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ payload: unknown }>>`
+      SELECT "payload"
+      FROM "reports_store"
+      WHERE "id" = ${id}
+      LIMIT 1
+    `
+    const payload = rows[0]?.payload
+    if (!payload) return null
+    if (typeof payload === "string") {
+      try {
+        return JSON.parse(payload)
+      } catch {
+        return null
+      }
+    }
+    return payload
+  } catch (error) {
+    console.error('Error reading report by id from database:', error)
+    return null
+  }
+}
+
+async function upsertReportToStore(report: any) {
+  const reportId = String(report?.id || "").trim()
+  if (!reportId) {
+    throw new Error('Invalid report id')
+  }
+  try {
+    await prisma.$executeRaw`
+      INSERT INTO "reports_store" ("id", "payload", "updated_at")
+      VALUES (${reportId}, ${JSON.stringify(report)}::jsonb, NOW())
+      ON CONFLICT ("id")
+      DO UPDATE SET "payload" = EXCLUDED."payload", "updated_at" = NOW()
+    `
+  } catch (error) {
+    console.error('Error upserting report to database:', error)
+    throw new Error('Failed to persist report')
+  }
 }
 
 // Report-Typen und ihre Beschreibungen
@@ -122,57 +179,77 @@ function getRecentTickets(tickets: any[], limit = 10) {
 // Main function - refactored into smaller parts
 async function getDashboardDataForReport() {
   try {
-    // Tickets und Artikel aus Datenbank lesen
-    const { prisma } = await import('@/lib/prisma')
-    
-    // Fetch tickets from database
-    const dbTickets = await prisma.ticket.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            department: true,
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
-    
-    // Fetch published articles from database
-    const dbArticles = await prisma.knowledgeBaseArticle.findMany({
-      where: { isPublished: true },
-      orderBy: { createdAt: 'desc' }
-    })
-    
-    // Transform tickets to match expected shape
-    const tickets = dbTickets.map(transformTicketForReport)
-    
-    // Calculate metrics
-    const { openTickets, resolvedTickets } = calculateTicketMetrics(dbTickets)
-    
-    // Calculate distributions
-    const categoryDistribution = calculateDistribution(tickets, 'category', 'Other')
-    const priorityDistribution = calculateDistribution(tickets, 'priority', 'medium')
-    
-    // Get top categories
-    const topCategories = getTopCategories(categoryDistribution)
-    
-    // Get recent tickets
-    const recentTickets = getRecentTickets(tickets)
-    
-    // Calculate resolution rate
-    const resolutionRate = tickets.length > 0 ? Math.round((resolvedTickets / tickets.length) * 100) : 0
+    const [totalTickets, openTickets, resolvedTickets, totalArticles, recentTicketRows, topCategoryGroups, priorityGroups] = await Promise.all([
+      prisma.ticket.count(),
+      prisma.ticket.count({
+        where: {
+          status: { in: ['NEW', 'ASSIGNED', 'IN_PROGRESS'] },
+        },
+      }),
+      prisma.ticket.count({
+        where: {
+          status: { in: ['RESOLVED', 'CLOSED'] },
+        },
+      }),
+      prisma.knowledgeBaseArticle.count({
+        where: { isPublished: true },
+      }),
+      prisma.ticket.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          title: true,
+          priority: true,
+          status: true,
+          category: true,
+          createdAt: true,
+        },
+      }),
+      prisma.ticket.groupBy({
+        by: ['category'],
+        _count: { _all: true },
+      }),
+      prisma.ticket.groupBy({
+        by: ['priority'],
+        _count: { _all: true },
+      }),
+    ])
+
+    const categoryDistribution: Record<string, number> = {}
+    for (const row of topCategoryGroups) {
+      const key = (row.category || 'Other').toLowerCase()
+      categoryDistribution[key] = (categoryDistribution[key] || 0) + row._count._all
+    }
+
+    const priorityDistribution: Record<string, number> = {}
+    for (const row of priorityGroups) {
+      const key = String(row.priority || 'MEDIUM').toLowerCase()
+      priorityDistribution[key] = (priorityDistribution[key] || 0) + row._count._all
+    }
+
+    const topCategories = Object.entries(categoryDistribution)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([category, count]) => ({ category, count }))
+
+    const recentTickets = recentTicketRows.map((ticket) => ({
+      id: ticket.id,
+      title: ticket.title,
+      priority: String(ticket.priority).toLowerCase(),
+      status: String(ticket.status).charAt(0) + String(ticket.status).slice(1).toLowerCase(),
+      category: ticket.category || 'Other',
+      createdAt: ticket.createdAt,
+    }))
+
+    const resolutionRate = totalTickets > 0 ? Math.round((resolvedTickets / totalTickets) * 100) : 0
     
     return {
-      totalTickets: tickets.length,
+      totalTickets,
       openTickets,
       resolvedTickets,
       resolutionRate,
-      totalArticles: dbArticles.length,
+      totalArticles,
       categoryDistribution,
       priorityDistribution,
       topCategories,
@@ -202,6 +279,7 @@ function getFallbackDashboardData() {
 
 // Hauptfunktionen
 export async function getReports() {
+  await requireServerActionAuth({ permissions: ["reports.view"] })
   const reports = await readReports()
   // Sortiere nach Datum (neueste zuerst)
   return reports.sort((a: any, b: any) => 
@@ -210,19 +288,15 @@ export async function getReports() {
 }
 
 export async function getReportById(id: string) {
-  const reports = await readReports()
-  return reports.find((report: any) => report.id === id)
+  await requireServerActionAuth({ permissions: ["reports.view"] })
+  return getReportByIdFromStore(id)
 }
 
 export async function getReportRecipientOptions() {
+  await requireServerActionAuth({ permissions: ["reports.view"] })
   try {
     const { prisma } = await import('@/lib/prisma')
     const users = await prisma.user.findMany({
-      where: {
-        email: {
-          not: null,
-        },
-      },
       select: {
         email: true,
         name: true,
@@ -249,9 +323,9 @@ export async function getReportRecipientOptions() {
 }
 
 export async function generateReportSummary(reportId: string): Promise<{ success: boolean; summary?: string; error?: string }> {
+  await requireServerActionAuth({ permissions: ["reports.create"] })
   try {
-    const reports = await readReports();
-    const report = reports.find((r: any) => r.id === reportId);
+    const report = await getReportByIdFromStore(reportId);
     if (!report) {
       return { success: false, error: 'Report not found' };
     }
@@ -290,7 +364,7 @@ Please provide a brief summary highlighting key insights, trends, and recommenda
     // Update report with summary
     report.summary = response.content;
     report.updatedAt = new Date().toISOString();
-    await writeReports(reports);
+    await upsertReportToStore(report);
     revalidatePath(`/reports/${reportId}`);
 
     return { success: true, summary: response.content };
@@ -301,16 +375,16 @@ Please provide a brief summary highlighting key insights, trends, and recommenda
 }
 
 export async function updateReportSummary(reportId: string, summary: string) {
+  await requireServerActionAuth({ permissions: ["reports.create"] })
   try {
-    const reports = await readReports()
-    const report = reports.find((r: any) => r.id === reportId)
+    const report = await getReportByIdFromStore(reportId)
     if (!report) {
       return { success: false, error: 'Report not found' }
     }
 
     report.summary = String(summary || '').trim()
     report.updatedAt = new Date().toISOString()
-    await writeReports(reports)
+    await upsertReportToStore(report)
     revalidatePath(`/reports/${reportId}`)
 
     return { success: true, summary: report.summary }
@@ -330,6 +404,7 @@ export async function generateReport(data: {
     end: string
   }
 }) {
+  await requireServerActionAuth({ permissions: ["reports.create"] })
   // Validierung
   if (!reportTypes[data.type]) {
     throw new Error(`Invalid report type: ${data.type}`)
@@ -368,9 +443,7 @@ export async function generateReport(data: {
   }
   
   // Report speichern
-  const reports = await readReports()
-  reports.push(report)
-  await writeReports(reports)
+  await upsertReportToStore(report)
   
   // Cache revalidieren
   revalidatePath('/reports')
@@ -393,20 +466,18 @@ export async function generateReport(data: {
 }
 
 export async function deleteReport(id: string) {
-  const reports = await readReports()
-  const filteredReports = reports.filter((report: any) => report.id !== id)
-  
-  if (filteredReports.length === reports.length) {
-    throw new Error('Report not found')
-  }
-  
-  await writeReports(filteredReports)
+  await requireServerActionAuth({ permissions: ["reports.export"] })
+  const existing = await getReportByIdFromStore(id)
+  if (!existing) throw new Error('Report not found')
+
+  await prisma.$executeRaw`DELETE FROM "reports_store" WHERE "id" = ${id}`
   revalidatePath('/reports')
   
   return true
 }
 
 export async function sendReport(id: string, recipients: string[]) {
+  await requireServerActionAuth({ permissions: ["reports.export"] })
   return sendReportEmail({
     id,
     recipients,
@@ -418,8 +489,8 @@ export async function generateReportEmailContent(
   id: string,
   customInstructions?: string
 ): Promise<{ success: boolean; subject?: string; message?: string; error?: string }> {
-  const reports = await readReports()
-  const report = reports.find((r: any) => r.id === id)
+  await requireServerActionAuth({ permissions: ["reports.create"] })
+  const report = await getReportByIdFromStore(id)
   
   if (!report) {
     return { success: false, error: 'Report not found' }
@@ -470,8 +541,8 @@ export async function sendReportEmail(data: {
   message?: string
   includeAttachment?: boolean
 }) {
-  const reports = await readReports()
-  const report = reports.find((r: any) => r.id === data.id)
+  await requireServerActionAuth({ permissions: ["reports.export"] })
+  const report = await getReportByIdFromStore(data.id)
   
   if (!report) {
     throw new Error('Report not found')
@@ -480,6 +551,9 @@ export async function sendReportEmail(data: {
   const recipients = data.recipients.map((email) => email.trim()).filter(Boolean)
   if (recipients.length === 0) {
     throw new Error('Please provide at least one valid recipient')
+  }
+  if (recipients.length > MAX_RECIPIENTS) {
+    throw new Error(`Too many recipients. Max allowed is ${MAX_RECIPIENTS}`)
   }
 
   const subject = data.subject?.trim() || `ITSM Report: ${report.name}`
@@ -499,13 +573,18 @@ export async function sendReportEmail(data: {
       content: contentBuffer,
       contentType: downloadable.contentType,
     }
+    if (attachment.content.length > MAX_ATTACHMENT_BYTES) {
+      throw new Error("Attachment too large to send by email")
+    }
   }
 
   for (const recipient of recipients) {
+    const safeSubject = escapeHtml(subject)
+    const safeBody = escapeHtml(messageBody).replace(/\n/g, "<br/>")
     const html = `
       <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-        <h2>${subject}</h2>
-        <p>${messageBody.replace(/\n/g, '<br/>')}</p>
+        <h2>${safeSubject}</h2>
+        <p>${safeBody}</p>
       </div>
     `
 
@@ -533,7 +612,7 @@ export async function sendReportEmail(data: {
   report.metadata.emailRecipients = recipients
   report.metadata.lastEmailSubject = subject
   report.updatedAt = new Date().toISOString()
-  await writeReports(reports)
+  await upsertReportToStore(report)
   revalidatePath('/reports')
   revalidatePath(`/reports/${data.id}`)
   
@@ -545,8 +624,8 @@ export async function sendReportEmail(data: {
 }
 
 export async function downloadReport(id: string) {
-  const reports = await readReports()
-  const report = reports.find((r: any) => r.id === id)
+  await requireServerActionAuth({ permissions: ["reports.export"] })
+  const report = await getReportByIdFromStore(id)
   
   if (!report) {
     throw new Error('Report not found')
@@ -574,8 +653,6 @@ export async function downloadReport(id: string) {
         const React = await import('react')
         const { PDFReport } = await import('@/components/pdf-report')
         
-        console.log('Starting PDF generation for report:', report.id)
-        
         // Create PDF component using React.createElement
         const pdfComponent = React.createElement(PDFReport, { report })
         
@@ -593,7 +670,6 @@ export async function downloadReport(id: string) {
           pdfStream.on('error', reject)
         })
         
-        console.log('PDF generation successful, buffer size:', pdfBuffer.length)
         content = pdfBuffer
         contentType = 'application/pdf'
       } catch (pdfError) {

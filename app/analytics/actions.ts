@@ -2,12 +2,12 @@
 
 import { prisma } from "@/lib/prisma"
 import { TicketStatus, Priority, TicketSource } from "@prisma/client"
+import { requireServerActionAuth } from "@/lib/auth/server-actions"
 
 export async function getAnalyticsData() {
+  await requireServerActionAuth({ permissions: ["analytics.view"] })
   // Skip database queries during build
-  console.log('IS_BUILD:', process.env.IS_BUILD, 'SKIP_DB_INIT:', process.env.SKIP_DB_INIT);
   if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
-    console.log('Skipping database queries during build');
     return {
       totalTickets: 0,
       openTickets: 0,
@@ -25,13 +25,46 @@ export async function getAnalyticsData() {
   }
   
   try {
-    // Get all tickets
-    const tickets = await prisma.ticket.findMany({
-      include: {
-        assignedTo: true,
-        user: true,
-      },
-    })
+    const [tickets, agents, slas] = await Promise.all([
+      prisma.ticket.findMany({
+        select: {
+          id: true,
+          status: true,
+          priority: true,
+          source: true,
+          createdAt: true,
+          resolvedAt: true,
+        },
+      }),
+      prisma.user.findMany({
+        where: {
+          role: 'AGENT',
+        },
+        include: {
+          assignedTickets: {
+            where: {
+              status: {
+                in: [TicketStatus.RESOLVED, TicketStatus.CLOSED]
+              }
+            }
+          }
+        }
+      }),
+      prisma.sLA.findMany({
+        where: {
+          isActive: true,
+        },
+        include: {
+          tickets: {
+            where: {
+              resolvedAt: {
+                not: null
+              }
+            }
+          }
+        }
+      }),
+    ])
 
     // Calculate total tickets
     const totalTickets = tickets.length
@@ -99,22 +132,6 @@ export async function getAnalyticsData() {
       })
     }
 
-    // Get agent performance (top 5 agents by number of resolved tickets)
-    const agents = await prisma.user.findMany({
-      where: {
-        role: 'AGENT',
-      },
-      include: {
-        assignedTickets: {
-          where: {
-            status: {
-              in: [TicketStatus.RESOLVED, TicketStatus.CLOSED]
-            }
-          }
-        }
-      }
-    })
-
     const agentPerformance = agents
       .map(agent => ({
         id: agent.id,
@@ -125,22 +142,6 @@ export async function getAnalyticsData() {
       }))
       .sort((a, b) => b.resolvedTickets - a.resolvedTickets)
       .slice(0, 5)
-
-    // Get SLA data
-    const slas = await prisma.sLA.findMany({
-      where: {
-        isActive: true,
-      },
-      include: {
-        tickets: {
-          where: {
-            resolvedAt: {
-              not: null
-            }
-          }
-        }
-      }
-    })
 
     const slaPerformance = slas.map(sla => {
       const compliantTickets = sla.tickets.filter(ticket => {

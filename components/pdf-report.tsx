@@ -198,8 +198,8 @@ export function PDFReport({ report }: PDFReportProps) {
                   key={idx}
                   style={[
                     styles.aiSummaryText,
-                    fragment.bold && styles.boldText,
-                    fragment.italic && styles.italicText,
+                    ...(fragment.bold ? [styles.boldText] : []),
+                    ...(fragment.italic ? [styles.italicText] : []),
                   ]}
                 >
                   {fragment.text}

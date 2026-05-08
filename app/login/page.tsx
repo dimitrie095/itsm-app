@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronRight, Crown, Headphones, Key, Loader2, Lock, LogIn, Mail, Monitor, Shield, Sparkles } from "lucide-react";
+import { ChevronRight, Crown, Headphones, Key, Loader2, Lock, LogIn, Mail, Monitor, Sparkles } from "lucide-react";
+import Image from "next/image";
 import { getProviders, signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ponturoLogo from "@/utils/logo/ponturo-logo.png";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -130,8 +132,15 @@ export default function LoginPage() {
         <div className="hidden lg:flex lg:w-1/2 p-10 lg:p-14 flex-col justify-between bg-slate-900 border-r border-slate-800">
           <div className="space-y-8">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
-                <Shield className="h-10 w-10 text-primary" />
+              <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-transparent">
+                <Image
+                  src={ponturoLogo}
+                  alt="Ponturo logo"
+                  width={56}
+                  height={56}
+                  className="h-[52px] w-[52px] object-contain"
+                  priority
+                />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-white">Ponturo ITSM Tool</h1>
@@ -195,8 +204,15 @@ export default function LoginPage() {
             {/* Mobile header */}
             <div className="text-center mb-8 lg:hidden">
               <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
-                  <Shield className="h-10 w-10 text-primary" />
+                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-transparent">
+                  <Image
+                    src={ponturoLogo}
+                    alt="Ponturo logo"
+                    width={56}
+                    height={56}
+                    className="h-[52px] w-[52px] object-contain"
+                    priority
+                  />
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-white">Ponturo ITSM Tool</h1>
@@ -374,17 +390,6 @@ export default function LoginPage() {
               </CardContent>
               
               <CardFooter className="flex flex-col space-y-4 pt-6 border-t border-slate-800">
-                <div className="text-center text-sm text-slate-500">
-                  By signing in, you agree to our{" "}
-                  <Link href="/terms" className="text-primary hover:underline">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="text-primary hover:underline">
-                    Privacy Policy
-                  </Link>
-                </div>
-                
                 {isDevelopment && (
                   <div className="lg:hidden p-3 rounded-lg bg-slate-800 border border-slate-700">
                     <p className="text-xs text-slate-300 text-center">

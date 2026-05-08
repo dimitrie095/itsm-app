@@ -40,8 +40,11 @@ declare module "next-auth/jwt" {
     department?: string | null;
     mustChangePassword?: boolean;
     permissions: string[];
+    permissionsRefreshedAt?: number;
   }
 }
+
+const PERMISSIONS_REFRESH_TTL_MS = 5 * 60 * 1000;
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma as any) as any,
@@ -62,16 +65,6 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Invalid credentials");
-        }
-
-        // Self-heal for environments where migration was not applied yet.
-        // Prevents runtime failures like "column does not exist".
-        try {
-          await prisma.$executeRawUnsafe(
-            `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "mustChangePassword" BOOLEAN NOT NULL DEFAULT false`
-          );
-        } catch (_error) {
-          // Ignore here; auth should continue and fail naturally only if truly required.
         }
 
         const isDevelopment = process.env.NODE_ENV === "development";
@@ -189,15 +182,29 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.department = user.department;
         token.mustChangePassword = user.mustChangePassword;
-        // Fetch user permissions
-        const permissions = await getUserPermissionNames(user.id);
-        console.log(`[auth] User ${user.id} permissions:`, permissions);
-        token.permissions = permissions;
+        token.permissions = await getUserPermissionNames(user.id);
+        token.permissionsRefreshedAt = Date.now();
       } else if (token.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id },
-        });
-        token.mustChangePassword = Boolean((dbUser as any)?.mustChangePassword);
+        const now = Date.now();
+        const shouldRefreshPermissions =
+          !Array.isArray(token.permissions) ||
+          token.permissions.length === 0 ||
+          !token.permissionsRefreshedAt ||
+          now - token.permissionsRefreshedAt > PERMISSIONS_REFRESH_TTL_MS;
+
+        if (shouldRefreshPermissions) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id },
+            select: {
+              role: true,
+              department: true,
+            },
+          });
+          token.role = (dbUser?.role as Role) || token.role;
+          token.department = dbUser?.department ?? token.department;
+          token.permissions = await getUserPermissionNames(token.id);
+          token.permissionsRefreshedAt = now;
+        }
       }
       return token;
     },

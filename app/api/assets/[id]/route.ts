@@ -169,7 +169,6 @@ export async function GET(
     return NextResponse.json({
       success: false,
       error: "Failed to fetch asset",
-      details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
@@ -372,7 +371,6 @@ export async function PUT(
     return NextResponse.json({
       success: false,
       error: "Failed to update asset",
-      details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
@@ -478,7 +476,6 @@ export async function DELETE(
     return NextResponse.json({
       success: false,
       error: "Failed to delete asset",
-      details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }

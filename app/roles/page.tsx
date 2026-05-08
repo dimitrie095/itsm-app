@@ -1,14 +1,24 @@
 export const dynamic = 'force-dynamic'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Shield, Grid, Users, Settings } from "lucide-react"
+import { Shield } from "lucide-react"
 import RolesPermissionsClient from "./roles-permissions-client"
-import { PermissionMatrix } from "./components/permission-matrix"
 import { getRolesAndPermissions } from "./actions"
 import { getPermissionMatrix } from "./matrix/actions"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { hasPermission } from "@/lib/permission-utils"
+import { redirect } from "next/navigation"
 
 export default async function RolesPermissionsPage() {
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    redirect("/login")
+  }
+  if (!hasPermission(session, "roles.view")) {
+    redirect("/")
+  }
+
   // Skip database queries during build
   const isBuild = process.env.IS_BUILD === 'true' || process.env.SKIP_DB_INIT === 'true';
   
@@ -94,70 +104,20 @@ export default async function RolesPermissionsPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="matrix" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="matrix" className="flex items-center gap-2">
-            <Grid className="h-4 w-4" />
-            Matrix View
-          </TabsTrigger>
-          <TabsTrigger value="roles" className="flex items-center gap-2">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Role Management
-          </TabsTrigger>
-          <TabsTrigger value="assignments" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            User Assignments
-          </TabsTrigger>
-          <TabsTrigger value="advanced" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Advanced
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="matrix" className="space-y-6">
-          <PermissionMatrix initialData={matrixData as any} />
-        </TabsContent>
-
-        <TabsContent value="roles" className="space-y-6">
+          </CardTitle>
+          <CardDescription>
+            Manage standard and custom roles with their permissions.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <RolesPermissionsClient initialData={standardData as any} />
-        </TabsContent>
-
-        <TabsContent value="assignments" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Role Assignments</CardTitle>
-              <CardDescription>
-                Assign roles to users and manage their access levels.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>User assignment interface will be implemented here.</p>
-                <p className="text-sm mt-2">Use the Role Management tab for basic assignments.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="advanced" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Advanced Role Management</CardTitle>
-              <CardDescription>
-                Role hierarchies, permission groups, and audit logs.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Advanced features coming soon.</p>
-                <p className="text-sm mt-2">Role inheritance, permission bundles, and audit trails.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   )
 }

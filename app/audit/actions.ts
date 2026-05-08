@@ -46,17 +46,18 @@ export async function getAuditLogs(
   }
 
   const skip = (page - 1) * pageSize
+  const whereClause: any = {
+    ...(filters?.action && { action: filters.action }),
+    ...(filters?.entityType && { entityType: { contains: filters.entityType, mode: "insensitive" } }),
+    ...(filters?.userId && { userId: filters.userId }),
+    ...(filters?.startDate && { createdAt: { gte: filters.startDate } }),
+    ...(filters?.endDate && { createdAt: { ...(filters?.startDate ? { gte: filters.startDate } : {}), lte: filters.endDate } }),
+  }
 
   const logs = await prisma.auditLog.findMany({
     skip,
     take: pageSize,
-    where: {
-      ...(filters?.action && { action: { contains: filters.action, mode: "insensitive" } }),
-      ...(filters?.entityType && { entityType: { contains: filters.entityType, mode: "insensitive" } }),
-      ...(filters?.userId && { userId: filters.userId }),
-      ...(filters?.startDate && { createdAt: { gte: filters.startDate } }),
-      ...(filters?.endDate && { createdAt: { lte: filters.endDate } }),
-    },
+    where: whereClause,
     include: {
       user: {
         select: {

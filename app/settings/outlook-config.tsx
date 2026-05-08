@@ -165,7 +165,7 @@ export default function OutlookConfigComponent() {
               type="password"
               value={config.smtpPass}
               onChange={(e) => setConfig((prev) => ({ ...prev, smtpPass: e.target.value }))}
-              placeholder="App password"
+              placeholder={config.smtpPassConfigured ? "Stored securely (enter new to rotate)" : "App password"}
               disabled={!config.enabled || loadingConfig}
             />
           </div>
@@ -193,7 +193,7 @@ export default function OutlookConfigComponent() {
               !config.smtpHost ||
               !config.smtpPort ||
               !config.smtpUser ||
-              !config.smtpPass ||
+              (!config.smtpPass && !config.smtpPassConfigured) ||
               !config.fromEmail
             }
           >
@@ -209,7 +209,7 @@ export default function OutlookConfigComponent() {
               !config.smtpHost ||
               !config.smtpPort ||
               !config.smtpUser ||
-              !config.smtpPass ||
+              (!config.smtpPass && !config.smtpPassConfigured) ||
               !config.fromEmail
             }
           >

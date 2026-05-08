@@ -7,6 +7,9 @@ import { authOptions } from "@/lib/auth"
 import { createNotification } from "@/lib/notifications"
 import { sendOutlookEmail } from "@/lib/outlook-mailer"
 import { sendTeamsMessage } from "@/lib/teams-webhook"
+import { requireServerActionAuth } from "@/lib/auth/server-actions"
+const VIEW_REVALIDATE_THROTTLE_MS = 30_000
+const articleViewRevalidateTracker = new Map<string, number>()
 
 // Fallback demo articles for when database is unavailable
 const fallbackArticles = [
@@ -31,6 +34,7 @@ export interface ArticleInput {
 
 // Article functions
 export async function getArticles() {
+  await requireServerActionAuth({ permissions: ["knowledge.view"] })
   try {
     const articles = await prisma.knowledgeBaseArticle.findMany({
       orderBy: { updatedAt: 'desc' },
@@ -69,6 +73,7 @@ export async function getArticles() {
 }
 
 export async function getArticleById(id: string) {
+  await requireServerActionAuth({ permissions: ["knowledge.view"] })
   try {
     const article = await prisma.knowledgeBaseArticle.findUnique({
       where: { id },
@@ -97,27 +102,29 @@ export async function getArticleById(id: string) {
 }
 
 export async function incrementArticleViews(id: string) {
+  await requireServerActionAuth({ permissions: ["knowledge.view"] })
   try {
     const article = await prisma.knowledgeBaseArticle.update({
       where: { id },
       data: {
         viewCount: { increment: 1 },
-        updatedAt: new Date()
       }
     })
-    revalidatePath('/knowledge')
-    revalidatePath(`/knowledge/${id}`)
+    const now = Date.now()
+    const lastRevalidateAt = articleViewRevalidateTracker.get(id) ?? 0
+    if (now - lastRevalidateAt >= VIEW_REVALIDATE_THROTTLE_MS) {
+      articleViewRevalidateTracker.set(id, now)
+      revalidatePath(`/knowledge/${id}`)
+    }
     return article
   } catch (error) {
     console.error('Error incrementing article views:', error)
-    // Fallback: just revalidate
-    revalidatePath('/knowledge')
-    revalidatePath(`/knowledge/${id}`)
     throw new Error('Failed to increment views')
   }
 }
 
 export async function createArticle(data: ArticleInput) {
+  const currentUser = await requireServerActionAuth({ permissions: ["knowledge.create"] })
   // Validate required fields
   if (!data.title.trim()) {
     throw new Error("Title is required")
@@ -129,8 +136,7 @@ export async function createArticle(data: ArticleInput) {
     throw new Error("Category is required")
   }
 
-  // TODO: replace with actual user ID from session
-  const authorId = 'demo-admin' // temporary
+  const authorId = currentUser.id
 
   try {
     const article = await prisma.knowledgeBaseArticle.create({
@@ -164,6 +170,7 @@ export async function createArticle(data: ArticleInput) {
 }
 
 export async function updateArticle(id: string, data: Partial<ArticleInput>) {
+  await requireServerActionAuth({ permissions: ["knowledge.update"] })
   try {
     const updateData: any = {}
     if (data.title !== undefined) updateData.title = data.title.trim()
@@ -196,6 +203,7 @@ export async function updateArticle(id: string, data: Partial<ArticleInput>) {
 }
 
 export async function deleteArticle(id: string) {
+  await requireServerActionAuth({ permissions: ["knowledge.delete"] })
   try {
     await prisma.knowledgeBaseArticle.delete({
       where: { id }
@@ -206,25 +214,6 @@ export async function deleteArticle(id: string) {
     console.error('Error deleting article:', error)
     throw new Error('Failed to delete article')
   }
-}
-
-async function ensureKnowledgeFeedbackTable() {
-  await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS "knowledge_article_feedback" (
-      "id" TEXT PRIMARY KEY,
-      "article_id" TEXT NOT NULL,
-      "type" TEXT NOT NULL,
-      "content" TEXT NOT NULL,
-      "user_id" TEXT,
-      "user_name" TEXT,
-      "user_email" TEXT,
-      "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `)
-  await prisma.$executeRawUnsafe(`
-    CREATE INDEX IF NOT EXISTS "knowledge_article_feedback_article_id_idx"
-    ON "knowledge_article_feedback"("article_id")
-  `)
 }
 
 export type KnowledgeFeedbackItem = {
@@ -239,10 +228,9 @@ export type KnowledgeFeedbackItem = {
 }
 
 export async function getArticleFeedback(articleId: string): Promise<KnowledgeFeedbackItem[]> {
+  await requireServerActionAuth({ permissions: ["knowledge.view"] })
   try {
-    await ensureKnowledgeFeedbackTable()
-    const rows = await prisma.$queryRawUnsafe<Array<any>>(
-      `
+    const rows = await prisma.$queryRaw<Array<any>>`
       SELECT
         "id",
         "article_id" AS "articleId",
@@ -253,11 +241,10 @@ export async function getArticleFeedback(articleId: string): Promise<KnowledgeFe
         "user_email" AS "userEmail",
         "created_at" AS "createdAt"
       FROM "knowledge_article_feedback"
-      WHERE "article_id" = $1
+      WHERE "article_id" = ${articleId}
+        AND "type" IN ('ISSUE', 'COMMENT')
       ORDER BY "created_at" DESC
-      `,
-      articleId
-    )
+      `
 
     return rows.map((row) => ({
       ...row,
@@ -314,7 +301,46 @@ async function notifyKnowledgeIssueReported(articleId: string, articleTitle: str
 }
 
 export async function markArticleHelpful(id: string) {
+  await requireServerActionAuth({ permissions: ["knowledge.view"] })
   try {
+    const session = await getServerSession(authOptions)
+    const userId = session?.user?.id
+    if (!userId) {
+      return { success: false as const, message: "You must be logged in to mark as helpful" }
+    }
+
+    const existingHelpful = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "knowledge_article_feedback"
+      WHERE "article_id" = ${id}
+        AND "user_id" = ${userId}
+        AND "type" = 'HELPFUL'
+      LIMIT 1
+      `
+
+    if (existingHelpful.length > 0) {
+      await prisma.$executeRaw`
+        DELETE FROM "knowledge_article_feedback"
+        WHERE "id" = ${existingHelpful[0].id}
+        `
+      await prisma.knowledgeBaseArticle.update({
+        where: { id },
+        data: {
+          helpfulCount: { decrement: 1 },
+          updatedAt: new Date(),
+        },
+      })
+      revalidatePath("/knowledge")
+      revalidatePath(`/knowledge/${id}`)
+      return { success: true as const, marked: false as const }
+    }
+
+    await prisma.$executeRaw`
+      INSERT INTO "knowledge_article_feedback"
+        ("id", "article_id", "type", "content", "user_id", "user_name", "user_email")
+      VALUES (${crypto.randomUUID()}, ${id}, 'HELPFUL', ${"helpful_vote"}, ${userId}, ${session?.user?.name || null}, ${session?.user?.email || null})
+      `
+
     await prisma.knowledgeBaseArticle.update({
       where: { id },
       data: {
@@ -324,7 +350,7 @@ export async function markArticleHelpful(id: string) {
     })
     revalidatePath("/knowledge")
     revalidatePath(`/knowledge/${id}`)
-    return { success: true as const }
+    return { success: true as const, marked: true as const }
   } catch (error) {
     console.error("Error marking article as helpful:", error)
     return { success: false as const, message: "Failed to mark article as helpful" }
@@ -332,6 +358,7 @@ export async function markArticleHelpful(id: string) {
 }
 
 export async function reportArticleIssue(id: string, content?: string) {
+  await requireServerActionAuth({ permissions: ["knowledge.view"] })
   try {
     const session = await getServerSession(authOptions)
     const article = await prisma.knowledgeBaseArticle.findUnique({
@@ -343,20 +370,11 @@ export async function reportArticleIssue(id: string, content?: string) {
     }
 
     if (content && content.trim().length > 0) {
-      await ensureKnowledgeFeedbackTable()
-      await prisma.$executeRawUnsafe(
-        `
+      await prisma.$executeRaw`
         INSERT INTO "knowledge_article_feedback"
           ("id", "article_id", "type", "content", "user_id", "user_name", "user_email")
-        VALUES ($1, $2, 'ISSUE', $3, $4, $5, $6)
-        `,
-        crypto.randomUUID(),
-        id,
-        content.trim(),
-        session?.user?.id || null,
-        session?.user?.name || null,
-        session?.user?.email || null
-      )
+        VALUES (${crypto.randomUUID()}, ${id}, 'ISSUE', ${content.trim()}, ${session?.user?.id || null}, ${session?.user?.name || null}, ${session?.user?.email || null})
+        `
       await notifyKnowledgeIssueReported(
         article.id,
         article.title,
@@ -382,6 +400,7 @@ export async function reportArticleIssue(id: string, content?: string) {
 }
 
 export async function addArticleComment(id: string, content: string) {
+  await requireServerActionAuth({ permissions: ["knowledge.view"] })
   try {
     const clean = content.trim()
     if (!clean) {
@@ -389,20 +408,11 @@ export async function addArticleComment(id: string, content: string) {
     }
 
     const session = await getServerSession(authOptions)
-    await ensureKnowledgeFeedbackTable()
-    await prisma.$executeRawUnsafe(
-      `
+    await prisma.$executeRaw`
       INSERT INTO "knowledge_article_feedback"
         ("id", "article_id", "type", "content", "user_id", "user_name", "user_email")
-      VALUES ($1, $2, 'COMMENT', $3, $4, $5, $6)
-      `,
-      crypto.randomUUID(),
-      id,
-      clean,
-      session?.user?.id || null,
-      session?.user?.name || null,
-      session?.user?.email || null
-    )
+      VALUES (${crypto.randomUUID()}, ${id}, 'COMMENT', ${clean}, ${session?.user?.id || null}, ${session?.user?.name || null}, ${session?.user?.email || null})
+      `
 
     revalidatePath("/knowledge")
     revalidatePath(`/knowledge/${id}`)
@@ -413,8 +423,31 @@ export async function addArticleComment(id: string, content: string) {
   }
 }
 
+export async function hasUserMarkedArticleHelpful(articleId: string): Promise<boolean> {
+  await requireServerActionAuth({ permissions: ["knowledge.view"] })
+  try {
+    const session = await getServerSession(authOptions)
+    const userId = session?.user?.id
+    if (!userId) return false
+
+    const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "knowledge_article_feedback"
+      WHERE "article_id" = ${articleId}
+        AND "user_id" = ${userId}
+        AND "type" = 'HELPFUL'
+      LIMIT 1
+      `
+    return rows.length > 0
+  } catch (error) {
+    console.error("Error checking helpful status:", error)
+    return false
+  }
+}
+
 // Statistics functions (optional)
 export async function getKnowledgeStats() {
+  await requireServerActionAuth({ permissions: ["knowledge.view"] })
   try {
     const articles = await prisma.knowledgeBaseArticle.findMany({
       select: {

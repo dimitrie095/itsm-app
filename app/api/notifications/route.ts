@@ -1,86 +1,97 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { checkApiAuth } from "@/lib/api-auth"
+import { withAuth } from "@/lib/auth/middleware"
+import { apiError, apiSuccess } from "@/lib/api-response"
 
 export async function GET(request: NextRequest) {
   try {
-    const authResult = await checkApiAuth(request, undefined, [])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const authResult = await withAuth()(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
     const userId = authResult.user?.id
     if (!userId) {
-      return NextResponse.json({ error: "User not found" }, { status: 401 })
+      return apiError("User not found", 401)
     }
 
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get("limit") || "50")
     const unreadOnly = searchParams.get("unreadOnly") === "true"
+    const summary = searchParams.get("summary") === "true"
 
-    const whereClause: any = { userId }
+    const whereClause: { userId: string; read?: boolean } = { userId }
     if (unreadOnly) {
       whereClause.read = false
     }
 
-    const notifications = await prisma.notification.findMany({
+    const notifications = await (prisma as any).notification.findMany({
       where: whereClause,
       orderBy: { createdAt: "desc" },
       take: Math.min(limit, 100),
+      select: summary
+        ? {
+            id: true,
+            title: true,
+            message: true,
+            type: true,
+            read: true,
+            createdAt: true,
+            metadata: true,
+          }
+        : undefined,
     })
 
-    return NextResponse.json({ notifications })
+    const unreadCount = await (prisma as any).notification.count({
+      where: { userId, read: false },
+    })
+
+    return apiSuccess({ notifications, unreadCount })
   } catch (error) {
     console.error("Error fetching notifications:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch notifications" },
-      { status: 500 }
-    )
+    return apiError("Failed to fetch notifications", 500)
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
-    const authResult = await checkApiAuth(request, undefined, [])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const authResult = await withAuth()(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
     const userId = authResult.user?.id
     if (!userId) {
-      return NextResponse.json({ error: "User not found" }, { status: 401 })
+      return apiError("User not found", 401)
     }
 
     const body = await request.json()
     const { notificationId, markAllAsRead } = body
 
     if (markAllAsRead) {
-      const result = await prisma.notification.updateMany({
+      const result = await (prisma as any).notification.updateMany({
         where: { userId, read: false },
         data: { read: true, readAt: new Date() },
       })
-      return NextResponse.json({ updatedCount: result.count })
+      return apiSuccess({ updatedCount: result.count })
     }
 
     if (notificationId) {
       // Verify the notification belongs to the user
-      const notification = await prisma.notification.findFirst({
+      const notification = await (prisma as any).notification.findFirst({
         where: { id: notificationId, userId },
       })
       if (!notification) {
-        return NextResponse.json({ error: "Notification not found" }, { status: 404 })
+        return apiError("Notification not found", 404)
       }
-      const updated = await prisma.notification.update({
+      const updated = await (prisma as any).notification.update({
         where: { id: notificationId },
         data: { read: true, readAt: new Date() },
       })
-      return NextResponse.json(updated)
+      return apiSuccess(updated)
     }
 
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 })
+    return apiError("Invalid request", 400)
   } catch (error) {
     console.error("Error updating notifications:", error)
-    return NextResponse.json(
-      { error: "Failed to update notifications" },
-      { status: 500 }
-    )
+    return apiError("Failed to update notifications", 500)
   }
 }

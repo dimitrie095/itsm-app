@@ -2,7 +2,8 @@
 
 import { prisma } from "@/lib/prisma"
 import { Role } from "@/lib/generated/prisma/enums"
-import { initializePermissions } from "../actions"
+import { ensurePermissionsBootstrap } from "../actions"
+import { requireServerActionAuth } from "@/lib/auth/server-actions"
 
 export interface PermissionMatrixData {
   categories: Array<{
@@ -31,6 +32,7 @@ export interface PermissionMatrixData {
 }
 
 export async function getPermissionMatrix(): Promise<PermissionMatrixData> {
+  await requireServerActionAuth({ permissions: ["roles.view"] })
   // Skip database queries during build
   if (process.env.IS_BUILD || process.env.SKIP_DB_INIT) {
     return {
@@ -42,8 +44,8 @@ export async function getPermissionMatrix(): Promise<PermissionMatrixData> {
   }
   
   try {
-    // Initialize permissions if needed
-    await initializePermissions()
+    // Initialize permissions bootstrap without requiring roles.update each request.
+    await ensurePermissionsBootstrap()
 
     const [categories, permissions, customRoles, rolePermissions] = await Promise.all([
       prisma.permissionCategory.findMany({
@@ -169,6 +171,7 @@ export async function bulkUpdatePermissions(
     granted: boolean
   }>
 ) {
+  await requireServerActionAuth({ permissions: ["roles.update"] })
   try {
     // Separate updates by role type (standard vs custom)
     const standardUpdates = updates.filter(update => 

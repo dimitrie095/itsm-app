@@ -13,7 +13,6 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { getDashboardData } from "./dashboard-actions"
 import { getEndUserDashboardData } from "./enduser-dashboard-actions"
-import { prisma } from "@/lib/prisma"
 
 // Hilfsfunktion zum Berechnen der relativen Zeit
 function timeAgo(dateString: string): string {
@@ -114,17 +113,7 @@ export default async function DashboardPage() {
     redirect('/unauthorized')
   }
 
-  let mustChangePassword = Boolean((session.user as { mustChangePassword?: boolean }).mustChangePassword)
-  if (session.user?.id) {
-    try {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: session.user.id },
-      })
-      mustChangePassword = Boolean((dbUser as any)?.mustChangePassword)
-    } catch (_error) {
-      // Keep session fallback if schema/client is temporarily behind.
-    }
-  }
+  const mustChangePassword = Boolean((session.user as { mustChangePassword?: boolean }).mustChangePassword)
 
   if (mustChangePassword) {
     redirect("/reset-initial-password")
@@ -201,8 +190,8 @@ async function EndUserDashboard({ session }: { session: any }) {
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Welcome back, {displayName}!</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">Here's your support dashboard</p>
+        <h1 className="text-[20px] font-bold tracking-tight">Welcome back, {displayName}!</h1>
+        <p className="text-muted-foreground text-[15px]">Here's your support dashboard</p>
       </div>
       
       {/* Quick Actions */}
@@ -240,13 +229,13 @@ async function EndUserDashboard({ session }: { session: any }) {
           return (
             <Card key={stat.label} className="overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6">
-                <CardTitle className="text-xs sm:text-sm font-medium">{stat.label}</CardTitle>
+                <CardTitle className="text-[15px] font-medium">{stat.label}</CardTitle>
                 <div className={`p-1.5 sm:p-2 rounded-full ${stat.bgColor}`}>
                   <Icon className={`h-3 w-3 sm:h-4 sm:w-4 ${stat.color}`} />
                 </div>
               </CardHeader>
               <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-                <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
+                <div className="text-[20px] font-bold">{stat.value}</div>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
                   {stat.label === "Avg. Resolution Time" ? (
                     <Badge variant="outline" className={`text-xs ${stats.withinSLA ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"}`}>
@@ -266,8 +255,8 @@ async function EndUserDashboard({ session }: { session: any }) {
         {/* My Recent Tickets */}
         <Card className="lg:col-span-2">
           <CardHeader className="px-4 sm:px-6">
-            <CardTitle className="text-lg sm:text-xl">My Recent Tickets</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">Your most recent support requests.</CardDescription>
+            <CardTitle className="text-[20px]">My Recent Tickets</CardTitle>
+            <CardDescription className="text-[13px]">Your most recent support requests.</CardDescription>
           </CardHeader>
           <CardContent className="px-0 sm:px-0">
             <RecentTicketsTable tickets={transformedRecentTickets} showAssignee={false} />
@@ -282,8 +271,8 @@ async function EndUserDashboard({ session }: { session: any }) {
         {/* Knowledge Base */}
         <Card>
           <CardHeader className="px-4 sm:px-6">
-            <CardTitle className="text-lg sm:text-xl">Knowledge Base</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">Helpful articles you might need.</CardDescription>
+            <CardTitle className="text-[20px]">Knowledge Base</CardTitle>
+            <CardDescription className="text-[13px]">Helpful articles you might need.</CardDescription>
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
             <div className="space-y-3 sm:space-y-4">
@@ -402,15 +391,15 @@ async function AdminAgentDashboard({ session }: { session: any }) {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">Welcome back! Here&apos;s what&apos;s happening with your IT service management.</p>
+          <h1 className="text-[20px] font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground text-[15px]">Welcome back! Here&apos;s what&apos;s happening with your IT service management.</p>
         </div>
         <div className="flex flex-row items-end gap-2 w-50 sm:w-auto">
-          <Button asChild className="w-30 sm:w-25 px-2 sm:px-2 py-1.5 h-9 text-xs sm:text-xs whitespace-nowrap min-w-0">
+          <Button asChild className="w-30 sm:w-25 px-2 sm:px-2 py-1.5 h-9 !text-[14px] whitespace-nowrap min-w-0">
             <Link href="/tickets/new">New Ticket</Link>
           </Button>
           {canCreateReport && (
-            <Button variant="outline" asChild className="w-30 sm:w-30 px-2 sm:px-2 py-1.5 h-9 text-xs sm:text-xs whitespace-nowrap min-w-0">
+            <Button variant="outline" asChild className="w-30 sm:w-30 px-2 sm:px-2 py-1.5 h-9 !text-[14px] whitespace-nowrap min-w-0">
               <Link href="/reports/new">Generate Report</Link>
             </Button>
           )}
@@ -424,13 +413,13 @@ async function AdminAgentDashboard({ session }: { session: any }) {
           return (
             <Card key={stat.label} className="overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6">
-                <CardTitle className="text-xs sm:text-sm font-medium">{stat.label}</CardTitle>
+                <CardTitle className="text-[15px] font-medium">{stat.label}</CardTitle>
                 <div className={`p-1.5 sm:p-2 rounded-full ${stat.bgColor}`}>
                   <Icon className={`h-3 w-3 sm:h-4 sm:w-4 ${stat.color}`} />
                 </div>
               </CardHeader>
               <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-                <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
+                <div className="text-[20px] font-bold">{stat.value}</div>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
                   {stat.change.startsWith('+') ? (
                     <ArrowUp className="mr-1 h-3 w-3 text-green-600" />
@@ -449,8 +438,8 @@ async function AdminAgentDashboard({ session }: { session: any }) {
         {/* Recent Tickets */}
         <Card className="lg:col-span-2">
           <CardHeader className="px-4 sm:px-6">
-            <CardTitle className="text-lg sm:text-xl">Recent Tickets</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">Latest tickets that need attention.</CardDescription>
+            <CardTitle className="text-[20px]">Recent Tickets</CardTitle>
+            <CardDescription className="text-[13px]">Latest tickets that need attention.</CardDescription>
           </CardHeader>
           <CardContent className="px-0 sm:px-0">
             <RecentTicketsTable tickets={recentTickets} showAssignee={true} />
@@ -465,8 +454,8 @@ async function AdminAgentDashboard({ session }: { session: any }) {
         {/* SLA Compliance */}
         <Card>
           <CardHeader className="px-4 sm:px-6">
-            <CardTitle className="text-lg sm:text-xl">SLA Compliance</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">Service Level Agreement performance.</CardDescription>
+            <CardTitle className="text-[20px]">SLA Compliance</CardTitle>
+            <CardDescription className="text-[13px]">Service Level Agreement performance.</CardDescription>
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
             <div className="space-y-3 sm:space-y-4">
@@ -510,7 +499,7 @@ async function AdminAgentDashboard({ session }: { session: any }) {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <p className="text-xs sm:text-sm font-medium">Average Response Time</p>
-                  <p className="text-xl sm:text-2xl font-bold">{averageResponseTime} min</p>
+                  <p className="text-[20px] font-bold">{averageResponseTime} min</p>
                 </div>
                 <Badge variant="outline" className={`text-xs sm:text-sm ${isWithinSLA ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"}`}>
                   {isWithinSLA ? "Within SLA" : "Outside SLA"}
@@ -524,8 +513,8 @@ async function AdminAgentDashboard({ session }: { session: any }) {
       {/* Knowledge Base Highlights */}
       <Card>
         <CardHeader className="px-4 sm:px-6">
-          <CardTitle className="text-lg sm:text-xl">Knowledge Base Highlights</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">Most viewed articles this week.</CardDescription>
+          <CardTitle className="text-[20px]">Knowledge Base Highlights</CardTitle>
+          <CardDescription className="text-[13px]">Most viewed articles this week.</CardDescription>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
           <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">

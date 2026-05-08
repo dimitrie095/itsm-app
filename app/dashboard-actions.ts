@@ -1,5 +1,7 @@
 "use server"
 
+import { computeSlaSnapshot } from "@/lib/sla"
+
 
 
 // SLA-Daten aus Datenbank lesen
@@ -71,11 +73,20 @@ function calculateSLACompliance(tickets: any[], slas: any[]) {
       }
     }
     
-    // Für Demo: Angenommen, Tickets sind innerhalb der SLA wenn sie "Resolved" oder "Closed" sind
-    // In einer realen App würde man firstResponseAt und resolvedAt mit responseTime/resolutionTime vergleichen
-    const compliantTickets = priorityTickets.filter(ticket => 
-      ticket.status === 'Resolved' || ticket.status === 'Closed'
-    ).length
+    const compliantTickets = priorityTickets.filter(ticket => {
+      const snapshot = computeSlaSnapshot({
+        createdAt: new Date(ticket.createdAt),
+        firstResponseAt: ticket.firstResponseAt ? new Date(ticket.firstResponseAt) : null,
+        resolvedAt: ticket.resolvedAt ? new Date(ticket.resolvedAt) : null,
+        status: ticket.rawStatus,
+        priority: ticket.rawPriority,
+        policy: {
+          responseTime: sla.responseTime,
+          resolutionTime: sla.resolutionTime,
+        },
+      })
+      return snapshot.responseState !== "breached" && snapshot.resolutionState !== "breached"
+    }).length
     
     const actual = Math.round((compliantTickets / totalTickets) * 100)
     
@@ -92,34 +103,23 @@ function calculateSLACompliance(tickets: any[], slas: any[]) {
 }
 
 // Durchschnittliche Antwortzeit berechnen
-function calculateAverageResponseTime(tickets: any[]) {
-  // Für Demo: Angenommene Antwortzeit basierend auf Ticket-Status
-  // In einer realen App würde man firstResponseAt - createdAt berechnen
-  const respondedTickets = tickets.filter(ticket => 
-    ticket.status !== 'New' && ticket.status !== 'Assigned'
-  )
-  
+function calculateAverageResponseTime(tickets: any[], slas: any[]) {
+  const respondedTickets = tickets.filter(ticket => ticket.firstResponseAt)
+
   if (respondedTickets.length === 0) {
-    return { average: 24, withinSLA: true } // Default für Demo
+    return { average: 0, withinSLA: true }
   }
-  
-  // Simulierte Antwortzeiten basierend auf Priorität
-  let totalResponseTime = 0
-  respondedTickets.forEach(ticket => {
-    switch (ticket.priority.toUpperCase()) {
-      case 'CRITICAL': totalResponseTime += 15; break // 15 Minuten
-      case 'HIGH': totalResponseTime += 45; break // 45 Minuten
-      case 'MEDIUM': totalResponseTime += 120; break // 2 Stunden
-      case 'LOW': totalResponseTime += 360; break // 6 Stunden
-      default: totalResponseTime += 60; break // 1 Stunde
-    }
-  })
-  
+
+  const totalResponseTime = respondedTickets.reduce((sum, ticket) => {
+    const created = new Date(ticket.createdAt).getTime()
+    const firstResponse = new Date(ticket.firstResponseAt).getTime()
+    return sum + Math.max(0, Math.round((firstResponse - created) / 60000))
+  }, 0)
+
   const average = Math.round(totalResponseTime / respondedTickets.length)
-  
-  // Annahme: Innerhalb der SLA wenn < 60 Minuten für alle außer Critical
-  const withinSLA = average < 60 || (average < 15 && respondedTickets.some(t => t.priority === 'CRITICAL'))
-  
+  const defaultMediumSla = slas.find((s) => s.priority === "MEDIUM")?.responseTime ?? 240
+  const withinSLA = average <= defaultMediumSla
+
   return { average, withinSLA }
 }
 
@@ -145,30 +145,52 @@ export async function getDashboardData() {
     }
   }
   
-  // Tickets aus Datenbank lesen
   const { prisma } = await import('@/lib/prisma')
-  const dbTickets = await prisma.ticket.findMany({
-    include: {
-      assignedTo: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        }
+  const [dbTickets, articles, slas, userCount, managedAssets] = await Promise.all([
+    prisma.ticket.findMany({
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        priority: true,
+        status: true,
+        assignedToId: true,
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        createdAt: true,
+        updatedAt: true,
+        firstResponseAt: true,
+        resolvedAt: true,
       },
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          department: true,
-        }
-      }
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  })
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    }),
+    prisma.knowledgeBaseArticle.findMany({
+      where: { isPublished: true },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        viewCount: true,
+        helpfulCount: true,
+        isPublished: true,
+        createdAt: true,
+        updatedAt: true,
+        authorId: true,
+        tags: true,
+      },
+      take: 200,
+    }),
+    getSLAFromDatabase(),
+    prisma.user.count(),
+    prisma.asset.count(),
+  ])
   
   // Transform tickets to match the expected JSON shape
   const tickets = dbTickets.map(ticket => {
@@ -184,33 +206,20 @@ export async function getDashboardData() {
       description: ticket.description,
       category: ticket.category || 'other',
       priority,
-      customer: ticket.user?.name || ticket.user?.email || 'Unknown',
-      email: ticket.user?.email || '',
-      department: ticket.user?.department || 'Unknown',
+      rawPriority: ticket.priority,
+      customer: 'Unknown',
+      email: '',
+      department: 'Unknown',
       status: ticket.status.charAt(0) + ticket.status.slice(1).toLowerCase(), // Capitalize first letter
+      rawStatus: ticket.status,
       assignedTo: ticket.assignedTo?.name || ticket.assignedTo?.email || 'Unassigned',
       sla,
       createdAt: ticket.createdAt.toISOString(),
       updatedAt: ticket.updatedAt.toISOString(),
+      firstResponseAt: ticket.firstResponseAt ? ticket.firstResponseAt.toISOString() : null,
+      resolvedAt: ticket.resolvedAt ? ticket.resolvedAt.toISOString() : null,
       // Keep original database ticket for popup
       original: ticket
-    }
-  })
-  
-  // Artikel aus Datenbank lesen (use existing prisma instance)
-  const articles = await prisma.knowledgeBaseArticle.findMany({
-    where: { isPublished: true },
-    select: {
-      id: true,
-      title: true,
-      category: true,
-      viewCount: true,
-      helpfulCount: true,
-      isPublished: true,
-      createdAt: true,
-      updatedAt: true,
-      authorId: true,
-      tags: true,
     }
   })
   
@@ -221,17 +230,11 @@ export async function getDashboardData() {
     helpful: article.helpfulCount,
   }))
   
-  // SLA-Daten aus Datenbank lesen
-  const slas = await getSLAFromDatabase()
-  
   // SLA-Compliance berechnen
   const slaCompliance = calculateSLACompliance(tickets, slas)
   
   // Durchschnittliche Antwortzeit berechnen
-  const responseTime = calculateAverageResponseTime(tickets)
-  
-  // User-Anzahl aus Datenbank
-  const userCount = await prisma.user.count()
+  const responseTime = calculateAverageResponseTime(tickets, slas)
   
   // Sortiere Tickets nach Datum (neueste zuerst) - already sorted by query
   const sortedTickets = tickets
@@ -243,9 +246,6 @@ export async function getDashboardData() {
   const openTickets = dbTickets.filter(ticket => 
     ticket.status === 'NEW' || ticket.status === 'ASSIGNED' || ticket.status === 'IN_PROGRESS'
   ).length
-  
-  // Assets count from database
-  const managedAssets = await prisma.asset.count()
   
   return {
     tickets: sortedTickets,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,15 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Shuffle } from "lucide-react";
 import Link from "next/link";
-
-const competenceCenters = [
-  "IT",
-  "Core Solutions",
-  "Analytical Solutions",
-  "Business Technologies",
-  "Data & AI Solutions",
-  "Innovation Lab",
-];
+import { competenceCenters } from "../competence-centers";
 
 const roles = [
   { value: "END_USER", label: "End User" },
@@ -26,9 +18,15 @@ const roles = [
   { value: "ADMIN", label: "Admin" },
 ];
 
+interface CustomRoleOption {
+  id: string;
+  name: string;
+}
+
 export default function NewUserPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [customRoles, setCustomRoles] = useState<CustomRoleOption[]>([]);
   const [formData, setFormData] = useState({
     email: "",
     name: "",
@@ -37,6 +35,21 @@ export default function NewUserPage() {
     password: "",
     confirmPassword: "",
   });
+
+  const fetchRoleOptions = async () => {
+    try {
+      const response = await fetch("/api/users/role-options", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json();
+      setCustomRoles(Array.isArray(data?.customRoles) ? data.customRoles : []);
+    } catch (error) {
+      console.error("Error loading role options:", error);
+    }
+  };
+
+  useEffect(() => {
+    void fetchRoleOptions();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -74,6 +87,8 @@ export default function NewUserPage() {
     setLoading(true);
     
     try {
+      const isCustomRoleSelection = formData.role.startsWith("CUSTOM:");
+      const selectedCustomRoleId = isCustomRoleSelection ? formData.role.replace("CUSTOM:", "") : undefined;
       const response = await fetch("/api/users", {
         method: "POST",
         headers: {
@@ -82,7 +97,8 @@ export default function NewUserPage() {
         body: JSON.stringify({
           email: formData.email,
           name: formData.name || undefined,
-          role: formData.role,
+          role: isCustomRoleSelection ? "CUSTOM" : formData.role,
+          customRoleId: selectedCustomRoleId,
           department: formData.department === "none" ? undefined : formData.department,
           password: formData.password,
         }),
@@ -184,6 +200,11 @@ export default function NewUserPage() {
                     {roles.map((role) => (
                       <SelectItem key={role.value} value={role.value}>
                         {role.label}
+                      </SelectItem>
+                    ))}
+                    {customRoles.map((role) => (
+                      <SelectItem key={role.id} value={`CUSTOM:${role.id}`}>
+                        Custom: {role.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

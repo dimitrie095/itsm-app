@@ -1,6 +1,6 @@
 import { PrismaClient } from './lib/generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaSQLite } from '@prisma/adapter-better-sqlite3'
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import dotenv from 'dotenv'
 
 dotenv.config()
@@ -14,7 +14,7 @@ if (databaseUrl.startsWith('postgresql://')) {
   adapter = new PrismaPg({ connectionString: databaseUrl })
 } else if (databaseUrl.startsWith('file:')) {
   console.log('Using SQLite adapter')
-  adapter = new PrismaSQLite({ connectionString: databaseUrl })
+  adapter = new PrismaBetterSqlite3({ url: databaseUrl.replace('file:', '') })
 } else {
   throw new Error('Unsupported database URL')
 }

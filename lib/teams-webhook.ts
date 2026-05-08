@@ -1,4 +1,5 @@
 import { prisma } from "./prisma"
+import { decryptSecret } from "./security/secrets"
 
 type TeamsMessagePayload = {
   title: string
@@ -12,6 +13,29 @@ type TeamsConfig = {
   webhookUrl?: string
 }
 
+function isPrivateOrLocalHost(hostname: string) {
+  const normalized = hostname.toLowerCase()
+  if (normalized === "localhost" || normalized.endsWith(".local")) return true
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(normalized)) {
+    const parts = normalized.split(".").map(Number)
+    return (
+      parts[0] === 10 ||
+      parts[0] === 127 ||
+      (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+      (parts[0] === 192 && parts[1] === 168) ||
+      (parts[0] === 169 && parts[1] === 254)
+    )
+  }
+  return false
+}
+
+function sanitizeText(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+}
+
 async function getTeamsConfig(): Promise<TeamsConfig | null> {
   try {
     const integration = await prisma.integrationConfig.findUnique({
@@ -20,11 +44,12 @@ async function getTeamsConfig(): Promise<TeamsConfig | null> {
 
     if (integration?.enabled) {
       const cfg = JSON.parse(integration.config || "{}")
+      const webhookUrl = decryptSecret(cfg.webhookUrl)
       return {
         enabled: integration.enabled,
         organizationName: cfg.organizationName,
         channelName: cfg.channelName,
-        webhookUrl: cfg.webhookUrl,
+        webhookUrl,
       }
     }
   } catch (error) {
@@ -48,23 +73,31 @@ export async function sendTeamsMessage(payload: TeamsMessagePayload) {
   if (!cfg?.enabled || !cfg.webhookUrl) {
     return { sent: false as const, reason: "missing_teams_config" as const }
   }
+  let webhook: URL
+  try {
+    webhook = new URL(cfg.webhookUrl)
+  } catch {
+    return { sent: false as const, reason: "invalid_teams_config" as const }
+  }
+  if (webhook.protocol !== "https:" || isPrivateOrLocalHost(webhook.hostname)) {
+    return { sent: false as const, reason: "invalid_teams_config" as const }
+  }
 
-  const response = await fetch(cfg.webhookUrl, {
+  const response = await fetch(webhook.toString(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       "@type": "MessageCard",
       "@context": "http://schema.org/extensions",
-      summary: payload.title,
+      summary: sanitizeText(payload.title),
       themeColor: "0073d2",
-      title: payload.title,
-      text: payload.text,
+      title: sanitizeText(payload.title),
+      text: sanitizeText(payload.text),
     }),
   })
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "")
-    throw new Error(`Teams webhook failed (${response.status}): ${body}`)
+    throw new Error(`Teams webhook failed (${response.status})`)
   }
 
   return { sent: true as const }

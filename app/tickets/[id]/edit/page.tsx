@@ -29,7 +29,7 @@ export default async function TicketEditPage({ params, searchParams }: PageProps
     redirect("/unauthorized")
   }
 
-  let ticket: Awaited<ReturnType<typeof prisma.ticket.findUnique>> | null = null
+  let ticket: any = null
   let additionalAssignees: Array<{ user: { id: string; name: string | null; email: string; role: Role } }> = []
 
   try {
@@ -65,7 +65,7 @@ export default async function TicketEditPage({ params, searchParams }: PageProps
           },
           orderBy: { createdAt: "asc" },
         },
-      },
+      } as any,
     })
   } catch {
     ticket = await prisma.ticket.findUnique({
@@ -129,14 +129,14 @@ export default async function TicketEditPage({ params, searchParams }: PageProps
         updatedAt: ticket.updatedAt.toISOString(),
         asset: ticket.asset,
         sla: ticket.sla,
-        comments: ticket.comments.map((comment) => ({
+        comments: ticket.comments.map((comment: any) => ({
           id: comment.id,
           content: comment.content,
           isInternal: comment.isInternal,
           createdAt: comment.createdAt.toISOString(),
           user: comment.user,
         })),
-        additionalAssignees: (ticket as typeof ticket & { additionalAssignees?: typeof additionalAssignees }).additionalAssignees?.map((entry) => ({
+        additionalAssignees: (ticket as typeof ticket & { additionalAssignees?: typeof additionalAssignees }).additionalAssignees?.map((entry: any) => ({
           id: entry.user.id,
           name: entry.user.name,
           email: entry.user.email,

@@ -8,19 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-
-const departments = [
-  "IT",
-  "Support",
-  "Sales",
-  "Marketing",
-  "HR",
-  "Finance",
-  "Operations",
-  "Engineering",
-  "Product",
-  "Other",
-];
+import { competenceCenters } from "../competence-centers";
 
 const roles = [
   { value: "END_USER", label: "End User" },
@@ -28,11 +16,17 @@ const roles = [
   { value: "ADMIN", label: "Admin" },
 ];
 
+interface CustomRoleOption {
+  id: string;
+  name: string;
+}
+
 interface User {
   id: string;
   email: string;
   name: string | null;
   role: string;
+  customRole?: { id: string; name: string } | null;
   department: string | null;
   createdAt: string;
   avatarUrl: string | null;
@@ -47,10 +41,11 @@ interface UserEditDialogProps {
 
 export function UserEditDialog({ user, open, onOpenChange, onUserUpdated }: UserEditDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [customRoles, setCustomRoles] = useState<CustomRoleOption[]>([]);
   const [formData, setFormData] = useState({
     name: user.name || "",
     email: user.email,
-    role: user.role,
+    role: user.role === "CUSTOM" && user.customRole ? `CUSTOM:${user.customRole.id}` : user.role,
     department: user.department || "none",
   });
 
@@ -59,10 +54,25 @@ export function UserEditDialog({ user, open, onOpenChange, onUserUpdated }: User
     setFormData({
       name: user.name || "",
       email: user.email,
-      role: user.role,
+      role: user.role === "CUSTOM" && user.customRole ? `CUSTOM:${user.customRole.id}` : user.role,
       department: user.department || "none",
     });
   }, [user]);
+
+  useEffect(() => {
+    if (!open) return;
+    const fetchRoleOptions = async () => {
+      try {
+        const response = await fetch("/api/users/role-options", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        setCustomRoles(Array.isArray(data?.customRoles) ? data.customRoles : []);
+      } catch (error) {
+        console.error("Error loading role options:", error);
+      }
+    };
+    void fetchRoleOptions();
+  }, [open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -78,6 +88,8 @@ export function UserEditDialog({ user, open, onOpenChange, onUserUpdated }: User
     setLoading(true);
 
     try {
+      const isCustomRoleSelection = formData.role.startsWith("CUSTOM:");
+      const selectedCustomRoleId = isCustomRoleSelection ? formData.role.replace("CUSTOM:", "") : undefined;
       const response = await fetch(`/api/users/${user.id}`, {
         method: "PATCH",
         headers: {
@@ -86,7 +98,8 @@ export function UserEditDialog({ user, open, onOpenChange, onUserUpdated }: User
         body: JSON.stringify({
           name: formData.name || undefined,
           email: formData.email,
-          role: formData.role,
+          role: isCustomRoleSelection ? "CUSTOM" : formData.role,
+          customRoleId: selectedCustomRoleId,
           department: formData.department === "none" ? undefined : formData.department,
         }),
       });
@@ -158,22 +171,27 @@ export function UserEditDialog({ user, open, onOpenChange, onUserUpdated }: User
                       {role.label}
                     </SelectItem>
                   ))}
+                  {customRoles.map((role) => (
+                    <SelectItem key={role.id} value={`CUSTOM:${role.id}`}>
+                      Custom: {role.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
+              <Label htmlFor="department">Competence Center</Label>
               <Select
                 value={formData.department}
                 onValueChange={(value) => handleSelectChange("department", value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a department" />
+                  <SelectValue placeholder="Select competence center" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No department</SelectItem>
-                  {departments.map((dept) => (
+                  <SelectItem value="none">No competence center</SelectItem>
+                  {competenceCenters.map((dept) => (
                     <SelectItem key={dept} value={dept}>
                       {dept}
                     </SelectItem>

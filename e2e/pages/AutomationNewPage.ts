@@ -141,6 +141,10 @@ export class AutomationNewPage {
     }
   }
 
+  async setStatus(status: "active" | "inactive") {
+    await this.setActive(status === "active");
+  }
+
   async submitForm() {
     await this.createRuleButton.click();
   }

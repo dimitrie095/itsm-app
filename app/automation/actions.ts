@@ -2,8 +2,10 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { requireServerActionAuth } from "@/lib/auth/server-actions"
 
 export async function getAutomationRules() {
+  await requireServerActionAuth({ permissions: ["automation.view"] })
   try {
     // Check if there are any rules, create default ones if empty
     const ruleCount = await prisma.automationRule.count()
@@ -82,6 +84,7 @@ export async function getAutomationRules() {
 }
 
 export async function getAutomationRule(id: string) {
+  await requireServerActionAuth({ permissions: ["automation.view"] })
   try {
     const rule = await prisma.automationRule.findUnique({
       where: { id }
@@ -125,6 +128,7 @@ export async function getAutomationRule(id: string) {
 }
 
 export async function getAutomationStats() {
+  await requireServerActionAuth({ permissions: ["automation.view"] })
   try {
     const totalRules = await prisma.automationRule.count()
     const activeRules = await prisma.automationRule.count({
@@ -203,6 +207,7 @@ export async function getAutomationStats() {
 }
 
 export async function toggleRuleStatus(formData: FormData) {
+  await requireServerActionAuth({ permissions: ["automation.update"] })
   try {
     const ruleId = formData.get('ruleId') as string
     const currentStatus = formData.get('currentStatus') === 'true'
@@ -224,6 +229,7 @@ export async function toggleRuleStatus(formData: FormData) {
 }
 
 export async function setRuleStatus(formData: FormData) {
+  await requireServerActionAuth({ permissions: ["automation.update"] })
   try {
     const ruleId = formData.get('ruleId') as string
     const status = formData.get('status') === 'true'
@@ -245,6 +251,7 @@ export async function setRuleStatus(formData: FormData) {
 }
 
 export async function getRuleById(ruleId: string) {
+  await requireServerActionAuth({ permissions: ["automation.view"] })
   try {
     const rule = await prisma.automationRule.findUnique({
       where: { id: ruleId }
@@ -279,6 +286,7 @@ export async function createRule(formData: {
   actionParam?: string
   isActive: boolean
 }) {
+  await requireServerActionAuth({ permissions: ["automation.create"] })
   try {
     // Combine action and param if provided
     const fullAction = formData.actionParam 
@@ -315,6 +323,7 @@ export async function updateRule(ruleId: string, formData: {
   actionParam?: string
   isActive: boolean
 }) {
+  await requireServerActionAuth({ permissions: ["automation.update"] })
   try {
     // Combine action and param if provided
     const fullAction = formData.actionParam 
@@ -343,6 +352,7 @@ export async function updateRule(ruleId: string, formData: {
 }
 
 export async function deleteRule(formData: FormData) {
+  await requireServerActionAuth({ permissions: ["automation.delete"] })
   try {
     const ruleId = formData.get('ruleId') as string
     
@@ -362,6 +372,7 @@ export async function deleteRule(formData: FormData) {
 }
 
 export async function duplicateRule(formData: FormData) {
+  await requireServerActionAuth({ permissions: ["automation.create"] })
   try {
     const ruleId = formData.get('ruleId') as string
     
@@ -397,6 +408,7 @@ export async function duplicateRule(formData: FormData) {
 
 // Log rule execution
 export async function logRuleExecution(ruleId: string, ticketId: string, success: boolean, details?: string) {
+  await requireServerActionAuth({ permissions: ["automation.execute"] })
   try {
     await prisma.automationExecution.create({
       data: {
@@ -421,6 +433,7 @@ export async function getAutomationExecutions(filters?: {
   page?: number
   limit?: number
 }) {
+  await requireServerActionAuth({ permissions: ["automation.view"] })
   try {
     const page = filters?.page || 1
     const limit = filters?.limit || 50
@@ -554,6 +567,7 @@ export async function getAutomationExecutions(filters?: {
 
 // Execute a rule manually
 export async function executeRule(ruleId: string) {
+  await requireServerActionAuth({ permissions: ["automation.execute"] })
   try {
     const rule = await prisma.automationRule.findUnique({
       where: { id: ruleId }

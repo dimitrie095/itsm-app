@@ -1,13 +1,13 @@
 import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
-import { checkApiAuth } from "@/lib/api-auth"
+import { NextRequest, NextResponse } from "next/server"
+import { withAuth } from "@/lib/auth/middleware"
 
 export async function GET(request: Request) {
   try {
-    // Check authentication and permission to view knowledge
-    const authResult = await checkApiAuth(request, undefined, ['knowledge.view'])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const nextRequest = new NextRequest(request.url, request)
+    const authResult = await withAuth({ permissions: ['knowledge.view'] })(nextRequest)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
     
     const { user } = authResult
@@ -57,10 +57,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // Check authentication and permission to create knowledge articles
-    const authResult = await checkApiAuth(request, undefined, ['knowledge.create'])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const nextRequest = new NextRequest(request.url, request)
+    const authResult = await withAuth({ permissions: ['knowledge.create'] })(nextRequest)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
     
     const { user } = authResult

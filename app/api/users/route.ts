@@ -5,6 +5,7 @@ import { Role } from "@/lib/generated/prisma/enums";
 import bcrypt from "bcryptjs";
 import { createAuditLogFromRequest } from "@/lib/logging/audit";
 import { sendOutlookEmail } from "@/lib/outlook-mailer";
+import { apiError, apiSuccess } from "@/lib/api-response";
 
 export const runtime = "nodejs";
 
@@ -27,28 +28,69 @@ export async function GET(request: Request) {
       return authResult
     }
     
-    const { user, session } = authResult
-    
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50")))
+    const search = (searchParams.get("search") || "").trim()
+    const paginate = searchParams.get("paginate") === "true"
+
+    const whereClause = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { email: { contains: search, mode: "insensitive" as const } },
+            { department: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : undefined
+
     const users = await prisma.user.findMany({
+      where: whereClause,
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
+        customRole: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         department: true,
         createdAt: true,
         avatarUrl: true,
       },
       orderBy: { createdAt: "desc" },
+      ...(paginate ? { skip: (page - 1) * limit, take: limit } : { take: limit }),
     });
-    
-    return NextResponse.json(users);
+
+    if (!paginate) {
+      return NextResponse.json({
+        success: true,
+        data: users,
+        users,
+      });
+    }
+
+    const total = await prisma.user.count({ where: whereClause })
+    const payload = {
+      users,
+      total,
+      pagination: {
+        page,
+        limit,
+        hasMore: page * limit < total,
+      },
+    }
+    return NextResponse.json({
+      success: true,
+      data: payload,
+      ...payload,
+    });
   } catch (error) {
     console.error("GET /api/users error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch users", details: String(error) },
-      { status: 500 }
-    );
+    return apiError("Failed to fetch users", 500);
   }
 }
 
@@ -70,15 +112,15 @@ export async function POST(request: Request) {
     const { user, session } = authResult
     
     const body = await request.json();
-    const { email, name, role, department, password } = body;
+    const { email, name, role, customRoleId, department, password } = body;
     
     // Validation
     if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+      return apiError("Email is required", 400);
     }
     
     if (!password) {
-      return NextResponse.json({ error: "Password is required" }, { status: 400 });
+      return apiError("Password is required", 400);
     }
     
     // Check if user already exists
@@ -87,12 +129,32 @@ export async function POST(request: Request) {
     });
     
     if (existingUser) {
-      return NextResponse.json({ error: "User with this email already exists" }, { status: 409 });
+      return apiError("User with this email already exists", 409);
     }
     
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     
+    // Resolve role assignment (standard/custom)
+    const resolvedRole = role in Role ? role : Role.END_USER;
+    let resolvedCustomRoleId: string | null = null;
+    if (resolvedRole === Role.CUSTOM) {
+      if (!customRoleId || typeof customRoleId !== "string") {
+        return NextResponse.json(
+          { error: "customRoleId is required when role is CUSTOM" },
+          { status: 400 }
+        );
+      }
+      const customRole = await prisma.customRole.findUnique({
+        where: { id: customRoleId },
+        select: { id: true, isActive: true },
+      });
+      if (!customRole || !customRole.isActive) {
+        return apiError("Selected custom role is not available", 400);
+      }
+      resolvedCustomRoleId = customRole.id;
+    }
+
     // Create user
     let newUser;
     try {
@@ -100,7 +162,8 @@ export async function POST(request: Request) {
         data: {
           email,
           name: name || null,
-          role: role in Role ? role : Role.END_USER,
+          role: resolvedRole,
+          customRoleId: resolvedCustomRoleId,
           department: department || null,
           passwordHash: hashedPassword,
           mustChangePassword: true,
@@ -123,7 +186,8 @@ export async function POST(request: Request) {
         data: {
           email,
           name: name || null,
-          role: role in Role ? role : Role.END_USER,
+          role: resolvedRole,
+          customRoleId: resolvedCustomRoleId,
           department: department || null,
           passwordHash: hashedPassword,
         },
@@ -142,10 +206,7 @@ export async function POST(request: Request) {
     // Hard guarantee: set reset-required flag even when create fallback path was used.
     // This helps when Prisma Client and DB schema are temporarily out of sync.
     try {
-      await prisma.$executeRawUnsafe(
-        `UPDATE "users" SET "mustChangePassword" = true WHERE "id" = $1`,
-        newUser.id
-      );
+      await prisma.$executeRaw`UPDATE "users" SET "mustChangePassword" = true WHERE "id" = ${newUser.id}`;
     } catch (flagError) {
       if (!String(flagError).toLowerCase().includes("mustchangepassword")) {
         console.warn("Unable to force mustChangePassword flag:", flagError);
@@ -158,8 +219,7 @@ export async function POST(request: Request) {
         <h2>Your Ponturo ITSM account is ready</h2>
         <p>Hello ${newUser.name || newUser.email},</p>
         <p>An account was created for you.</p>
-        <p><strong>Login:</strong> ${newUser.email}<br/>
-        <strong>Initial password:</strong> ${password}</p>
+        <p><strong>Login:</strong> ${newUser.email}</p>
         <p>Please sign in using this link: <a href="${loginUrl}">${loginUrl}</a></p>
         <p>You will be asked to change your password immediately after your first login.</p>
       </div>
@@ -190,12 +250,9 @@ export async function POST(request: Request) {
       },
     });
     
-    return NextResponse.json(newUser, { status: 201 });
+    return apiSuccess(newUser, { status: 201 });
   } catch (error) {
     console.error("POST /api/users error:", error);
-    return NextResponse.json(
-      { error: "Failed to create user", details: String(error) },
-      { status: 500 }
-    );
+    return apiError("Failed to create user", 500);
   }
 }

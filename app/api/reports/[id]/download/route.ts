@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { downloadReport } from '@/app/reports/actions'
-import { checkApiAuth } from '@/lib/api-auth'
+import { withAuth } from '@/lib/auth/middleware'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Check authentication and permission to view reports
-    const authResult = await checkApiAuth(request, undefined, ['reports.view'])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const authResult = await withAuth({ permissions: ['reports.view'] })(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
     
     const { id } = await params
@@ -46,7 +45,7 @@ export async function GET(
     }
     
     return NextResponse.json(
-      { error: 'Failed to download report', details: String(error) },
+      { error: 'Failed to download report' },
       { status: 500 }
     )
   }

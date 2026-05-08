@@ -37,7 +37,7 @@ export function validateRequest<T extends ZodType<any, any>>(schema: T) {
       return validatedData as z.infer<T>
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => ({
+        const errors = error.issues.map(err => ({
           path: err.path.join('.'),
           message: err.message,
         }))
@@ -88,7 +88,7 @@ export function validateQueryParams<T extends ZodType<any, any>>(schema: T) {
       return validatedParams as z.infer<T>
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => ({
+        const errors = error.issues.map(err => ({
           path: err.path.join('.'),
           message: err.message,
         }))
@@ -180,10 +180,10 @@ export function validatePartial<T extends ZodType<any, any>>(
   data: Partial<z.infer<T>>
 ) {
   try {
-    return schema.partial().parse(data)
+    return (schema as any).partial().parse(data)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errors = error.errors.map(err => ({
+      const errors = error.issues.map(err => ({
         path: err.path.join('.'),
         message: err.message,
       }))

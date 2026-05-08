@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BarChart3, TrendingUp, TrendingDown, Download, AlertTriangle, CheckCircle, Clock, Users } from "lucide-react"
+import { BarChart3, TrendingUp, TrendingDown, FileText, AlertTriangle, CheckCircle, Clock, Users } from "lucide-react"
 import Link from "next/link"
 import { getAnalyticsData } from "./actions"
 import { Badge } from "@/components/ui/badge"
@@ -66,9 +66,9 @@ export default async function AnalyticsPage() {
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Analytics</h1>
           <p className="text-muted-foreground">Data-driven insights into your IT service performance.</p>
         </div>
-        <Button variant="outline" asChild>
+        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
           <Link href="/reports/new">
-            <Download className="mr-2 h-4 w-4" />
+            <FileText className="mr-2 h-4 w-4" />
             Generate Report
           </Link>
         </Button>

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { checkApiAuth } from '@/lib/api-auth'
+import { withAuth } from '@/lib/auth/middleware'
 import { SuggestionStatus } from '@/lib/generated/prisma/enums'
 
 export async function POST(request: NextRequest) {
   try {
     // Check authentication and permission to create articles and manage suggestions
-    const authResult = await checkApiAuth(request, undefined, ['knowledge.create', 'knowledge.suggestions.manage'])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const authResult = await withAuth({ permissions: ['knowledge.create', 'knowledge.suggestions.manage'] })(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
 
     const { user } = authResult
@@ -81,7 +81,6 @@ export async function POST(request: NextRequest) {
     console.error('POST /api/knowledge/suggestions/convert error:', error)
     return NextResponse.json({ 
       error: 'Failed to convert suggestion to article',
-      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 }

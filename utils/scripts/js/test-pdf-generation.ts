@@ -1,4 +1,4 @@
-import { downloadReport } from './app/reports/actions'
+import { downloadReport } from '../../../app/reports/actions'
 
 async function test() {
   try {

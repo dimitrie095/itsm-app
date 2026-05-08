@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, Clock } from "lucide-react"
@@ -57,31 +57,39 @@ function statusColor(status: string) {
   }
 }
 
+function formatEnumLabel(value: string) {
+  const normalized = value.toLowerCase().replace(/_/g, " ")
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
 export function RecentTicketsTable({ tickets, showAssignee = true }: RecentTicketsTableProps) {
   const [selectedTicket, setSelectedTicket] = useState<PopupTicket | null>(null)
   const [popupOpen, setPopupOpen] = useState(false)
   const [users, setUsers] = useState<Array<{id: string, name: string | null, email: string}>>([])
+  const [usersLoaded, setUsersLoaded] = useState(false)
+  const [usersLoading, setUsersLoading] = useState(false)
 
-  // Fetch users for assignment dropdown
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch('/api/users')
-        if (response.ok) {
-          const data = await response.json()
-          setUsers(data)
-        } else {
-          console.error('Failed to fetch users:', response.status)
-        }
-      } catch (error) {
-        console.error('Error fetching users:', error)
-        // Silently fail - assignment dropdown will be empty
+  const loadUsers = async () => {
+    if (usersLoaded || usersLoading) return
+    try {
+      setUsersLoading(true)
+      const response = await fetch('/api/users?paginate=true&page=1&limit=100')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(Array.isArray(data?.users) ? data.users : [])
+        setUsersLoaded(true)
+      } else {
+        console.error('Failed to fetch users:', response.status)
       }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    } finally {
+      setUsersLoading(false)
     }
-    fetchUsers()
-  }, [])
+  }
 
   const handleRowClick = (ticket: Ticket) => {
+    void loadUsers()
     // Transform ticket to match TicketEditDialog interface
     const original = ticket.original || ticket
     const assignedTo = original.assignedTo ? {
@@ -153,13 +161,13 @@ export function RecentTicketsTable({ tickets, showAssignee = true }: RecentTicke
                       {ticket.title}
                     </TableCell>
                     <TableCell>
-                      <Badge className={priorityColor(ticket.priority)}>
-                        {ticket.priority}
+                      <Badge className={`${priorityColor(ticket.priority)} !text-[12px]`}>
+                        {formatEnumLabel(ticket.priority)}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={statusColor(ticket.status)}>
-                        {ticket.status}
+                      <Badge className={`${statusColor(ticket.status)} !text-[12px]`}>
+                        {formatEnumLabel(ticket.status)}
                       </Badge>
                     </TableCell>
                     {showAssignee && (

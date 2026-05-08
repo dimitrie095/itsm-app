@@ -111,7 +111,7 @@ function runTestSuite(suiteName, testFile) {
   printStatus('info', `Running ${suiteName}...`)
   
   try {
-    const jestConfig = path.join(__dirname, '..', 'tests', 'security', 'jest.config.js')
+    const jestConfig = path.join(__dirname, '..', '..', '..', 'tests', 'security', 'jest.config.js')
     
     execSync(`npx jest ${testFile} --config=${jestConfig} --passWithNoTests`, {
       stdio: 'inherit',
@@ -130,7 +130,7 @@ function runAllTests() {
   printStatus('info', 'Running complete security test suite...')
   
   try {
-    const jestConfig = path.join(__dirname, '..', 'tests', 'security', 'jest.config.js')
+    const jestConfig = path.join(__dirname, '..', '..', '..', 'tests', 'security', 'jest.config.js')
     
     execSync(`npx jest tests/security --config=${jestConfig} --passWithNoTests`, {
       stdio: 'inherit',
@@ -149,7 +149,7 @@ function generateCoverageReport() {
   printStatus('info', 'Generating coverage report...')
   
   try {
-    const jestConfig = path.join(__dirname, '..', 'tests', 'security', 'jest.config.js')
+    const jestConfig = path.join(__dirname, '..', '..', '..', 'tests', 'security', 'jest.config.js')
     
     execSync(`npx jest tests/security --config=${jestConfig} --coverage --passWithNoTests`, {
       stdio: 'inherit',
@@ -210,6 +210,7 @@ async function main() {
     { name: 'Authentication Security Tests', file: 'tests/security/auth.test.ts' },
     { name: 'Input Validation Security Tests', file: 'tests/security/validation.test.ts' },
     { name: 'API Security Tests', file: 'tests/security/api.test.ts' },
+    { name: 'Penetration Security Tests', file: 'tests/security/penetration.test.ts' },
   ]
   
   for (const suite of testSuites) {

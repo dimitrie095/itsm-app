@@ -133,7 +133,6 @@ export async function GET(
       {
         success: false,
         error: "Failed to fetch user",
-        details: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString(),
       },
       { status: 500 }
@@ -186,7 +185,7 @@ export async function PATCH(
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id },
-      select: { id: true, role: true, email: true, name: true, department: true },
+      select: { id: true, role: true, customRoleId: true, email: true, name: true, department: true },
     });
 
     if (!existingUser) {
@@ -229,7 +228,10 @@ export async function PATCH(
     }
 
     // If changing role, require users.manage_roles permission
-    if (validatedData.role !== undefined && validatedData.role !== existingUser.role) {
+    const roleAssignmentChanged =
+      (validatedData.role !== undefined && validatedData.role !== existingUser.role) ||
+      (validatedData.customRoleId !== undefined && validatedData.customRoleId !== existingUser.customRoleId);
+    if (roleAssignmentChanged) {
       // Check if the requesting user has users.manage_roles permission
       const hasManageRoles = user!.permissions.includes("users.manage_roles");
       if (!hasManageRoles && user!.role !== Role.ADMIN) {
@@ -254,12 +256,53 @@ export async function PATCH(
     const updateData: any = {};
     if (validatedData.name !== undefined) updateData.name = validatedData.name;
     if (validatedData.email !== undefined) updateData.email = validatedData.email;
-    if (validatedData.role !== undefined) updateData.role = validatedData.role;
     if (validatedData.department !== undefined) updateData.department = validatedData.department;
     if (validatedData.password !== undefined) {
       // Hash password
       const hashedPassword = await bcrypt.hash(validatedData.password, 10);
       updateData.passwordHash = hashedPassword;
+    }
+
+    // Handle standard/custom role assignment explicitly
+    if (validatedData.role !== undefined || validatedData.customRoleId !== undefined) {
+      const nextRole = validatedData.role ?? existingUser.role;
+
+      if (nextRole === Role.CUSTOM) {
+        const nextCustomRoleId = validatedData.customRoleId;
+        if (!nextCustomRoleId) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Validation Error",
+              message: "customRoleId is required when role is CUSTOM",
+              timestamp: new Date().toISOString(),
+            },
+            { status: 400 }
+          );
+        }
+
+        const customRole = await prisma.customRole.findUnique({
+          where: { id: nextCustomRoleId },
+          select: { id: true, isActive: true },
+        });
+        if (!customRole || !customRole.isActive) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Validation Error",
+              message: "Selected custom role is not available",
+              timestamp: new Date().toISOString(),
+            },
+            { status: 400 }
+          );
+        }
+
+        updateData.role = Role.CUSTOM;
+        updateData.customRoleId = customRole.id;
+      } else {
+        updateData.role = nextRole;
+        updateData.customRoleId = null;
+      }
     }
 
     // Update user
@@ -358,7 +401,7 @@ export async function PATCH(
         {
           success: false,
           error: "Validation Error",
-          details: error.errors,
+          details: error.issues,
           timestamp: new Date().toISOString(),
         },
         { status: 400 }
@@ -369,7 +412,6 @@ export async function PATCH(
       {
         success: false,
         error: "Failed to update user",
-        details: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString(),
       },
       { status: 500 }
@@ -555,7 +597,6 @@ export async function DELETE(
       {
         success: false,
         error: "Failed to delete user",
-        details: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString(),
       },
       { status: 500 }

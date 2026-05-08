@@ -1,5 +1,4 @@
 import { prisma } from "./prisma"
-import { Notification } from "./generated/prisma/client"
 import {
   buildTicketAssignedEmailHtml,
   buildTicketStatusChangedEmailHtml,
@@ -26,11 +25,13 @@ export interface CreateNotificationInput {
   metadata?: Record<string, any>
 }
 
+type Notification = any
+
 /**
  * Create a new notification for a user
  */
 export async function createNotification(input: CreateNotificationInput): Promise<Notification> {
-  return prisma.notification.create({
+  return (prisma as any).notification.create({
     data: {
       userId: input.userId,
       type: input.type,
@@ -46,7 +47,7 @@ export async function createNotification(input: CreateNotificationInput): Promis
  * Get unread notifications for a user
  */
 export async function getUnreadNotifications(userId: string, limit?: number): Promise<Notification[]> {
-  return prisma.notification.findMany({
+  return (prisma as any).notification.findMany({
     where: {
       userId,
       read: false,
@@ -62,7 +63,7 @@ export async function getUnreadNotifications(userId: string, limit?: number): Pr
  * Get all notifications for a user (read and unread)
  */
 export async function getUserNotifications(userId: string, limit?: number): Promise<Notification[]> {
-  return prisma.notification.findMany({
+  return (prisma as any).notification.findMany({
     where: {
       userId,
     },
@@ -77,7 +78,7 @@ export async function getUserNotifications(userId: string, limit?: number): Prom
  * Mark a notification as read
  */
 export async function markNotificationAsRead(notificationId: string): Promise<Notification> {
-  return prisma.notification.update({
+  return (prisma as any).notification.update({
     where: { id: notificationId },
     data: { 
       read: true,
@@ -90,7 +91,7 @@ export async function markNotificationAsRead(notificationId: string): Promise<No
  * Mark all notifications for a user as read
  */
 export async function markAllNotificationsAsRead(userId: string): Promise<{ count: number }> {
-  const result = await prisma.notification.updateMany({
+  const result = await (prisma as any).notification.updateMany({
     where: { 
       userId,
       read: false,

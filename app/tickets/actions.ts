@@ -6,8 +6,10 @@ import { notifyTicketAssigned, notifyTicketStatusChanged } from "@/lib/notificat
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { buildTicketClarificationEmailHtml, sendTicketEmail } from "@/lib/outlook-mailer"
+import { requireServerActionAuth } from "@/lib/auth/server-actions"
 
 export async function getTicketsFromDatabase(userId?: string, userRole?: string) {
+  await requireServerActionAuth({ permissions: ["tickets.view"] })
   try {
     // Build where clause based on user role
     let whereClause: any = {}
@@ -74,6 +76,7 @@ function getSlaForPriority(priority: Priority): string {
 }
 
 export async function getTicketStats(userId?: string, userRole?: string) {
+  await requireServerActionAuth({ permissions: ["tickets.view"] })
   try {
     // Build where clause based on user role for stats
     let whereClause: any = {}
@@ -130,6 +133,7 @@ export async function updateTicket(
     additionalAssigneeIds?: string[]
   }
 ) {
+  await requireServerActionAuth({ permissions: ["tickets.update"] })
   try {
     // Validate ticket exists and user has permission
     // Note: In a real app, you should add proper authentication and authorization checks
@@ -285,6 +289,7 @@ export async function updateTicket(
 }
 
 export async function addTicketComment(ticketId: string, content: string, isInternal = true) {
+  await requireServerActionAuth({ permissions: ["tickets.update"] })
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     throw new Error("Unauthorized")
@@ -332,6 +337,7 @@ export async function addTicketComment(ticketId: string, content: string, isInte
 }
 
 export async function sendTicketClarificationEmail(ticketId: string, message: string, subject?: string) {
+  await requireServerActionAuth({ permissions: ["tickets.update"] })
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     throw new Error("Unauthorized")

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@/lib/generated/prisma/client"
 import { withAuth } from "@/lib/auth/middleware"
 import { AssetType, AssetStatus, Role } from "@/lib/generated/prisma/enums"
 import { searchSchema } from "@/lib/validation/schemas"
@@ -67,7 +68,6 @@ export async function GET(request: Request) {
   const logger = getRequestLogger(nextRequest)
   
   try {
-    console.log('GET /api/assets called', new Date().toISOString())
     logger.info('Fetching assets', {
       category: 'api',
       operation: 'assets_list',
@@ -128,7 +128,7 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit
     
     // Build where clause based on user role
-    let whereClause: any = {}
+    const whereClause: Prisma.AssetWhereInput = {}
     
     if (user!.role === Role.END_USER) {
       // END_USER can only see assets assigned to them
@@ -148,7 +148,7 @@ export async function GET(request: Request) {
       whereClause.status = status
     }
     if (location) {
-      whereClause.location = { contains: location, mode: 'insensitive' }
+      whereClause.location = { contains: location }
     }
     
     // Date range filter with validation (on createdAt)
@@ -165,8 +165,8 @@ export async function GET(request: Request) {
     // Search filter (name or serialNumber)
     if (search) {
       whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { serialNumber: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search } },
+        { serialNumber: { contains: search } },
       ]
     }
     
@@ -183,12 +183,29 @@ export async function GET(request: Request) {
     })
     
     // Build orderBy clause
-    const orderBy: any = {}
-    const allowedSortFields = ['name', 'type', 'status', 'createdAt', 'updatedAt', 'purchaseDate', 'warrantyEnd']
-    if (allowedSortFields.includes(sortBy)) {
-      orderBy[sortBy] = sortOrder
-    } else {
-      orderBy.createdAt = 'desc' // Default sorting
+    let orderBy: Prisma.AssetOrderByWithRelationInput = { createdAt: 'desc' } // Default sorting
+    switch (sortBy) {
+      case 'name':
+        orderBy = { name: sortOrder }
+        break
+      case 'type':
+        orderBy = { type: sortOrder }
+        break
+      case 'status':
+        orderBy = { status: sortOrder }
+        break
+      case 'createdAt':
+        orderBy = { createdAt: sortOrder }
+        break
+      case 'updatedAt':
+        orderBy = { updatedAt: sortOrder }
+        break
+      case 'purchaseDate':
+        orderBy = { purchaseDate: sortOrder }
+        break
+      case 'warrantyEnd':
+        orderBy = { warrantyEnd: sortOrder }
+        break
     }
     
     // Fetch assets with pagination and validation
@@ -293,7 +310,6 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: false,
       error: "Failed to fetch assets",
-      details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
@@ -335,7 +351,7 @@ export async function POST(request: Request) {
     const validatedData = assetCreateSchema.parse(body)
     
     // Prepare data for Prisma
-    const createData: any = {
+    const createData: Prisma.AssetUncheckedCreateInput = {
       name: validatedData.name,
       type: validatedData.type,
       status: validatedData.status,
@@ -450,7 +466,6 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: false,
       error: "Failed to create asset",
-      details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }

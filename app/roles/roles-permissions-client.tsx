@@ -15,18 +15,18 @@ import {
   CheckCircle, 
   AlertCircle, 
   UserCog, 
-  Users,
   Save,
   Plus,
   Trash2,
-  Edit
+  Edit,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react"
 import { 
   updateStandardRolePermissions, 
   createCustomRole, 
   updateCustomRole, 
-  deleteCustomRole,
-  assignRoleToUser 
+  deleteCustomRole
 } from "./actions"
 import { Role } from "@/lib/generated/prisma/enums"
 import type { PermissionModel as Permission, CustomRoleModel as CustomRole } from "@/lib/generated/prisma/models"
@@ -87,8 +87,7 @@ export default function RolesPermissionsClient({ initialData }: RolesPermissions
     permissions: [] as string[]
   })
   
-  // State for user assignments
-  const [userAssignments, setUserAssignments] = useState(initialData.users)
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
 
   // Group permissions by category for display
   const permissionsByCategory = initialData.permissions
@@ -193,38 +192,17 @@ export default function RolesPermissionsClient({ initialData }: RolesPermissions
     })
   }
 
-  const handleAssignRoleToUser = async (userId: string, roleType: "standard" | "custom", roleValue: Role | string) => {
-    setLoading({ ...loading, [userId]: true })
-    try {
-      const result = await assignRoleToUser(userId, roleType, roleValue)
-      if (result.success) {
-        // Update local state
-        setUserAssignments(prev => prev.map(user => {
-          if (user.id === userId) {
-            return {
-              ...user,
-              role: roleType === "standard" ? (roleValue as Role) : "CUSTOM",
-              customRole: roleType === "custom" 
-                ? customRoles.find(r => r.id === roleValue) || null
-                : null
-            }
-          }
-          return user
-        }))
-        setMessage({ type: "success", text: "Role assigned successfully" })
-      } else {
-        setMessage({ type: "error", text: result.error || "Failed to assign role" })
-      }
-    } finally {
-      setLoading({ ...loading, [userId]: false })
-    }
-  }
+  const getCategoryKey = (role: Role, category: string) => `${role}:${category}`
 
-  const getRoleDisplayName = (role: Role, customRole: { id: string, name: string } | null) => {
-    if (role === "CUSTOM" && customRole) {
-      return `Custom: ${customRole.name}`
-    }
-    return role.replace("_", " ").toLowerCase().replace(/\b\w/g, l => l.toUpperCase())
+  const isCategoryCollapsed = (role: Role, category: string) =>
+    collapsedCategories[getCategoryKey(role, category)] ?? false
+
+  const toggleCategory = (role: Role, category: string) => {
+    const key = getCategoryKey(role, category)
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [key]: !(prev[key] ?? false)
+    }))
   }
 
   return (
@@ -241,7 +219,7 @@ export default function RolesPermissionsClient({ initialData }: RolesPermissions
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="standard" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Standard Roles
@@ -249,10 +227,6 @@ export default function RolesPermissionsClient({ initialData }: RolesPermissions
           <TabsTrigger value="custom" className="flex items-center gap-2">
             <UserCog className="h-4 w-4" />
             Custom Roles
-          </TabsTrigger>
-          <TabsTrigger value="assignments" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            User Assignments
           </TabsTrigger>
         </TabsList>
 
@@ -282,27 +256,38 @@ export default function RolesPermissionsClient({ initialData }: RolesPermissions
                   <div className="space-y-3">
                     {Object.entries(permissionsByCategory).map(([category, perms]) => (
                       <div key={category}>
-                        <Label className="text-sm font-medium capitalize mb-2 block">
-                          {category}
-                        </Label>
-                        <div className="space-y-2 pl-2">
-                          {perms.map((permission) => (
-                            <div key={permission.id} className="flex items-center justify-between">
-                              <div>
-                                <Label htmlFor={`${role}-${permission.id}`} className="text-sm font-normal cursor-pointer">
-                                  {permission.description}
-                                </Label>
+                        <button
+                          type="button"
+                          onClick={() => toggleCategory(role, category)}
+                          className="mb-2 flex w-full items-center justify-between rounded-lg bg-muted/70 px-3 py-2 text-left"
+                        >
+                          <span className="text-sm font-medium capitalize">{category}</span>
+                          {isCategoryCollapsed(role, category) ? (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </button>
+                        {!isCategoryCollapsed(role, category) && (
+                          <div className="space-y-2 pl-2">
+                            {perms.map((permission) => (
+                              <div key={permission.id} className="flex items-center justify-between">
+                                <div>
+                                  <Label htmlFor={`${role}-${permission.id}`} className="text-sm font-normal cursor-pointer">
+                                    {permission.description}
+                                  </Label>
+                                </div>
+                                <Switch
+                                  id={`${role}-${permission.id}`}
+                                  checked={standardPermissions[role].includes(permission.name)}
+                                  onCheckedChange={(checked) => 
+                                    handleStandardPermissionChange(role, permission.name, checked)
+                                  }
+                                />
                               </div>
-                              <Switch
-                                id={`${role}-${permission.id}`}
-                                checked={standardPermissions[role].includes(permission.name)}
-                                onCheckedChange={(checked) => 
-                                  handleStandardPermissionChange(role, permission.name, checked)
-                                }
-                              />
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                         <Separator className="my-3" />
                       </div>
                     ))}
@@ -418,139 +403,147 @@ export default function RolesPermissionsClient({ initialData }: RolesPermissions
                 <div className="space-y-4">
                   {customRoles.map((role) => (
                     <div key={role.id} className="border rounded-lg p-4">
-                      {editingRole === role.id ? (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>Role Name</Label>
-                              <input
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                value={editRoleForm.name}
-                                onChange={(e) => setEditRoleForm({ ...editRoleForm, name: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Description</Label>
-                              <input
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                value={editRoleForm.description}
-                                onChange={(e) => setEditRoleForm({ ...editRoleForm, description: e.target.value })}
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              checked={editRoleForm.isActive}
-                              onCheckedChange={(checked) => setEditRoleForm({ ...editRoleForm, isActive: checked })}
-                            />
-                            <Label>Role is active</Label>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Permissions</Label>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 border rounded-md">
-                              {initialData.allPermissions.map((permission) => (
-                                <div key={permission.id} className="flex items-center space-x-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={editRoleForm.permissions.includes(permission.name)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setEditRoleForm({
-                                          ...editRoleForm,
-                                          permissions: [...editRoleForm.permissions, permission.name]
-                                        })
-                                      } else {
-                                        setEditRoleForm({
-                                          ...editRoleForm,
-                                          permissions: editRoleForm.permissions.filter(p => p !== permission.name)
-                                        })
-                                      }
-                                    }}
-                                    className="h-4 w-4"
-                                  />
-                                  <Label className="text-sm">{permission.description}</Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => handleEditCustomRole(role.id)}
-                              disabled={loading[role.id]}
-                              className="flex-1"
-                            >
-                              {loading[role.id] && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              <Save className="mr-2 h-4 w-4" />
-                              Save Changes
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => setEditingRole(null)}
-                              disabled={loading[role.id]}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold">{role.name}</h3>
-                                <Badge variant={role.isActive ? "default" : "outline"}>
-                                  {role.isActive ? "Active" : "Inactive"}
-                                </Badge>
-                                <Badge variant="secondary">
-                                  {role.permissions.length} permissions
-                                </Badge>
+                      {/*
+                        Newly created roles can temporarily miss nested relation arrays
+                        in the optimistic UI payload, so we guard against undefined.
+                      */}
+                      {(() => {
+                        const assignedUsersCount = role.users?.length ?? 0
+                        const permissionCount = role.permissions?.length ?? 0
+                        return editingRole === role.id ? (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Role Name</Label>
+                                <input
+                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                  value={editRoleForm.name}
+                                  onChange={(e) => setEditRoleForm({ ...editRoleForm, name: e.target.value })}
+                                />
                               </div>
-                              {role.description && (
-                                <p className="text-sm text-muted-foreground mt-1">{role.description}</p>
-                              )}
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Assigned to {role.users.length} user{role.users.length !== 1 ? 's' : ''}
-                              </p>
+                              <div className="space-y-2">
+                                <Label>Description</Label>
+                                <input
+                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                  value={editRoleForm.description}
+                                  onChange={(e) => setEditRoleForm({ ...editRoleForm, description: e.target.value })}
+                                />
+                              </div>
                             </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={editRoleForm.isActive}
+                                onCheckedChange={(checked) => setEditRoleForm({ ...editRoleForm, isActive: checked })}
+                              />
+                              <Label>Role is active</Label>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Permissions</Label>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 border rounded-md">
+                                {initialData.allPermissions.map((permission) => (
+                                  <div key={permission.id} className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={editRoleForm.permissions.includes(permission.name)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setEditRoleForm({
+                                            ...editRoleForm,
+                                            permissions: [...editRoleForm.permissions, permission.name]
+                                          })
+                                        } else {
+                                          setEditRoleForm({
+                                            ...editRoleForm,
+                                            permissions: editRoleForm.permissions.filter(p => p !== permission.name)
+                                          })
+                                        }
+                                      }}
+                                      className="h-4 w-4"
+                                    />
+                                    <Label className="text-sm">{permission.description}</Label>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
                             <div className="flex gap-2">
                               <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => startEditingRole(role)}
+                                onClick={() => handleEditCustomRole(role.id)}
+                                disabled={loading[role.id]}
+                                className="flex-1"
                               >
-                                <Edit className="h-4 w-4" />
+                                {loading[role.id] && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                <Save className="mr-2 h-4 w-4" />
+                                Save Changes
                               </Button>
                               <Button
                                 variant="outline"
-                                size="sm"
-                                onClick={() => handleDeleteCustomRole(role.id)}
-                                disabled={loading[role.id] || role.users.length > 0}
+                                onClick={() => setEditingRole(null)}
+                                disabled={loading[role.id]}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                Cancel
                               </Button>
                             </div>
                           </div>
-                          
-                          <div className="text-sm">
-                            <div className="font-medium mb-1">Permissions:</div>
-                            <div className="flex flex-wrap gap-1">
-                              {role.permissions.slice(0, 5).map((p: { permission: { id: string; description: string | null } }) => (
-                                <Badge key={p.permission.id} variant="outline" className="text-xs">
-                                  {p.permission.description}
-                                </Badge>
-                              ))}
-                              {role.permissions.length > 5 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{role.permissions.length - 5} more
-                                </Badge>
-                              )}
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-semibold">{role.name}</h3>
+                                  <Badge variant={role.isActive ? "default" : "outline"}>
+                                    {role.isActive ? "Active" : "Inactive"}
+                                  </Badge>
+                                  <Badge variant="secondary">
+                                    {permissionCount} permissions
+                                  </Badge>
+                                </div>
+                                {role.description && (
+                                  <p className="text-sm text-muted-foreground mt-1">{role.description}</p>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Assigned to {assignedUsersCount} user{assignedUsersCount !== 1 ? "s" : ""}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => startEditingRole(role)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteCustomRole(role.id)}
+                                  disabled={loading[role.id] || assignedUsersCount > 0}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      )}
+                            
+                            <div className="text-sm">
+                              <div className="font-medium mb-1">Permissions:</div>
+                              <div className="flex flex-wrap gap-1">
+                                {(role.permissions ?? []).slice(0, 5).map((p: { permission: { id: string; description: string | null } }) => (
+                                  <Badge key={p.permission.id} variant="outline" className="text-xs">
+                                    {p.permission.description}
+                                  </Badge>
+                                ))}
+                                {permissionCount > 5 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{permissionCount - 5} more
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </>
+                        )
+                      })()}
                     </div>
                   ))}
                 </div>
@@ -559,63 +552,6 @@ export default function RolesPermissionsClient({ initialData }: RolesPermissions
           </Card>
         </TabsContent>
 
-        {/* User Assignments Tab */}
-        <TabsContent value="assignments" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Role Assignments</CardTitle>
-              <CardDescription>
-                Assign roles to users and manage their access levels.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {userAssignments.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between border rounded-lg p-4">
-                    <div>
-                      <div className="font-medium">{user.name || user.email}</div>
-                      <div className="text-sm text-muted-foreground">{user.email}</div>
-                      <div className="text-xs mt-1">
-                        Current role:{" "}
-                        <Badge variant="outline">
-                          {getRoleDisplayName(user.role, user.customRole)}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <select
-                        className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={user.role === "CUSTOM" && user.customRole ? `custom:${user.customRole.id}` : user.role}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          if (value.startsWith("custom:")) {
-                            const customRoleId = value.replace("custom:", "")
-                            handleAssignRoleToUser(user.id, "custom", customRoleId)
-                          } else {
-                            handleAssignRoleToUser(user.id, "standard", value as Role)
-                          }
-                        }}
-                        disabled={loading[user.id]}
-                      >
-                        <option value="ADMIN">Administrator</option>
-                        <option value="AGENT">Agent</option>
-                        <option value="END_USER">End User</option>
-                        {customRoles.filter(r => r.isActive).map(role => (
-                          <option key={role.id} value={`custom:${role.id}`}>
-                            Custom: {role.name}
-                          </option>
-                        ))}
-                      </select>
-                      {loading[user.id] && (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   )

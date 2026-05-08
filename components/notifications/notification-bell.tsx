@@ -35,15 +35,25 @@ export function NotificationBell() {
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const previousNotificationIds = useRef<Set<string>>(new Set())
+  const lastFetchRef = useRef(0)
+  const POLL_INTERVAL_MS = 60000
+  const MIN_FETCH_GAP_MS = 10000
 
   const fetchNotifications = async () => {
     if (!session?.user?.id) return
+    const now = Date.now()
+    if (now - lastFetchRef.current < MIN_FETCH_GAP_MS) return
+    lastFetchRef.current = now
     try {
       setLoading(true)
-      const response = await fetch(`/api/notifications?unreadOnly=false&limit=20`)
+      const response = await fetch(`/api/notifications?unreadOnly=false&limit=20&summary=true`)
       if (!response.ok) throw new Error("Failed to fetch notifications")
       const data = await response.json()
       const newNotifications: Notification[] = data.notifications || []
+      const nextUnreadCount =
+        typeof data.unreadCount === "number"
+          ? data.unreadCount
+          : newNotifications.filter((n: Notification) => !n.read).length
       
       // Identify new notifications since last fetch
       const newIds = new Set(newNotifications.map(n => n.id))
@@ -65,8 +75,7 @@ export function NotificationBell() {
       previousNotificationIds.current = newIds
       
       setNotifications(newNotifications)
-      const unread = newNotifications.filter((n: Notification) => !n.read).length
-      setUnreadCount(unread)
+      setUnreadCount(nextUnreadCount)
     } catch (error) {
       console.error("Error fetching notifications:", error)
     } finally {
@@ -77,11 +86,20 @@ export function NotificationBell() {
   useEffect(() => {
     if (session?.user?.id) {
       fetchNotifications()
-      // Poll every 30 seconds for new notifications
-      const interval = setInterval(fetchNotifications, 30000)
-      return () => clearInterval(interval)
+      // Poll every 60 seconds for new notifications
+      const interval = setInterval(fetchNotifications, POLL_INTERVAL_MS)
+      const onVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          fetchNotifications()
+        }
+      }
+      document.addEventListener("visibilitychange", onVisibilityChange)
+      return () => {
+        clearInterval(interval)
+        document.removeEventListener("visibilitychange", onVisibilityChange)
+      }
     }
-  }, [session?.user?.id])
+  }, [session?.user?.id, POLL_INTERVAL_MS])
 
   const markAsRead = async (notificationId: string) => {
     try {

@@ -232,7 +232,20 @@ export default async function KnowledgePage({ searchParams }: { searchParams?: {
                           {canUpdateArticle && <DropdownMenuItem asChild><Link href={`/knowledge/${article.id}/edit`}>Edit</Link></DropdownMenuItem>}
                           {canCreateArticle && <DropdownMenuItem>Duplicate</DropdownMenuItem>}
                           {(canUpdateArticle || canCreateArticle || canDeleteArticle) && <DropdownMenuSeparator />}
-                          {canDeleteArticle && <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>}
+                          {canDeleteArticle && (
+                            <DropdownMenuItem asChild className="text-red-600">
+                              <form
+                                action={async () => {
+                                  "use server"
+                                  await deleteArticle(article.id)
+                                }}
+                              >
+                                <button type="submit" className="w-full text-left">
+                                  Delete
+                                </button>
+                              </form>
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

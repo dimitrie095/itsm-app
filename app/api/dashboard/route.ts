@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { checkApiAuth } from "@/lib/api-auth"
+import { withAuth } from "@/lib/auth/middleware"
 import { Role } from "@/lib/generated/prisma/enums"
 
 export const runtime = 'nodejs'
@@ -39,10 +39,10 @@ function formatResolutionTime(minutes: number): string {
 
 export async function GET(request: Request) {
   try {
-    // Check authentication with dashboard.view permission
-    const authResult = await checkApiAuth(request, undefined, ["dashboard.view"])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const nextRequest = new NextRequest(request.url, request)
+    const authResult = await withAuth({ permissions: ["dashboard.view"] })(nextRequest)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
     
     const { user, session } = authResult
@@ -56,8 +56,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("GET /api/dashboard error:", error)
     return NextResponse.json({
-      error: "Failed to fetch dashboard data",
-      details: String(error)
+      error: "Failed to fetch dashboard data"
     }, { status: 500 })
   }
 }

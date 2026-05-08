@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@/lib/generated/prisma/client"
 import { withAuth } from "@/lib/auth/middleware"
-import { checkApiAuth } from "@/lib/api-auth-new"
 import { Role, TicketStatus, Priority, TicketSource, ImpactLevel, UrgencyLevel } from "@/lib/generated/prisma/enums"
 import { searchSchema } from "@/lib/validation/schemas"
 import { getRequestLogger } from "@/lib/logging/middleware"
@@ -9,6 +9,7 @@ import { z, ZodError } from 'zod'
 import { notifyTicketAssigned, notifyTicketCreated } from "@/lib/notifications"
 import { buildTicketCreatedEmailHtml, sendTicketEmail } from "@/lib/outlook-mailer"
 import { buildTeamsTicketCreatedMessage, sendTeamsMessage } from "@/lib/teams-webhook"
+import { computeSlaSnapshot } from "@/lib/sla"
 
 export const runtime = 'nodejs'
 
@@ -22,6 +23,7 @@ const ticketSearchSchema = searchSchema.extend({
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   sort: z.string().optional(),
+  skip: z.coerce.number().int().min(0).optional(),
 })
 
 export async function GET(request: Request) {
@@ -60,12 +62,16 @@ export async function GET(request: Request) {
       query: url.searchParams.get('search') || undefined,
       page: parseInt(url.searchParams.get('page') || '1'),
       limit: parseInt(url.searchParams.get('limit') || '50'),
+      skip: parseInt(url.searchParams.get('skip') || '0'),
       sortBy: url.searchParams.get('sort') || 'createdAt',
       sortOrder: url.searchParams.get('sortOrder') || 'desc',
       status: url.searchParams.get('status') as TicketStatus || undefined,
       priority: url.searchParams.get('priority') as Priority || undefined,
       category: url.searchParams.get('category') || undefined,
-      assigned: url.searchParams.get('assigned') as any || undefined,
+      assigned: (() => {
+        const value = url.searchParams.get('assigned')
+        return value === 'me' || value === 'unassigned' || value === 'assigned' ? value : undefined
+      })(),
       startDate: url.searchParams.get('startDate') || undefined,
       endDate: url.searchParams.get('endDate') || undefined,
     })
@@ -81,11 +87,12 @@ export async function GET(request: Request) {
       startDate, 
       endDate,
       sortBy,
-      sortOrder
+      sortOrder,
+      skip: explicitSkip
     } = validatedParams
     
     // Calculate skip for pagination
-    const skip = (page - 1) * limit
+    const skip = typeof explicitSkip === "number" && explicitSkip > 0 ? explicitSkip : (page - 1) * limit
     
     // Build where clause based on user role
     let whereClause: any = {}
@@ -132,23 +139,35 @@ export async function GET(request: Request) {
     
     // Search filter (title or description)
     if (search) {
-      whereClause.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ]
+      const trimmedSearch = search.trim()
+      let fulltextIds: string[] = []
+
+      if (trimmedSearch.length > 0) {
+        try {
+          const rows = await prisma.$queryRaw<Array<{ id: string }>>(
+            Prisma.sql`
+              SELECT "id"
+              FROM "tickets"
+              WHERE "search_vector" @@ websearch_to_tsquery('english', ${trimmedSearch})
+              ORDER BY ts_rank("search_vector", websearch_to_tsquery('english', ${trimmedSearch})) DESC
+              LIMIT 500
+            `
+          )
+          fulltextIds = rows.map((row) => row.id)
+        } catch (_fulltextError) {
+          fulltextIds = []
+        }
+      }
+
+      if (fulltextIds.length > 0) {
+        whereClause.id = { in: fulltextIds }
+      } else {
+        whereClause.OR = [
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ]
+      }
     }
-    
-    // Get total count for pagination
-    const countStartTime = Date.now()
-    const total = await prisma.ticket.count({ where: whereClause })
-    const countDuration = Date.now() - countStartTime
-    
-    logger.debug('Ticket count query executed', {
-      category: 'database',
-      operation: 'ticket_count',
-      duration: countDuration,
-      whereClause,
-    })
     
     // Build orderBy clause
     const orderBy: any = {}
@@ -157,59 +176,63 @@ export async function GET(request: Request) {
     } else {
       orderBy.createdAt = 'desc' // Default sorting
     }
-    
-    // Fetch tickets with pagination and validation
-    const findStartTime = Date.now()
-    const tickets = await prisma.ticket.findMany({
-      where: whereClause,
-      skip: Math.max(0, skip),
-      take: Math.min(Math.max(1, limit), 100), // Cap at 100, min 1
-      orderBy,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            department: true,
-          }
-        },
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            department: true,
-          }
-        },
-        asset: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            serialNumber: true,
-            status: true,
-          }
-        },
-        sla: {
-          select: {
-            id: true,
-            name: true,
-            responseTime: true,
-            resolutionTime: true,
+
+    const safeTake = Math.min(Math.max(1, limit), 100) // Cap at 100, min 1
+    const queryStartTime = Date.now()
+    const [total, tickets] = await Promise.all([
+      prisma.ticket.count({ where: whereClause }),
+      prisma.ticket.findMany({
+        where: whereClause,
+        skip: Math.max(0, skip),
+        take: safeTake,
+        orderBy,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              department: true,
+            }
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              department: true,
+            }
+          },
+          asset: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              serialNumber: true,
+              status: true,
+            }
+          },
+          sla: {
+            select: {
+              id: true,
+              name: true,
+              responseTime: true,
+              resolutionTime: true,
+            }
           }
         }
-      }
-    })
-    const findDuration = Date.now() - findStartTime
-    
-    logger.debug('Ticket findMany query executed', {
+      }),
+    ])
+    const queryDuration = Date.now() - queryStartTime
+
+    logger.debug('Ticket count+find queries executed in parallel', {
       category: 'database',
-      operation: 'ticket_find_many',
-      duration: findDuration,
+      operation: 'ticket_count_and_find_many',
+      duration: queryDuration,
       skip,
-      take: limit,
+      take: safeTake,
       ticketsCount: tickets.length,
+      total,
     })
     
     // Parse tags from JSON string to array with error handling
@@ -228,6 +251,19 @@ export async function GET(request: Request) {
       return {
         ...ticket,
         tags: parsedTags,
+        slaSnapshot: computeSlaSnapshot({
+          createdAt: ticket.createdAt,
+          firstResponseAt: ticket.firstResponseAt,
+          resolvedAt: ticket.resolvedAt,
+          status: ticket.status,
+          priority: ticket.priority,
+          policy: ticket.sla
+            ? {
+                responseTime: ticket.sla.responseTime,
+                resolutionTime: ticket.sla.resolutionTime,
+              }
+            : null,
+        }),
       }
     })
     
@@ -276,7 +312,6 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: false,
       error: "Failed to fetch tickets",
-      details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }
@@ -284,10 +319,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // Check authentication - anyone can create tickets if authenticated
-    const authResult = await checkApiAuth(request)
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const nextRequest = new NextRequest(request.url, request)
+    const authResult = await withAuth()(nextRequest)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
     
     const { user, session } = authResult
@@ -470,7 +505,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       success: false,
       error: 'Failed to create ticket', 
-      details: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString(),
     }, { status: 500 })
   }

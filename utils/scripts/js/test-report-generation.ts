@@ -1,4 +1,4 @@
-import { generateReport } from './app/reports/actions'
+import { generateReport } from '../../../app/reports/actions'
 
 async function test() {
   try {
@@ -19,7 +19,7 @@ async function test() {
     console.log('Status:', report.status)
     
     // Now try to download it
-    const { downloadReport } = await import('./app/reports/actions')
+    const { downloadReport } = await import('../../../app/reports/actions')
     const result = await downloadReport(report.id)
     console.log('Download successful')
     console.log('Content type:', result.contentType)

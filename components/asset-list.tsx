@@ -56,6 +56,7 @@ export function AssetList() {
   const [skip, setSkip] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [search, setSearch] = useState(searchParams.get("search") || "")
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("search") || "")
 
   const typeIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -84,6 +85,11 @@ export function AssetList() {
     }
   }
 
+  const formatEnumLabel = (value: string) => {
+    const normalized = value.toLowerCase().replace(/_/g, " ")
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+  }
+
   const isWarrantyExpired = (warranty: string) => {
     if (warranty === "Expired" || warranty === "N/A" || !warranty) return true
     try {
@@ -106,16 +112,11 @@ export function AssetList() {
       const params = new URLSearchParams()
       params.append("limit", "50")
       params.append("skip", newSkip.toString())
-      params.append("_", Date.now().toString()) // Cache busting
-      
-      if (search) params.append("search", search)
+      if (debouncedSearch) params.append("search", debouncedSearch)
       
       const response = await fetch(`/api/assets?${params.toString()}`, {
-        cache: 'no-store',
+        cache: 'default',
         credentials: 'same-origin',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-        }
       })
       
       if (!response.ok) {
@@ -134,13 +135,7 @@ export function AssetList() {
     } finally {
       setLoading(false)
     }
-  }, [status, search])
-
-  // Initial fetch on mount
-  useEffect(() => {
-    fetchAssets(0)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [status, debouncedSearch])
 
   const handleSearch = (value: string) => {
     setSearch(value)
@@ -148,15 +143,20 @@ export function AssetList() {
 
   useEffect(() => {
     setSearch(searchParams.get("search") || "")
+    setDebouncedSearch(searchParams.get("search") || "")
   }, [searchParams])
 
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchAssets(0)
-    }, 300)
+      setDebouncedSearch(search)
+    }, 350)
     return () => clearTimeout(timer)
-  }, [search, fetchAssets])
+  }, [search])
+
+  useEffect(() => {
+    fetchAssets(0)
+  }, [fetchAssets])
 
 
 
@@ -233,7 +233,9 @@ export function AssetList() {
                         </TableCell>
                         <TableCell>{asset.type}</TableCell>
                         <TableCell>
-                          <Badge className={statusColor(asset.status)}>{asset.status}</Badge>
+                          <Badge className={`${statusColor(asset.status)} !text-[12px]`}>
+                            {formatEnumLabel(asset.status)}
+                          </Badge>
                         </TableCell>
                         <TableCell>{asset.assignedTo || "Unassigned"}</TableCell>
                         <TableCell>{asset.location}</TableCell>

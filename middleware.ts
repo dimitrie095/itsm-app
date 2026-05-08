@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const PUBLIC_PATHS = ["/login", "/forgot-password"];
+const PUBLIC_PATHS = ["/login", "/forgot-password", "/api/auth"];
 const ALLOWED_WHEN_RESET_REQUIRED = [
   "/reset-initial-password",
   "/api/auth",
@@ -33,8 +33,15 @@ export async function middleware(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
+  const isPublicPath = startsWithAny(pathname, PUBLIC_PATHS);
+
   if (!token) {
-    return NextResponse.next();
+    if (isPublicPath) {
+      return NextResponse.next();
+    }
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   const mustChangePassword = Boolean((token as any).mustChangePassword);
@@ -47,7 +54,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  if (startsWithAny(pathname, PUBLIC_PATHS)) {
+  if (isPublicPath) {
     return NextResponse.next();
   }
 
@@ -55,6 +62,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!.*\\.).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.).*)"],
 };
 

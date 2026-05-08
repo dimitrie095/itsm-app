@@ -9,15 +9,18 @@ import { ArrowLeft, BookOpen, Calendar, Edit, Eye, Tag, ThumbsUp, User } from "l
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getArticleById, getArticleFeedback } from "../actions"
+import { getArticleById, getArticleFeedback, hasUserMarkedArticleHelpful } from "../actions"
 import ArticleFeedbackActions from "./components/article-feedback-actions"
 import ArticleFeedbackList from "./components/article-feedback-list"
 import ViewIncrementor from "./components/ViewIncrementor"
 
 export default async function ArticleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const article = await getArticleById(id)
-  const feedbackItems = await getArticleFeedback(id)
+  const [article, feedbackItems, hasMarkedHelpful] = await Promise.all([
+    getArticleById(id),
+    getArticleFeedback(id),
+    hasUserMarkedArticleHelpful(id),
+  ])
   
   if (!article) {
     notFound()
@@ -71,16 +74,15 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
                   </Badge>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Eye className="h-3 w-3" />
-                    <span>{article.views || 0} views</span>
+                    <span>{article.viewCount ?? (article as any).views ?? 0} views</span>
                   </div>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <ThumbsUp className="h-3 w-3" />
-                    <span>{article.helpful || 0} helpful</span>
+                    <span>{article.helpfulCount ?? (article as any).helpful ?? 0} helpful</span>
                   </div>
                 </div>
               </div>
             </div>
-            <p className="text-muted-foreground mt-2">Article ID: {article.id}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -105,7 +107,7 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
             </CardHeader>
             <CardContent className="overflow-auto">
               <div
-                className="prose max-w-none dark:prose-invert"
+                className="prose max-w-none text-[15px] dark:prose-invert"
                 dangerouslySetInnerHTML={{ __html: formattedContent }}
               />
             </CardContent>
@@ -185,7 +187,7 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
                   </Link>
                 </Button>
               )}
-              <ArticleFeedbackActions articleId={article.id} />
+              <ArticleFeedbackActions articleId={article.id} initialHelpfulMarked={hasMarkedHelpful} />
             </CardContent>
           </Card>
         </div>

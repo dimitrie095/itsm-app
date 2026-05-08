@@ -11,7 +11,7 @@ export default async function UserSettingsPage() {
   if (!session?.user) {
     redirect("/login");
   }
-  
+
   return (
     <UserSettingsClient
       initialName={session.user.name || ""}

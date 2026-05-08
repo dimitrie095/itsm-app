@@ -328,7 +328,7 @@ export async function analyzeTicketsAndGenerateSuggestions(userId: string): Prom
       // Check if a similar suggestion already exists (by title similarity)
       const existing = await prisma.knowledgeBaseSuggestion.findFirst({
         where: {
-          title: { contains: draft.title.substring(0, 50), mode: 'insensitive' }
+          title: { contains: draft.title.substring(0, 50) }
         }
       })
       if (existing) {

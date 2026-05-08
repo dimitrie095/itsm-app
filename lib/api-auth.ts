@@ -1,9 +1,7 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "./auth";
-import { prisma } from "./prisma";
+import { NextRequest, NextResponse } from "next/server";
 import { Role } from "@/lib/generated/prisma/enums";
-import { NextResponse } from "next/server";
-import { getPermissionsForResource } from "./permission-shortcuts";
+import { withAuth } from "@/lib/auth/middleware";
+import { prisma } from "@/lib/prisma";
 
 /**
  * API route protection utilities
@@ -28,103 +26,28 @@ export async function checkApiAuth(
   request: Request,
   requiredRole?: Role,
   requiredPermissions?: string[],
-  requiredShortcut?: { resource: string; shortcut: string }
+  _requiredShortcut?: { resource: string; shortcut: string }
 ): Promise<ApiAuthResult> {
   try {
-    // Get session
-    const session = await getServerSession(authOptions);
-    
-    if (!session || !session.user) {
+    const nextRequest = request instanceof NextRequest ? request : new NextRequest(request.url)
+    const roleOptions = requiredRole ? [requiredRole] : undefined
+    const authResult = await withAuth({
+      roles: roleOptions,
+      permissions: requiredPermissions,
+    })(nextRequest)
+
+    if (authResult instanceof NextResponse) {
       return {
         session: null,
         user: null,
         isAuthorized: false,
-        errorResponse: NextResponse.json(
-          { error: "Unauthorized" },
-          { status: 401 }
-        )
+        errorResponse: authResult,
       };
-    }
-    
-    // Get full user data from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email || "" },
-    });
-    
-    if (!user) {
-      return {
-        session,
-        user: null,
-        isAuthorized: false,
-        errorResponse: NextResponse.json(
-          { error: "User not found" },
-          { status: 404 }
-        )
-      };
-    }
-    
-    // Check role requirement
-    if (requiredRole && user.role !== requiredRole) {
-      return {
-        session,
-        user,
-        isAuthorized: false,
-        errorResponse: NextResponse.json(
-          { error: "Forbidden: Insufficient role" },
-          { status: 403 }
-        )
-      };
-    }
-    
-    // Get user permissions from session (already populated by auth callback)
-    const userPermissions = (session.user as any).permissions as string[] || [];
-    
-    // Check permission requirements from shortcut
-    if (requiredShortcut) {
-      const shortcutPermissions = getPermissionsForResource(
-        requiredShortcut.resource as any,
-        requiredShortcut.shortcut
-      );
-      
-      const hasAllShortcutPermissions = shortcutPermissions.every(perm => 
-        userPermissions.includes(perm)
-      );
-      
-      if (!hasAllShortcutPermissions) {
-        return {
-          session,
-          user,
-          isAuthorized: false,
-          errorResponse: NextResponse.json(
-            { error: `Forbidden: Insufficient permissions for ${requiredShortcut.resource} (${requiredShortcut.shortcut})` },
-            { status: 403 }
-          )
-        };
-      }
-    }
-    
-    // Check explicit permission requirements
-    if (requiredPermissions && requiredPermissions.length > 0) {
-      const hasAllRequired = requiredPermissions.every(perm => 
-        userPermissions.includes(perm)
-      );
-      
-      if (!hasAllRequired) {
-        return {
-          session,
-          user,
-          isAuthorized: false,
-          errorResponse: NextResponse.json(
-            { error: "Forbidden: Insufficient permissions" },
-            { status: 403 }
-          )
-        };
-      }
     }
     
     return {
-      session,
-      user,
+      session: authResult.session,
+      user: authResult.user,
       isAuthorized: true
     };
   } catch (error) {

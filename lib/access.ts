@@ -2,6 +2,21 @@ import { prisma } from "./prisma";
 import { Role } from "@/lib/generated/prisma/enums";
 import { getPermissionsForResource } from "./permission-shortcuts";
 
+const standardRolePermissionCache = new Map<Role, string[]>();
+
+async function getStandardRolePermissionNames(role: Role): Promise<string[]> {
+  const cached = standardRolePermissionCache.get(role);
+  if (cached) return cached;
+
+  const rolePermissions = await prisma.rolePermission.findMany({
+    where: { role },
+    select: { permission: { select: { name: true } } },
+  });
+  const names = rolePermissions.map((rp) => rp.permission.name);
+  standardRolePermissionCache.set(role, names);
+  return names;
+}
+
 /**
  * Get all permission names for a user, combining:
  * - Standard role permissions (if user.role is ADMIN/AGENT/END_USER)
@@ -11,18 +26,13 @@ import { getPermissionsForResource } from "./permission-shortcuts";
 export async function getUserPermissionNames(userId: string): Promise<string[]> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: {
-      customRole: {
-        include: {
-          permissions: {
-            include: { permission: true }
-          }
-        }
-      },
+    select: {
+      role: true,
+      customRoleId: true,
       userPermissions: {
-        include: { permission: true }
-      }
-    }
+        select: { permission: { select: { name: true } } },
+      },
+    },
   });
 
   if (!user) {
@@ -37,19 +47,22 @@ export async function getUserPermissionNames(userId: string): Promise<string[]> 
   });
 
   // Add role-based permissions
-  if ((user.role as string) === "CUSTOM" && user.customRole) {
-    // Custom role permissions
-    user.customRole.permissions.forEach(rp => {
+  if ((user.role as string) === "CUSTOM" && user.customRoleId) {
+    const customRole = await prisma.customRole.findUnique({
+      where: { id: user.customRoleId },
+      select: {
+        permissions: {
+          select: { permission: { select: { name: true } } },
+        },
+      },
+    });
+    customRole?.permissions.forEach((rp) => {
       permissionNames.add(rp.permission.name);
     });
   } else {
-    // Standard role permissions (ADMIN, AGENT, END_USER)
-    const rolePermissions = await prisma.rolePermission.findMany({
-      where: { role: user.role },
-      include: { permission: true }
-    });
-    rolePermissions.forEach(rp => {
-      permissionNames.add(rp.permission.name);
+    const rolePermissionNames = await getStandardRolePermissionNames(user.role as Role);
+    rolePermissionNames.forEach((name) => {
+      permissionNames.add(name);
     });
   }
 

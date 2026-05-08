@@ -1,8 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "./auth";
-import { prisma } from "./prisma";
 import { Role } from "@/lib/generated/prisma/enums";
-import { getPermissionsForResource, expandShortcut } from "./permission-shortcuts";
+import { requireServerActionAuth } from "@/lib/auth/server-actions";
 
 export interface ServerAuthResult {
   session: any;
@@ -21,97 +18,27 @@ export interface ServerAuthResult {
 export async function checkServerAuth(
   requiredRole?: Role,
   requiredPermissions?: string[],
-  requiredShortcut?: { resource: string; shortcut: string }
+  _requiredShortcut?: { resource: string; shortcut: string }
 ): Promise<ServerAuthResult> {
   try {
-    // Get session
-    const session = await getServerSession(authOptions);
-    
-    if (!session || !session.user) {
-      return {
-        session: null,
-        user: null,
-        isAuthorized: false,
-        error: "Unauthorized"
-      };
-    }
-
-    // Get full user data from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email || "" },
-    });
-
-    if (!user) {
-      return {
-        session,
-        user: null,
-        isAuthorized: false,
-        error: "User not found"
-      };
-    }
-
-    // Check role requirement
-    if (requiredRole && user.role !== requiredRole) {
-      return {
-        session,
-        user,
-        isAuthorized: false,
-        error: "Forbidden: Insufficient role"
-      };
-    }
-
-    // Get user permissions from session
-    const userPermissions = (session.user as any).permissions as string[] || [];
-
-    // Check permission requirements from shortcut
-    if (requiredShortcut) {
-      const shortcutPermissions = getPermissionsForResource(
-        requiredShortcut.resource as any,
-        requiredShortcut.shortcut
-      );
-      
-      const hasAllShortcutPermissions = shortcutPermissions.every(perm => 
-        userPermissions.includes(perm)
-      );
-      
-      if (!hasAllShortcutPermissions) {
-        return {
-          session,
-          user,
-          isAuthorized: false,
-          error: `Forbidden: Insufficient permissions for ${requiredShortcut.resource} (${requiredShortcut.shortcut})`
-        };
-      }
-    }
-
-    // Check explicit permission requirements
-    if (requiredPermissions && requiredPermissions.length > 0) {
-      const hasAllRequired = requiredPermissions.every(perm => 
-        userPermissions.includes(perm)
-      );
-      
-      if (!hasAllRequired) {
-        return {
-          session,
-          user,
-          isAuthorized: false,
-          error: "Forbidden: Insufficient permissions"
-        };
-      }
-    }
+    const roles = requiredRole ? [requiredRole] : undefined
+    const user = await requireServerActionAuth({
+      roles,
+      permissions: requiredPermissions,
+    })
 
     return {
-      session,
       user,
+      session: { user },
       isAuthorized: true
     };
   } catch (error) {
-    console.error("Server auth check error:", error);
+    const message = error instanceof Error ? error.message : "Internal server error"
     return {
       session: null,
       user: null,
       isAuthorized: false,
-      error: "Internal server error"
+      error: message
     };
   }
 }

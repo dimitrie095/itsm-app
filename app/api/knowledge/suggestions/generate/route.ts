@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { checkApiAuth } from '@/lib/api-auth'
+import { withAuth } from '@/lib/auth/middleware'
 import { analyzeTicketsAndGenerateSuggestions } from '@/lib/services/ticket-analysis'
 
 export async function POST(request: NextRequest) {
   try {
     // Check authentication and permission to generate suggestions
-    const authResult = await checkApiAuth(request, undefined, ['knowledge.suggestions.generate'])
-    if (!authResult.isAuthorized) {
-      return authResult.errorResponse!
+    const authResult = await withAuth({ permissions: ['knowledge.suggestions.generate'] })(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
 
     const { user } = authResult
@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
     console.error('POST /api/knowledge/suggestions/generate error:', error)
     return NextResponse.json({ 
       error: 'Failed to generate suggestions',
-      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 }

@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma"
 import nodemailer from "nodemailer"
+import { requireServerActionAuth } from "@/lib/auth/server-actions"
+import { decryptSecret, encryptSecret } from "@/lib/security/secrets"
 
 export interface AzureADConfig {
   enabled: boolean
@@ -22,6 +24,7 @@ export interface OutlookConfig {
   smtpPort: string
   smtpUser: string
   smtpPass: string
+  smtpPassConfigured?: boolean
   fromEmail: string
 }
 
@@ -30,9 +33,43 @@ export interface TeamsConfig {
   organizationName: string
   channelName: string
   webhookUrl: string
+  webhookConfigured?: boolean
+}
+
+function isPrivateOrLocalHost(hostname: string) {
+  const normalized = hostname.toLowerCase()
+  if (normalized === "localhost" || normalized.endsWith(".local")) return true
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(normalized)) {
+    const parts = normalized.split(".").map(Number)
+    return (
+      parts[0] === 10 ||
+      parts[0] === 127 ||
+      (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+      (parts[0] === 192 && parts[1] === 168) ||
+      (parts[0] === 169 && parts[1] === 254)
+    )
+  }
+  return false
+}
+
+function validateWebhookUrl(value: string) {
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
+    return { valid: false, message: "Invalid webhook URL format." }
+  }
+  if (url.protocol !== "https:") {
+    return { valid: false, message: "Webhook URL must use HTTPS." }
+  }
+  if (isPrivateOrLocalHost(url.hostname)) {
+    return { valid: false, message: "Private or local webhook URLs are not allowed." }
+  }
+  return { valid: true, message: "" }
 }
 
 export async function saveAzureADConfig(config: AzureADConfig) {
+  await requireServerActionAuth({ permissions: ["settings.manage_integrations"] })
   try {
     // In a real application, you would:
     // 1. Store configuration in a database table
@@ -58,12 +95,6 @@ export async function saveAzureADConfig(config: AzureADConfig) {
       },
     })
 
-    // Also update environment variables for current session
-    // Note: In production, you'd need to restart the server or use a configuration service
-    process.env.AZURE_AD_CLIENT_ID = config.enabled ? config.clientId : ""
-    process.env.AZURE_AD_CLIENT_SECRET = config.enabled ? config.clientSecret : ""
-    process.env.AZURE_AD_TENANT_ID = config.enabled ? config.tenantId : ""
-
     return { success: true, message: "Azure AD configuration saved successfully" }
   } catch (error) {
     console.error("Error saving Azure AD config:", error)
@@ -72,6 +103,7 @@ export async function saveAzureADConfig(config: AzureADConfig) {
 }
 
 export async function testAzureADConnection(config: AzureADConfig) {
+  await requireServerActionAuth({ permissions: ["settings.manage_integrations"] })
   try {
     // Test Azure AD connection by attempting to get a token
     // This is a simplified test - in production, you'd make an actual API call
@@ -114,6 +146,7 @@ export async function testAzureADConnection(config: AzureADConfig) {
 }
 
 export async function getAzureADConfig() {
+  await requireServerActionAuth({ permissions: ["settings.view"] })
   try {
     const integration = await prisma.integrationConfig.findUnique({
       where: { provider: "azure_ad" },
@@ -124,6 +157,7 @@ export async function getAzureADConfig() {
       return {
         enabled: integration.enabled,
         ...config,
+        clientSecret: "",
       } as AzureADConfig
     }
 
@@ -154,6 +188,7 @@ export async function getAzureADConfig() {
 }
 
 export async function triggerUserSync() {
+  await requireServerActionAuth({ permissions: ["settings.manage_integrations"] })
   try {
     // This would trigger a background job to sync users from Azure AD
     // For now, we'll simulate the sync
@@ -179,20 +214,32 @@ export async function triggerUserSync() {
 }
 
 export async function saveOutlookConfig(config: OutlookConfig) {
+  await requireServerActionAuth({ permissions: ["settings.manage_integrations"] })
   try {
+    const existing = await prisma.integrationConfig.findUnique({
+      where: { provider: "outlook_smtp" },
+    })
+    const existingConfig = existing ? JSON.parse(existing.config || "{}") : {}
+    const mergedConfig = {
+      ...existingConfig,
+      ...config,
+      smtpPass: config.smtpPass
+        ? encryptSecret(config.smtpPass)
+        : existingConfig.smtpPass || "",
+    }
     const integration = await prisma.integrationConfig.upsert({
       where: {
         provider: "outlook_smtp",
       },
       update: {
-        config: JSON.stringify(config),
+        config: JSON.stringify(mergedConfig),
         enabled: config.enabled,
         updatedAt: new Date(),
       },
       create: {
         provider: "outlook_smtp",
         name: "Outlook SMTP",
-        config: JSON.stringify(config),
+        config: JSON.stringify(mergedConfig),
         enabled: config.enabled,
       },
     })
@@ -205,6 +252,7 @@ export async function saveOutlookConfig(config: OutlookConfig) {
 }
 
 export async function getOutlookConfig() {
+  await requireServerActionAuth({ permissions: ["settings.view"] })
   try {
     const integration = await prisma.integrationConfig.findUnique({
       where: { provider: "outlook_smtp" },
@@ -219,7 +267,8 @@ export async function getOutlookConfig() {
         smtpHost: config.smtpHost || "smtp.office365.com",
         smtpPort: config.smtpPort || "587",
         smtpUser: config.smtpUser || "",
-        smtpPass: config.smtpPass || "",
+        smtpPass: "",
+        smtpPassConfigured: Boolean(config.smtpPass),
         fromEmail: config.fromEmail || "",
       } as OutlookConfig
     }
@@ -231,7 +280,8 @@ export async function getOutlookConfig() {
       smtpHost: process.env.OUTLOOK_SMTP_HOST || "smtp.office365.com",
       smtpPort: process.env.OUTLOOK_SMTP_PORT || "587",
       smtpUser: process.env.OUTLOOK_SMTP_USER || "",
-      smtpPass: process.env.OUTLOOK_SMTP_PASS || "",
+      smtpPass: "",
+      smtpPassConfigured: Boolean(process.env.OUTLOOK_SMTP_PASS),
       fromEmail: process.env.OUTLOOK_FROM_EMAIL || process.env.OUTLOOK_SMTP_USER || "",
     } as OutlookConfig
   } catch (error) {
@@ -244,17 +294,28 @@ export async function getOutlookConfig() {
       smtpPort: "587",
       smtpUser: "",
       smtpPass: "",
+      smtpPassConfigured: false,
       fromEmail: "",
     } as OutlookConfig
   }
 }
 
 export async function testOutlookConnection(config: OutlookConfig) {
+  await requireServerActionAuth({ permissions: ["settings.manage_integrations"] })
   try {
+    let effectivePass = config.smtpPass
+    if (!effectivePass) {
+      const integration = await prisma.integrationConfig.findUnique({
+        where: { provider: "outlook_smtp" },
+      })
+      const existing = integration ? JSON.parse(integration.config || "{}") : {}
+      effectivePass = decryptSecret(existing.smtpPass || "")
+    }
+
     if (!config.enabled) {
       return { success: false, message: "Please enable Outlook integration first." }
     }
-    if (!config.smtpHost || !config.smtpPort || !config.smtpUser || !config.smtpPass || !config.fromEmail) {
+    if (!config.smtpHost || !config.smtpPort || !config.smtpUser || !effectivePass || !config.fromEmail) {
       return { success: false, message: "Please fill in all required SMTP fields." }
     }
     if (!config.organizationName.trim()) {
@@ -267,7 +328,7 @@ export async function testOutlookConnection(config: OutlookConfig) {
       secure: false,
       auth: {
         user: config.smtpUser,
-        pass: config.smtpPass,
+        pass: effectivePass,
       },
     })
 
@@ -286,18 +347,34 @@ export async function testOutlookConnection(config: OutlookConfig) {
 }
 
 export async function saveTeamsConfig(config: TeamsConfig) {
+  await requireServerActionAuth({ permissions: ["settings.manage_integrations"] })
   try {
+    const urlCheck = validateWebhookUrl(config.webhookUrl)
+    if (!urlCheck.valid) {
+      return { success: false, error: urlCheck.message }
+    }
+    const existing = await prisma.integrationConfig.findUnique({
+      where: { provider: "microsoft_teams" },
+    })
+    const existingConfig = existing ? JSON.parse(existing.config || "{}") : {}
+    const mergedConfig = {
+      ...existingConfig,
+      ...config,
+      webhookUrl: config.webhookUrl
+        ? encryptSecret(config.webhookUrl)
+        : existingConfig.webhookUrl || "",
+    }
     const integration = await prisma.integrationConfig.upsert({
       where: { provider: "microsoft_teams" },
       update: {
-        config: JSON.stringify(config),
+        config: JSON.stringify(mergedConfig),
         enabled: config.enabled,
         updatedAt: new Date(),
       },
       create: {
         provider: "microsoft_teams",
         name: "Microsoft Teams",
-        config: JSON.stringify(config),
+        config: JSON.stringify(mergedConfig),
         enabled: config.enabled,
       },
     })
@@ -310,6 +387,7 @@ export async function saveTeamsConfig(config: TeamsConfig) {
 }
 
 export async function getTeamsConfig() {
+  await requireServerActionAuth({ permissions: ["settings.view"] })
   try {
     const integration = await prisma.integrationConfig.findUnique({
       where: { provider: "microsoft_teams" },
@@ -321,7 +399,8 @@ export async function getTeamsConfig() {
         enabled: integration.enabled,
         organizationName: config.organizationName || "",
         channelName: config.channelName || "",
-        webhookUrl: config.webhookUrl || "",
+        webhookUrl: "",
+        webhookConfigured: Boolean(config.webhookUrl),
       } as TeamsConfig
     }
 
@@ -329,7 +408,8 @@ export async function getTeamsConfig() {
       enabled: false,
       organizationName: process.env.TEAMS_ORGANIZATION_NAME || "",
       channelName: process.env.TEAMS_CHANNEL_NAME || "",
-      webhookUrl: process.env.TEAMS_WEBHOOK_URL || "",
+      webhookUrl: "",
+      webhookConfigured: Boolean(process.env.TEAMS_WEBHOOK_URL),
     } as TeamsConfig
   } catch (error) {
     console.error("Error loading Teams config:", error)
@@ -338,12 +418,23 @@ export async function getTeamsConfig() {
       organizationName: "",
       channelName: "",
       webhookUrl: "",
+      webhookConfigured: false,
     } as TeamsConfig
   }
 }
 
 export async function testTeamsConnection(config: TeamsConfig) {
+  await requireServerActionAuth({ permissions: ["settings.manage_integrations"] })
   try {
+    let effectiveWebhookUrl = config.webhookUrl
+    if (!effectiveWebhookUrl) {
+      const integration = await prisma.integrationConfig.findUnique({
+        where: { provider: "microsoft_teams" },
+      })
+      const existing = integration ? JSON.parse(integration.config || "{}") : {}
+      effectiveWebhookUrl = decryptSecret(existing.webhookUrl || "")
+    }
+
     if (!config.enabled) {
       return { success: false, message: "Please enable Microsoft Teams integration first." }
     }
@@ -353,11 +444,15 @@ export async function testTeamsConnection(config: TeamsConfig) {
     if (!config.channelName.trim()) {
       return { success: false, message: "Please provide channel name." }
     }
-    if (!config.webhookUrl.trim()) {
+    if (!effectiveWebhookUrl.trim()) {
       return { success: false, message: "Please provide webhook URL." }
     }
+    const urlCheck = validateWebhookUrl(effectiveWebhookUrl)
+    if (!urlCheck.valid) {
+      return { success: false, message: urlCheck.message }
+    }
 
-    const response = await fetch(config.webhookUrl, {
+    const response = await fetch(effectiveWebhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

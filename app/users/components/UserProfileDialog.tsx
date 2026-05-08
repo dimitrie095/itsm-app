@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Building, Calendar, Key, User as UserIcon } from "lucide-react";
 
@@ -65,7 +65,6 @@ export function UserProfileDialog({ user, open, onOpenChange }: UserProfileDialo
           {/* Avatar and basic info */}
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
-              <AvatarImage src={user.avatarUrl || ""} />
               <AvatarFallback>
                 {user.name
                   ? user.name.split(' ').map(n => n[0]).join('')
@@ -98,9 +97,9 @@ export function UserProfileDialog({ user, open, onOpenChange }: UserProfileDialo
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Building className="h-3 w-3" />
-                <span>Department</span>
+                <span>Competence Center</span>
               </div>
-              <p className="text-sm text-muted-foreground">{user.department || "No department"}</p>
+              <p className="text-sm text-muted-foreground">{user.department || "No competence center"}</p>
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm font-medium">

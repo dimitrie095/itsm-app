@@ -5,6 +5,7 @@ import * as path from 'path'
 import { revalidatePath } from 'next/cache'
 import { prisma } from "@/lib/prisma"
 import { AssetType, AssetStatus } from "@/lib/generated/prisma/enums"
+import { requireServerActionAuth } from "@/lib/auth/server-actions"
 
 const assetsFilePath = path.join(process.cwd(), 'assets.json')
 
@@ -71,6 +72,7 @@ export interface AssetInput {
 
 // Asset-Funktionen
 export async function getAssets() {
+  await requireServerActionAuth({ permissions: ["assets.view"] })
   try {
     const assets = await prisma.asset.findMany({
       include: {
@@ -129,11 +131,13 @@ export async function getAssets() {
 }
 
 export async function getAssetById(id: string) {
+  await requireServerActionAuth({ permissions: ["assets.view"] })
   const assets = await readAssets()
   return assets.find((asset: any) => asset.id === id)
 }
 
 export async function createAsset(data: AssetInput) {
+  await requireServerActionAuth({ permissions: ["assets.create"] })
   // Validierung
   if (!data.name.trim()) {
     throw new Error("Asset name is required")
@@ -172,6 +176,7 @@ export async function createAsset(data: AssetInput) {
 }
 
 export async function updateAsset(id: string, data: Partial<AssetInput>) {
+  await requireServerActionAuth({ permissions: ["assets.update"] })
   const assets = await readAssets()
   const assetIndex = assets.findIndex((asset: any) => asset.id === id)
   
@@ -196,6 +201,7 @@ export async function updateAsset(id: string, data: Partial<AssetInput>) {
 }
 
 export async function deleteAsset(id: string) {
+  await requireServerActionAuth({ permissions: ["assets.delete"] })
   const assets = await readAssets()
   const filteredAssets = assets.filter((asset: any) => asset.id !== id)
   
@@ -211,8 +217,8 @@ export async function deleteAsset(id: string) {
 
 // Statistik-Funktionen
 export async function getAssetStats() {
+  await requireServerActionAuth({ permissions: ["assets.view"] })
   try {
-    console.log('getAssetStats called', new Date().toISOString())
     const assets = await prisma.asset.findMany()
     
     const totalAssets = assets.length

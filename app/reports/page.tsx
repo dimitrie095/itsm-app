@@ -7,14 +7,22 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Plus, FileText, Download, Mail, Eye, MoreHorizontal, Calendar, User, BarChart } from "lucide-react"
 import Link from "next/link"
-import { getReports } from "./actions"
+import { deleteReport, getReports } from "./actions"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { hasPermission } from "@/lib/permission-utils"
 import { DownloadDropdownItem } from "@/components/reports/download-dropdown-item"
+import { redirect } from "next/navigation"
 
 export default async function ReportsPage() {
   const session = await getServerSession(authOptions)
+  if (!session) {
+    redirect("/login")
+  }
+  if (!hasPermission(session, "reports.view")) {
+    redirect("/")
+  }
+
   const reports = await getReports()
   const canCreateReport = hasPermission(session, "reports.create")
   const userPermissions = (session?.user as any)?.permissions as string[] || []
@@ -188,9 +196,20 @@ export default async function ReportsPage() {
                             {canExportReport && (
                               <DropdownMenuSeparator />
                             )}
-                            <DropdownMenuItem className="text-red-600">
-                              Delete
-                            </DropdownMenuItem>
+                            {canExportReport && (
+                              <DropdownMenuItem asChild className="text-red-600">
+                                <form
+                                  action={async () => {
+                                    "use server"
+                                    await deleteReport(report.id)
+                                  }}
+                                >
+                                  <button type="submit" className="w-full text-left">
+                                    Delete
+                                  </button>
+                                </form>
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

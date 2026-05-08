@@ -10,11 +10,12 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Save, User, Lock, Bell, Palette } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { updateProfile, changePassword, updateNotificationPreferences, updateDisplayPreferences } from "./actions";
+import { competenceCenters } from "../users/competence-centers";
 
 interface UserSettingsClientProps {
   initialName?: string;
@@ -25,7 +26,7 @@ interface UserSettingsClientProps {
 export default function UserSettingsClient({ 
   initialName = "", 
   initialEmail = "", 
-  initialDepartment = "" 
+  initialDepartment = ""
 }: UserSettingsClientProps) {
   const { data: session, status } = useSession();
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,7 @@ export default function UserSettingsClient({
   // Profile state
   const [name, setName] = useState(initialName);
   const [email, setEmail] = useState(initialEmail);
-  const [department, setDepartment] = useState(initialDepartment);
+  const [department, setDepartment] = useState(initialDepartment || "none");
   
   // Security state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -52,6 +53,20 @@ export default function UserSettingsClient({
   const [theme, setTheme] = useState(currentTheme || "system");
   const [timezone, setTimezone] = useState("UTC");
   const [language, setLanguage] = useState("en");
+
+  const getUserInitials = () => {
+    const source = (name || "").trim();
+    if (source) {
+      return source
+        .split(" ")
+        .filter(Boolean)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return (email || "U").charAt(0).toUpperCase();
+  };
   
   // Sync theme with theme provider
   useEffect(() => {
@@ -65,7 +80,7 @@ export default function UserSettingsClient({
       // Override with session data if needed
       if (session.user.name && !name) setName(session.user.name);
       if (session.user.email && !email) setEmail(session.user.email);
-      if (session.user.department && !department) setDepartment(session.user.department);
+      if (session.user.department && department === "none") setDepartment(session.user.department);
       setLoading(false);
     } else if (status === "unauthenticated") {
       toast.error("You must be logged in to view settings");
@@ -75,7 +90,10 @@ export default function UserSettingsClient({
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      const result = await updateProfile({ name, department });
+      const result = await updateProfile({
+        name,
+        department: department === "none" ? undefined : department,
+      });
       if (result.success) {
         toast.success(result.message);
       } else {
@@ -87,7 +105,7 @@ export default function UserSettingsClient({
       setSaving(false);
     }
   };
-  
+
   const handleSaveSecurity = async () => {
     if (newPassword !== confirmPassword) {
       toast.error("New passwords do not match");
@@ -176,8 +194,7 @@ export default function UserSettingsClient({
         </div>
         <div className="flex items-center gap-4">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`} />
-            <AvatarFallback>{name.charAt(0) || "U"}</AvatarFallback>
+            <AvatarFallback className="bg-primary/10 text-primary">{getUserInitials()}</AvatarFallback>
           </Avatar>
           <div>
             <p className="font-medium">{name}</p>
@@ -237,21 +254,23 @@ export default function UserSettingsClient({
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="department">Department</Label>
-                <Select value={department} onValueChange={setDepartment}>
+                <Label htmlFor="department">Competence Center</Label>
+                <Select value={department} onValueChange={setDepartment} disabled>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder="Select competence center" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="IT">IT</SelectItem>
-                    <SelectItem value="Sales">Sales</SelectItem>
-                    <SelectItem value="Support">Support</SelectItem>
-                    <SelectItem value="Marketing">Marketing</SelectItem>
-                    <SelectItem value="Finance">Finance</SelectItem>
-                    <SelectItem value="HR">Human Resources</SelectItem>
-                    <SelectItem value="Operations">Operations</SelectItem>
+                    <SelectItem value="none">No competence center</SelectItem>
+                    {competenceCenters.map((center) => (
+                      <SelectItem key={center} value={center}>
+                        {center}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Competence center is managed by administrators.
+                </p>
               </div>
               <div className="pt-4">
                 <Button onClick={handleSaveProfile} disabled={saving}>

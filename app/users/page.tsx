@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Plus, Search, Filter, Mail, Building, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ interface User {
   email: string;
   name: string | null;
   role: string;
+  customRole?: { id: string; name: string } | null;
   department: string | null;
   createdAt: string;
   avatarUrl: string | null;
@@ -33,6 +34,11 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [viewProfileOpen, setViewProfileOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -48,18 +54,36 @@ export default function UsersPage() {
   const canManageRoles = hasPermission("users.manage_roles");
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm.trim());
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  const fetchUsers = async () => {
+  useEffect(() => {
+    fetchUsers(page, debouncedSearchTerm);
+  }, [page, debouncedSearchTerm]);
+
+  const fetchUsers = async (targetPage = page, search = debouncedSearchTerm) => {
     try {
       setLoading(true);
-      const response = await fetch("/api/users");
+      const params = new URLSearchParams({
+        paginate: "true",
+        page: targetPage.toString(),
+        limit: limit.toString(),
+      });
+      if (search) {
+        params.set("search", search);
+      }
+      const response = await fetch(`/api/users?${params.toString()}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch users: ${response.status}`);
       }
       const data = await response.json();
-      setUsers(data);
+      setUsers(Array.isArray(data?.users) ? data.users : []);
+      setTotal(typeof data?.total === "number" ? data.total : 0);
+      setHasMore(Boolean(data?.pagination?.hasMore));
       setError(null);
     } catch (error: any) {
       console.error("Error fetching users:", error);
@@ -79,11 +103,12 @@ export default function UsersPage() {
     }
   };
 
-  const roleLabel = (role: string) => {
+  const roleLabel = (role: string, customRole?: { name: string } | null) => {
     switch (role) {
       case "ADMIN": return "Admin";
       case "AGENT": return "Agent";
       case "END_USER": return "End User";
+      case "CUSTOM": return customRole?.name ? `Custom: ${customRole.name}` : "Custom";
       default: return role;
     }
   };
@@ -96,15 +121,8 @@ export default function UsersPage() {
     });
   };
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.department && user.department.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
   const stats = {
-    total: users.length,
+    total,
     admins: users.filter(u => u.role === "ADMIN").length,
     agents: users.filter(u => u.role === "AGENT").length,
     endUsers: users.filter(u => u.role === "END_USER").length,
@@ -154,7 +172,7 @@ export default function UsersPage() {
               <h3 className="text-lg font-semibold">Failed to load users</h3>
               <p className="text-muted-foreground">{error}</p>
             </div>
-            <Button onClick={fetchUsers}>Retry</Button>
+            <Button onClick={() => fetchUsers()}>Retry</Button>
           </CardContent>
         </Card>
       </div>
@@ -247,25 +265,24 @@ export default function UsersPage() {
                 <TableHead>User</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
+                <TableHead>Competence Center</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.length === 0 ? (
+              {users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     {searchTerm ? "No users match your search." : "No users found."}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUsers.map((user) => (
+                users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarImage src={user.avatarUrl || ""} />
                           <AvatarFallback>
                             {user.name
                               ? user.name.split(' ').map(n => n[0]).join('')
@@ -286,13 +303,13 @@ export default function UsersPage() {
                     </TableCell>
                     <TableCell>
                       <Badge className={roleColor(user.role)}>
-                        {roleLabel(user.role)}
+                        {roleLabel(user.role, user.customRole)}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Building className="h-3 w-3" />
-                        {user.department || "No department"}
+                        {user.department || "No competence center"}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -341,6 +358,29 @@ export default function UsersPage() {
               )}
             </TableBody>
           </Table>
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Showing {(page - 1) * limit + (users.length > 0 ? 1 : 0)} to {(page - 1) * limit + users.length} of {total} users
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!hasMore || loading}
+                onClick={() => setPage((prev) => prev + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
       {selectedUser && (

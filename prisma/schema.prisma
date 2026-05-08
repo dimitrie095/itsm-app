@@ -72,6 +72,9 @@ model Ticket {
   @@index([assignedToId])
   @@index([assetId])
   @@index([slaId])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([priority, createdAt(sort: Desc)])
+  @@index([status, resolvedAt(sort: Desc)])
   @@map("tickets")
 }
 
@@ -160,6 +163,7 @@ model KnowledgeBaseArticle {
   knowledgeBaseSuggestions KnowledgeBaseSuggestion[]
 
   @@index([authorId])
+  @@index([isPublished, createdAt(sort: Desc)])
   @@map("knowledge_base_articles")
 }
 
